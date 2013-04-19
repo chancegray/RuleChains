@@ -68,6 +68,10 @@ environments {
         // TODO: grails.serverURL = "http://www.changeme.com"
     }
 }
+//// Remove the JDBC jar before the war is bundled
+//grails.war.resources = { stagingDir ->
+//  delete(file:"${stagingDir}/WEB-INF/lib/jdbc2_0-stdext.jar")
+//}
 
 // log4j configuration
 log4j = {
