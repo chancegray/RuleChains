@@ -74,6 +74,7 @@ class Chain {
                         }
                         break
                     case { it instanceof Groovy }:
+                        println "Detected a Groovy Script"
                         orderedLinks[i].output = { r ->
                             if([Collection, Object[]].any { it.isAssignableFrom(r.getClass()) }) {
                                 switch(r) {

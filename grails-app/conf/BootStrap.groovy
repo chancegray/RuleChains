@@ -37,8 +37,9 @@ class BootStrap {
                 def sequenceNum = 1
                 [
                     [ rule: [name:"SQLTest1", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
-                    [ rule: [name:"SQLTest2", rule: "INSERT INTO testtable (test) VALUES (?)"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "UPDATE", linkEnum: "NONE"] as Link,
-                    [ rule: [name:"GroovyTest1", rule: "INSERT INTO testtable (test) VALUES (?)"] as Groovy, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "NONE", linkEnum: "ENDLOOP"] as Link,
+                    [ rule: [name:"SQLTest2", rule: "INSERT INTO testtable (test) VALUES (?)"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "UPDATE", linkEnum: "ENDLOOP"] as Link,
+                    [ rule: [name:"SQLTest3", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
+                    [ rule: [name:"GroovyTest1", rule: "return row"] as Groovy, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "NONE", linkEnum: "ENDLOOP"] as Link,
                 ].eachWithIndex { l,i ->
                     l.sequenceNumber = i + 1
                     try {
