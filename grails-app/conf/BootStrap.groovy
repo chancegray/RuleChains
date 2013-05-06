@@ -394,7 +394,7 @@ class BootStrap {
             LinkService.metaClass.getSQLSources {
                 String sfRoot = "sessionFactory_"
                 def sfb = grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( 'sessionFactory_' ) }.collectEntries { b ->
-                    return [ "${b.tokenize(sfRoot).last()}" : new Sql(grailsApplication.mainContext."${b}".currentSession.connection()) ]
+                    return [ (b[sfRoot.size()..-1]) : new Sql(grailsApplication.mainContext."${b}".currentSession.connection()) ]
                 }
             }
 //        ChainJob.unschedule()

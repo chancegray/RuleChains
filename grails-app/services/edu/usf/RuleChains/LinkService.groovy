@@ -102,27 +102,23 @@ class LinkService {
         )        
     }
     def justGroovy(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
-        def sqls = getSQLSources()
-        def sql = getSQLSource(sourceName)
-        String toBeEvaluated = """\
-            def sql = longSQLplaceHolderUniqueVariable
-            def sqls = longSQLSplaceHolderUniqueVariable
-            def row = longROWplaceHolderVariable
-            
-            ${rule}
-        """        
-        
-        return new GroovyShell(new Binding([
-            longSQLplaceHolderUniqueVariable:getSQLSource(sourceName),
-            longSQLSplaceHolderUniqueVariable:getSQLSources(),
-            longROWplaceHolderVariable: input
-        ])).evaluate(toBeEvaluated)
-        
-        
-        
-        
-        
-        
+        return Link.withTransaction{ status ->
+            def sqls = getSQLSources()
+            def sql = getSQLSource(sourceName)
+            String toBeEvaluated = """\
+                def sql = longSQLplaceHolderUniqueVariable
+                def sqls = longSQLSplaceHolderUniqueVariable
+                def row = longROWplaceHolderVariable
+
+                ${rule}
+            """        
+
+            return new GroovyShell(new Binding([
+                longSQLplaceHolderUniqueVariable:getSQLSource(sourceName),
+                longSQLSplaceHolderUniqueVariable:getSQLSources(),
+                longROWplaceHolderVariable: input
+            ])).evaluate(toBeEvaluated)
+        }
     }
     
     def justSQL(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
