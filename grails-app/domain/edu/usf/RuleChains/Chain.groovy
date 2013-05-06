@@ -39,7 +39,7 @@ class Chain {
             **/
            println "Made it this far with ${row}"
             for(int i = 0; i < orderedLinks.size(); i++) {
-                orderedLinks[i].input = [ row ]
+                orderedLinks[i].input = row
             }
             /**
              * Distinguish what kind of "rules" and handle them by type

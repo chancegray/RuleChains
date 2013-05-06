@@ -13,6 +13,7 @@ import static org.quartz.TriggerBuilder.*
 import grails.plugin.quartz2.ClosureJob
 import org.quartz.*
 import static org.quartz.CronScheduleBuilder.cronSchedule
+import edu.usf.RuleChains.Groovy
 
 class BootStrap {
     def grailsApplication
@@ -35,8 +36,9 @@ class BootStrap {
                 println "Created new RuleSet ${rs.name}" 
                 def sequenceNum = 1
                 [
-                    [ rule: [name:"SQLTest1", rule: "SELECT 'fart' FROM DUAL"] as SQLQuery, sourceName: "baggageclaim"] as Link,
-                    [ rule: [name:"SQLTest2", rule: "INSERT INTO testtable (test) VALUES (?)"] as SQLQuery, sourceName: "baggageclaim"] as Link,
+                    [ rule: [name:"SQLTest1", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
+                    [ rule: [name:"SQLTest2", rule: "INSERT INTO testtable (test) VALUES (?)"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "UPDATE", linkEnum: "NONE"] as Link,
+                    [ rule: [name:"GroovyTest1", rule: "INSERT INTO testtable (test) VALUES (?)"] as Groovy, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "NONE", linkEnum: "ENDLOOP"] as Link,
                 ].eachWithIndex { l,i ->
                     l.sequenceNumber = i + 1
                     try {
@@ -376,7 +378,7 @@ class BootStrap {
             LinkService.metaClass.getSourceSession { String name ->
                 String sfRoot = "sessionFactory_"
                 def sfb = grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( 'sessionFactory_' ) }.find{ it.endsWith(name) }
-                if(!!!sfb) {
+                if(!!!!sfb) {
                     return grailsApplication.mainContext."${sfb}".currentSession
                 }
                 return grailsApplication.mainContext."sessionFactory".currentSession
@@ -384,7 +386,7 @@ class BootStrap {
             LinkService.metaClass.getSQLSource { String name ->
                 String sfRoot = "sessionFactory_"
                 def sfb = grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( 'sessionFactory_' ) }.find{ it.endsWith(name) }
-                if(!!!sfb) {
+                if(!!!!sfb) {
                     return new Sql(grailsApplication.mainContext."${sfb}".currentSession.connection())
                 }
                 return new Sql(grailsApplication.mainContext."sessionFactory".currentSession.connection())                

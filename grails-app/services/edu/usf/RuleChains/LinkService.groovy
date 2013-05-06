@@ -126,58 +126,61 @@ class LinkService {
     }
     
     def justSQL(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
-        def session = getSourceSession(sourceName)        
-        def query = session.createSQLQuery(rule.rule).setResultTransformer(org.hibernate.transform.Transformers.TO_LIST).setReadOnly(true).setFetchSize(Integer.MIN_VALUE).setCacheable(false)
-        switch(executeEnum) {
-            case ExecuteEnum.EXECUTE_USING_ROW: 
-                switch(rule) {
-                    case { it instanceof NamedQuery }:
-                        query.setProperties(input)                                
-                        break
-                    case { it instanceof SQLQuery }:
-                        input.eachWithIndex { p,index ->
-                            query.setParameter(index, p);
-                        }                                                
-                        break
-                }
-                break
-        }
-        switch(resultEnum) {
-            case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
-                return { s ->
-                    def row = (s.next())?s.get():[]
-                    s.close()
-                    session.flush()
-                    return row
-                }.call(query.scroll(ScrollMode.FORWARD_ONLY))
-                break
-            case [ ResultEnum.RECORDSET ]: 
-                return { s ->
-                    def out = []
-                    while(s.next()) {
-                        out.add(s.get()[0])
+        return Link.withTransaction{ status ->
+            def session = getSourceSession(sourceName)
+            // Link."${sourceName}"
+            def query = session.createSQLQuery(rule.rule).setResultTransformer(org.hibernate.transform.Transformers.TO_LIST).setReadOnly(true).setFetchSize(Integer.MIN_VALUE).setCacheable(false)
+            switch(executeEnum) {
+                case ExecuteEnum.EXECUTE_USING_ROW: 
+                    switch(rule) {
+                        case { it instanceof NamedQuery }:
+                            query.setProperties(input.collectEntries { [(it.key): it.value.toString()] })                                
+                            break
+                        case { it instanceof SQLQuery }:
+                            input.eachWithIndex { p,index ->
+                                query.setParameter(index, p.toString());
+                            }                                                
+                            break
                     }
-                    s.close()
-                    session.flush() 
-                    println "Recordset out is ${out}"
-                    return out
-                }.call(query.scroll(ScrollMode.FORWARD_ONLY))                
-                break
-            case [ ResultEnum.NONE ]: 
-                return { s ->
-                    s.close()
-                    session.flush()
-                    return []
-                }.call(query.scroll(ScrollMode.FORWARD_ONLY))
-                break
-            case [ ResultEnum.UPDATE ]:
-                return [ 
-                    { s ->
+                    break
+            }
+            switch(resultEnum) {
+                case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
+                    return { s ->
+                        def row = (s.next())?s.get():[]
+                        s.close()
                         session.flush()
-                        return [ s ]
-                    }.call(query.executeUpdate()) 
-                ]            
-                break                
+                        return row
+                    }.call(query.scroll(ScrollMode.FORWARD_ONLY))
+                    break
+                case [ ResultEnum.RECORDSET ]: 
+                    return { s ->
+                        def out = []
+                        while(s.next()) {
+                            out.add(s.get()[0])
+                        }
+                        s.close()
+                        session.flush() 
+                        println "Recordset out is ${out}"
+                        return out
+                    }.call(query.scroll(ScrollMode.FORWARD_ONLY))                
+                    break
+                case [ ResultEnum.NONE ]: 
+                    return { s ->
+                        s.close()
+                        session.flush()
+                        return []
+                    }.call(query.scroll(ScrollMode.FORWARD_ONLY))
+                    break
+                case [ ResultEnum.UPDATE ]:
+                    return [ 
+                        { s ->
+                            session.flush()
+                            return [ s ]
+                        }.call(query.executeUpdate()) 
+                    ]            
+                    break                
+            }
         }
     }    
     
