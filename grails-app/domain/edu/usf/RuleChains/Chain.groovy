@@ -17,7 +17,7 @@ class Chain {
                 size: 3..255,
                 unique: true,
                 //Custom constraint - only allow upper, lower, digits, dash and underscore
-                validator: { val, obj -> val ==~ /[A-Za-z0-9_-]+/ }
+                validator: { val, obj -> val ==~ /[A-Za-z0-9_-]+/ && { r -> return (!!!!r)?(r instanceof Snippet):true }.call(Rule.findByName(val)) }
             )               
     }
     def getOrderedLinks() {
