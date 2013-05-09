@@ -20,6 +20,14 @@ class Chain {
                 validator: { val, obj -> val ==~ /[A-Za-z0-9_-]+/ && { r -> return (!!!!r)?(r instanceof Snippet):true }.call(Rule.findByName(val)) }
             )               
     }
+    def afterUpdate() {
+        Snippet.findAllByChain(this).each { s ->
+            if(s.name != name) {
+                s.name=name
+                s.save(flush: true)
+            }
+        }
+    }
     def getOrderedLinks() {
         links.sort{it.sequenceNumber}
     }
