@@ -20,12 +20,26 @@ class Chain {
                 validator: { val, obj -> val ==~ /[A-Za-z0-9_-]+/ && { r -> return (!!!!r)?(r instanceof Snippet):true }.call(Rule.findByName(val)) }
             )               
     }
-    def afterUpdate() {
+    /**
+     * Anytime a chain is renamed, snippet reference name needs to be renamed (if exists)
+     **/
+    def afterUpdate() {        
         Snippet.findAllByChain(this).each { s ->
             if(s.name != name) {
                 s.name=name
                 s.save(flush: true)
             }
+        }
+    }
+    /**
+     * Before a chain is deleted, snippet reference and any links using it need to be removed
+     **/
+    def beforeDelete() {
+        Snippet.findAllByChain(this).each { s ->
+            Link.findAllByRule(s).each { l ->
+                (new ChainService()).deleteChainLink(l.chain.name,l.sequenceNumber)
+            }
+            (new RuleSetService()).deleteRule(s.ruleSet.name,s.name)
         }
     }
     def getOrderedLinks() {
