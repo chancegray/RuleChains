@@ -103,6 +103,11 @@
               </table>
             </div>
             <div id="backup" role="main">
+              <div id="backupButtonSet" style="display: inline-block;font-size:70%;">
+                <a id="backupButton" href="backup/download">Make a Backup</a>
+                <button id="restoreButton">Restore a Backup</button> 
+                <input type="file" id="restore" name="restore" size="chars" style="display:none;">
+              </div>              
             </div>            
           </div>
 	</body>

@@ -26,7 +26,7 @@ class UrlMappings {
                     action = [GET:"getChain", PUT:"addChainLink", DELETE:"deleteChain", POST:"modifyChain"] 
                 } 
                 "/chain/$name/$sequenceNumber"(controller:"chain",parseRequest: true){ 
-                    action = [GET:"getChain", PUT:"error", DELETE:"deleteChainLink", POST:"modifyChainLink"] 
+                    action = [GET:"getChainLink", PUT:"error", DELETE:"deleteChainLink", POST:"modifyChainLink"] 
                 } 
                 "/source"(controller:"chain",parseRequest: true){ 
                     action = [GET:"getSources", PUT:"error", DELETE:"error", POST:"error"] 
@@ -39,6 +39,10 @@ class UrlMappings {
                 }
                 "/job/$name/$cronExpression"(controller:"job",parseRequest: true){ 
                     action = [GET:"error", PUT:"addscheduleChainJob", DELETE:"unscheduleChainJob", POST:"rescheduleChainJob"] 
+                }
+                "/backup/download"(controller:"config",action: "downloadChainData",parseRequest: true)
+                "/backup/upload"(controller:"config",parseRequest: true){ 
+                    action = [GET:"error", PUT:"error", DELETE:"error", POST:"uploadChainData"] 
                 }
 		"/"(view:"/index")
 		"500"(view:'/error')

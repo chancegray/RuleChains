@@ -69,6 +69,19 @@ class ChainController {
             }
         }                    
     }    
+    def getChainLink() {
+        withFormat {
+            html {
+                return chainService.getChainLink(params.name,params.sequenceNumber)
+            }
+            xml {
+                render chainService.getChainLink(params.name,params.sequenceNumber) as XML
+            }
+            json {
+                JSON.use("deep") { render chainService.getChainLink(params.name,params.sequenceNumber) as JSON }
+            }
+        }                            
+    }
     def addChainLink() {
         withFormat {
             html {

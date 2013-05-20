@@ -89,7 +89,53 @@
         buildBackupContent: function() {
             var self = this,
                 o = self.options,
-                el = self.element;
+                el = self.element,
+                tabs = self.tabContents,
+                backupButton = $(self.backupButton = $('a#backupButton',tabs.backup)).button({
+                    text: true,
+                    icons: {
+                        primary: "ui-icon-arrowthick-1-s"
+                    }            
+                }).click(function(e) {
+                    e.preventDefault();  //stop the browser from following
+                    window.location.href = 'backup/download';
+                }),
+                restoreButton = $(self.restoreButton = $('button#restoreButton',tabs.backup)).button({
+                    text: true,
+                    icons: {
+                        primary: "ui-icon-arrowthick-1-n"
+                    }            
+                }).click(function(){
+                    restoreFile.click();
+                }),
+                restoreFile = $(self.restoreFile = $('input#restore')).change(function() { 
+                    if(restoreFile.val() !== "") {
+                        // alert(JSON.stringify(restoreFile.get(0).files));
+                        var reader  = new FileReader();
+                        // Closure to capture the file information.
+                        reader.onload = (function(e) {
+                            // var content = e.target.result;
+                            // alert(content);
+                            // var json = $.parseJSON(e.target.result);
+                            var json = JSON.parse(e.target.result);
+//                            alert(json);
+//                            $.each(json.ruleSets[0].rules,function(index,ruleSet) {
+//                                alert(JSON.stringify(ruleSet));
+//                            });
+//                            alert(JSON.stringify(json));
+                            $.ruleChains.config.POSTuploadChainData(e.target.result,function(response) {
+                                restoreFile.val("").trigger("change");
+                                if("error" in response) {
+                                    alert(response.error);
+                                }
+                                self.chainRefreshButton.trigger("click");
+                                self.ruleSetRefreshButton.trigger("click");
+                            });
+                        });
+                        reader.readAsText(restoreFile.get(0).files[0]);
+                    }
+                }),
+                backupButtonSet = $('div#backupButtonSet',tabs.backup).buttonset();
             
         },        
         buildScheduleContent: function() {
@@ -886,7 +932,7 @@
                 o = self.options,
                 el = self.element,
                 tabs = self.tabContents,
-                chainRefreshButton = $('button#refreshChain',tabs.chains).button({
+                chainRefreshButton = $(self.chainRefreshButton = $('button#refreshChain',tabs.chains)).button({
                     text: false,
                     icons: {
                         primary: "ui-icon-refresh"

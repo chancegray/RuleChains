@@ -13,8 +13,82 @@ class ConfigService {
     def chainService
     def ruleSetService
     
-    def importChainData() {
+    def uploadChainData(restore) {
         // def o = JSON.parse(new File('Samples/import.json').text); // Parse a JSON String
-
+        if("ruleSets" in restore) {
+            println "Made it this far"
+            restore.ruleSets.each { rs ->
+                print rs.name
+                def ruleSet = { r ->
+                    if("error" in r) {
+                        r = ruleSetService.addRuleSet(rs.name)
+                        if("error" in r) {
+                            return null
+                        }
+                        return r.ruleSet
+                    }
+                    return r.ruleSet
+                }.call(ruleSetService.getRuleSet(rs.name))
+                if(!!!!ruleSet) {
+                    rs.rules.each { r ->
+                        { r2 ->
+                            if(r."class".endsWith("Snippet")) {
+                                { c ->
+                                    if("error" in c) {
+                                        chainService.addChain(r.name)
+                                    }
+                                }.call(chainService.getChain(r.name))                                
+                            }
+                            if("error" in r2) {
+                                ruleSetService.addRule(ruleSet.name,r.name,r."class")                                
+                            }
+                            ruleSetService.updateRule(ruleSet.name,r.name,r) 
+                        }.call(ruleSetService.getRule(ruleSet.name,r.name))                        
+                    }
+                } else {
+                    println "error"
+                }
+            }
+        } else {
+            println "no ruleSets array"
+        }
+        if("chains" in restore) {
+            restore.chains.each { c ->
+                def chain = { ch ->
+                    if("error" in ch) {
+                        return chainService.addChain(c.name).chain
+                    }
+                    return ch.chain
+                }.call(chainService.getChain(c.name)) 
+                if(!!!!chain) {
+                    c.links.each { l ->
+                        if(!!!l.sequenceNumber) {
+                            chain = { ch ->
+                                if("error" in c) {
+                                    return chain
+                                }
+                                l.sequenceNumber = ch.chain.links.max { it.sequenceNumber }
+                                return ch.chain
+                            }.call(chainService.addChainLink(c.name,l))
+                        }
+                        chainService.modifyChainLink(c.name,l.sequenceNumber,l)
+                    }
+                } else {
+                    println "error"
+                }
+            }
+        } else {
+            println "no chains array"
+        }
+    }
+    
+    def downloadChainData() {
+        return [
+            ruleSets: RuleSet.list(),
+            chains: Chain.list()
+        ]
+    }
+    def uploadChainData2(restore) {
+        
     }
 }

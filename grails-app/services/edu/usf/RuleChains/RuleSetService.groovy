@@ -154,9 +154,9 @@ class RuleSetService {
                         ruleUpdate.chain = Chain.get(ruleUpdate.chain.id)
                         ruleUpdate.name = ruleUpdate.chain.name
                     } else if("method" in ruleUpdate) {
-                        ruleUpdate.method = MethodEnum.byName(ruleUpdate.method.name)
-                        ruleUpdate.parse = ParseEnum.byName(ruleUpdate.parse.name)
-                        ruleUpdate.authType = AuthTypeEnum.byName(ruleUpdate.authType.name)
+                        ruleUpdate.method = MethodEnum.byName(ruleUpdate.method)
+                        ruleUpdate.parse = ParseEnum.byName(ruleUpdate.parse)
+                        ruleUpdate.authType = AuthTypeEnum.byName(ruleUpdate.authType)
                     }
                     rule.properties = ruleUpdate
                     if(!rule.save(failOnError:false, flush: true, validate: true)) {

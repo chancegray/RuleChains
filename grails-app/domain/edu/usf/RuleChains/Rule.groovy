@@ -1,4 +1,6 @@
 package edu.usf.RuleChains
+import edu.usf.RuleChains.*
+import org.hibernate.FlushMode
 
 abstract class Rule {
     String name
@@ -10,7 +12,20 @@ abstract class Rule {
                 size: 3..255,
                 unique: true,
                 //Custom constraint - only allow upper, lower, digits, dash and underscore
-                validator: { val, obj -> val ==~ /[A-Za-z0-9_-]+/ && ((obj instanceof Snippet)?(!!!!Chain.findByName(val)):true) }
+                validator: { val, obj -> val ==~ /[A-Za-z0-9_-]+/ && ((obj instanceof Snippet)?(
+                    {
+                        boolean valid = true;
+                        Chain.withNewSession { session ->
+                            session.flushMode = FlushMode.MANUAL
+                            try {
+                                valid =  !!!!Chain.findByName(val)
+                            } finally {
+                                session.setFlushMode(FlushMode.AUTO)
+                            }
+                        }
+                        return valid
+                    }.call()
+                ):true) }
             )               
 
     }

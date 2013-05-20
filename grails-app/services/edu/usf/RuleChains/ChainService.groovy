@@ -120,6 +120,17 @@ class ChainService {
         }
         return [ error : "Chain named ${name} not found!"]
     }
+    def getChainLink(String name,def sequenceNumber) {
+        def chain = Chain.findByName(name.trim())
+        if(!!chain) {
+            def link = chain.links.find { it.sequenceNumber = sequenceNumber }
+            if(!!link) {
+                return [ link: link ]
+            }
+            return [ error : "Link sequence Number ${sequenceNumber} not found!"]
+        }        
+        return [ error : "Chain named ${name} not found!"]
+    }
     def deleteChainLink(String name,def sequenceNumber) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
