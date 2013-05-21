@@ -20,75 +20,38 @@ class BootStrap {
     def quartzScheduler
     def jobService
     def init = { servletContext ->
-        def c = new Chain([ name: "TestChain" ])
-        if(!c.save(failOnError:true, flush: true, insert: true, validate: true)) {
-            c.errors.allErrors.each {
-                println it
-            }                
-        } else {
-            println "Created new Chain ${c.name}" 
-            def rs = new RuleSet([ name: "TestRuleSet"])
-            if(!rs.save(failOnError:true, flush: true, insert: true, validate: true)) {
-                rs.errors.allErrors.each {
-                    println it
-                }                
-            } else {
-                println "Created new RuleSet ${rs.name}" 
-                def sequenceNum = 1
-                [
-                    [ rule: [name:"SQLTest1", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
-                    [ rule: [name:"SQLTest2", rule: "INSERT INTO testtable (test) VALUES (?)"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "UPDATE", linkEnum: "ENDLOOP"] as Link,
-                    [ rule: [name:"SQLTest3", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
-                    [ rule: [name:"GroovyTest1", rule: "return row"] as Groovy, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "NONE", linkEnum: "ENDLOOP"] as Link,
-                ].eachWithIndex { l,i ->
-                    l.sequenceNumber = i + 1
-                    try {
-                        if(!rs.addToRules(l.rule).save(failOnError:false, flush: true, validate: true)) {
-                            rs.errors.allErrors.each {
-                                println it
-                            }           
-                            println "'${rs.errors.fieldError.field}' value '${rs.errors.fieldError.rejectedValue}' rejected" 
-                        } else {
-                            println "Created new rule ${l.rule.name} in ${rs.name}"                             
-                            try {
-                                if(!c.addToLinks(l).save(failOnError:false, flush: true, validate: true)) {
-                                    c.errors.allErrors.each {
-                                        println it
-                                    }
-                                    println "'${c.errors.fieldError.field}' value '${c.errors.fieldError.rejectedValue}' rejected" 
-                                } else {
-                                    println "Created new link ${l.sequenceNumber} in ${c.name}" 
-                                    
-                                }
-                            } catch(Exception ex) {    
-                                l.errors.allErrors.each {
-                                    println it
-                                }           
-                                println "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" 
-                            }
-                        }                    
-                    } catch(Exception ex) {
-                        l.rule.errors.allErrors.each {
-                            println it
-                        }           
-                        println "'${l.rule.errors.fieldError.field}' value '${l.rule.errors.fieldError.rejectedValue}' rejected" 
-                    }
-                    
-                    
-                }
+
+
+//        def c = new Chain([ name: "TestChain" ])
+//        if(!c.save(failOnError:true, flush: true, insert: true, validate: true)) {
+//            c.errors.allErrors.each {
+//                println it
+//            }                
+//        } else {
+//            println "Created new Chain ${c.name}" 
+//            def rs = new RuleSet([ name: "TestRuleSet"])
+//            if(!rs.save(failOnError:true, flush: true, insert: true, validate: true)) {
+//                rs.errors.allErrors.each {
+//                    println it
+//                }                
+//            } else {
+//                println "Created new RuleSet ${rs.name}" 
+//                def sequenceNum = 1
 //                [
-//                    [name:"SQLTest1", rule: "SELECT 'fart' FROM DUAL"] as SQLQuery,
-//                    [name:"SQLTest2", rule: "INSERT INTO testtable (test) VALUES (?)"] as SQLQuery
-//                ].each { r ->
+//                    [ rule: [name:"SQLTest1", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
+//                    [ rule: [name:"SQLTest2", rule: "INSERT INTO testtable (test) VALUES (?)"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "UPDATE", linkEnum: "ENDLOOP"] as Link,
+//                    [ rule: [name:"SQLTest3", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
+//                    [ rule: [name:"GroovyTest1", rule: "return row"] as Groovy, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "NONE", linkEnum: "ENDLOOP"] as Link,
+//                ].eachWithIndex { l,i ->
+//                    l.sequenceNumber = i + 1
 //                    try {
-//                        if(!rs.addToRules(r).save(failOnError:false, flush: true, validate: true)) {
+//                        if(!rs.addToRules(l.rule).save(failOnError:false, flush: true, validate: true)) {
 //                            rs.errors.allErrors.each {
 //                                println it
 //                            }           
 //                            println "'${rs.errors.fieldError.field}' value '${rs.errors.fieldError.rejectedValue}' rejected" 
 //                        } else {
-//                            println "Created new rule ${r.name} in ${rs.name}" 
-//                            def l = new Link([rule: r, sequenceNumber: sequenceNum++, sourceName: "baggageclaim"])
+//                            println "Created new rule ${l.rule.name} in ${rs.name}"                             
 //                            try {
 //                                if(!c.addToLinks(l).save(failOnError:false, flush: true, validate: true)) {
 //                                    c.errors.allErrors.each {
@@ -107,14 +70,16 @@ class BootStrap {
 //                            }
 //                        }                    
 //                    } catch(Exception ex) {
-//                        r.errors.allErrors.each {
+//                        l.rule.errors.allErrors.each {
 //                            println it
 //                        }           
-//                        println "'${r.errors.fieldError.field}' value '${r.errors.fieldError.rejectedValue}' rejected" 
+//                        println "'${l.rule.errors.fieldError.field}' value '${l.rule.errors.fieldError.rejectedValue}' rejected" 
 //                    }
+//                    
+//                    
 //                }
-            }            
-        }        
+//            }            
+//        }        
         if(!!!quartzScheduler) {
             print "Didn't get set!"
         } else {

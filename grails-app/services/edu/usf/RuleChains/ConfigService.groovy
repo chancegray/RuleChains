@@ -80,6 +80,7 @@ class ConfigService {
         } else {
             println "no chains array"
         }
+        return [ status: "complete"]
     }
     
     def downloadChainData() {
@@ -87,8 +88,5 @@ class ConfigService {
             ruleSets: RuleSet.list(),
             chains: Chain.list()
         ]
-    }
-    def uploadChainData2(restore) {
-        
     }
 }

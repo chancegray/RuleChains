@@ -6,6 +6,7 @@ import edu.usf.RuleChains.ServiceTypeEnum
 import edu.usf.RuleChains.MethodEnum
 import edu.usf.RuleChains.ParseEnum
 import edu.usf.RuleChains.AuthTypeEnum
+import grails.converters.*
 
 class RuleSetService {
     static transactional = true
@@ -151,12 +152,12 @@ class RuleSetService {
                 }
                 if(!!rule) {
                     if("chain" in ruleUpdate) {
-                        ruleUpdate.chain = Chain.get(ruleUpdate.chain.id)
+                        ruleUpdate.chain = ("name" in ruleUpdate.chain)?Chain.findByName(ruleUpdate.chain.name):Chain.get(ruleUpdate.chain.id)
                         ruleUpdate.name = ruleUpdate.chain.name
                     } else if("method" in ruleUpdate) {
-                        ruleUpdate.method = MethodEnum.byName(ruleUpdate.method)
-                        ruleUpdate.parse = ParseEnum.byName(ruleUpdate.parse)
-                        ruleUpdate.authType = AuthTypeEnum.byName(ruleUpdate.authType)
+                        ruleUpdate.method = MethodEnum.byName(("name" in ruleUpdate.method)?ruleUpdate.method.name:ruleUpdate.method)
+                        ruleUpdate.parse = ParseEnum.byName(("name" in ruleUpdate.parse)?ruleUpdate.parse.name:ruleUpdate.parse)
+                        ruleUpdate.authType = AuthTypeEnum.byName(("name" in ruleUpdate.authType)?ruleUpdate.authType.name:ruleUpdate.authType)
                     }
                     rule.properties = ruleUpdate
                     if(!rule.save(failOnError:false, flush: true, validate: true)) {
