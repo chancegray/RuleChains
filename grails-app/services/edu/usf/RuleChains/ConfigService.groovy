@@ -39,8 +39,8 @@ class ConfigService {
                                     }
                                 }.call(chainService.getChain(r.name))                                
                             }
-                            if("error" in r2) {
-                                ruleSetService.addRule(ruleSet.name,r.name,r."class")                                
+                            if("error" in r2) {                                
+                                ruleSetService.addRule(ruleSet.name,r.name,r."class".tokenize('.').last())                                
                             }
                             ruleSetService.updateRule(ruleSet.name,r.name,r) 
                         }.call(ruleSetService.getRule(ruleSet.name,r.name))                        
@@ -61,17 +61,31 @@ class ConfigService {
                     return ch.chain
                 }.call(chainService.getChain(c.name)) 
                 if(!!!!chain) {
-                    c.links.each { l ->
-                        if(!!!l.sequenceNumber) {
-                            chain = { ch ->
-                                if("error" in c) {
-                                    return chain
-                                }
-                                l.sequenceNumber = ch.chain.links.max { it.sequenceNumber }
-                                return ch.chain
-                            }.call(chainService.addChainLink(c.name,l))
+                    c.links.sort { a, b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
+                        println "${l.sequenceNumber}"
+                        l.sequenceNumber = (!!!l.sequenceNumber)?(chain.links.max { it.sequenceNumber } + 1):l.sequenceNumber
+                        println c.name
+                        println chainService.getChainLink(c.name,l.sequenceNumber) as JSON
+                        if("error" in chainService.getChainLink(c.name,l.sequenceNumber)) {
+                            println "Added chain link"
+                            chainService.addChainLink(c.name,l)
+                            // chain.refresh()
+                        } else {
+                            println "Modified chain link"
+                            chainService.modifyChainLink(c.name,l.sequenceNumber,l)
                         }
-                        chainService.modifyChainLink(c.name,l.sequenceNumber,l)
+                        
+//                        if(!!!l.sequenceNumber || "error" in chainService.getChainLink(c.name,l.sequenceNumber)) {
+//                            l.sequenceNumber = (!!!l.sequenceNumber)?(chain.links.max { it.sequenceNumber } + 1):l.sequenceNumber
+//                            { ch ->
+//                                if(!("error" in ch)) {
+//                                    chain.refresh()
+//                                    // l.sequenceNumber = chain.links.max { it.sequenceNumber }
+//                                }
+//                            }.call(chainService.addChainLink(c.name,l))                            
+//                        }
+                        println "${l.sequenceNumber}"
+//                        chainService.modifyChainLink(c.name,l.sequenceNumber,l)
                     }
                 } else {
                     println "error"

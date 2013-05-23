@@ -72,7 +72,22 @@ class ChainService {
             def rule = Rule.findByName(newLink.rule.name)
             if(!!rule) {
                 newLink.rule = rule
-                Link link = new Link(newLink)
+                Link link = new Link(newLink.collectEntries {
+                    switch(it.key) {
+                        case "executeEnum":
+                            return [ "${it.key}": ExecuteEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
+                            break
+                        case "resultEnum":
+                            return [ "${it.key}": ResultEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
+                            break
+                        case "linkEnum":
+                            return [ "${it.key}": LinkEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
+                            break
+                        default:
+                            return [ "${it.key}": it.value ]
+                            break
+                    }
+                })
                 System.out.println(link.sequenceNumber)
                 def sequenceNumber = link.sequenceNumber+1
                 chain.links.findAll { l ->
@@ -123,7 +138,7 @@ class ChainService {
     def getChainLink(String name,def sequenceNumber) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            def link = chain.links.find { it.sequenceNumber = sequenceNumber }
+            def link = chain.links.find { it.sequenceNumber == sequenceNumber }
             if(!!link) {
                 return [ link: link ]
             }
@@ -134,7 +149,7 @@ class ChainService {
     def deleteChainLink(String name,def sequenceNumber) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            def link = chain.links.find { it.sequenceNumber = sequenceNumber }
+            def link = chain.links.find { it.sequenceNumber == sequenceNumber }
             if(!!link) {
                 if(!chain.removeFromLinks(link).save(failOnError:false, flush: true, validate: true)) {
                     chain.errors.allErrors.each {
@@ -181,10 +196,27 @@ class ChainService {
     def modifyChainLink(String name,def sequenceNumber,def updatedLink) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
+            println "Modify chain link ${sequenceNumber}"
             def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber }
             if(!!link) {
-                link.properties['sourceName','inputReorder','outputReorder','sequenceNumber','executeEnum','linkEnum','resultEnum'] = updatedLink
-                link.rule = Rule.get(updatedLink.rule.id)
+                println "Found Link"
+                link.properties['sourceName','inputReorder','outputReorder','sequenceNumber','executeEnum','linkEnum','resultEnum'] = updatedLink.collectEntries {
+                    if(it.key in ['executeEnum','linkEnum','resultEnum']) {
+                        switch(it.key) {
+                            case "executeEnum":
+                                return [ "${it.key}": ("name" in it.value)?ExecuteEnum.byName(it.value.name):ExecuteEnum.byName(it.value) ]                                
+                                break
+                            case "linkEnum":
+                                return [ "${it.key}": ("name" in it.value)?LinkEnum.byName(it.value.name):LinkEnum.byName(it.value) ]                                
+                                break
+                            case "resultEnum":
+                                return [ "${it.key}": ("name" in it.value)?ResultEnum.byName(it.value.name):ResultEnum.byName(it.value) ]                                
+                                break
+                        }
+                    }
+                    return [ "${it.key}": it.value ]
+                }
+                link.rule = ("name" in updatedLink.rule)?Rule.findByName(updatedLink.rule.name):Rule.get(updatedLink.rule.id)
                 if(!link.save(failOnError:false, flush: true, validate: true)) {
                     link.errors.allErrors.each {
                         println it
@@ -192,6 +224,8 @@ class ChainService {
                     return [ error : "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
                 }
                 return [ link : link]
+            } else {
+                println "Didn't Find link"
             }
             return [ error : "Link with sequence ${sequenceNumber} not found!"]
         }

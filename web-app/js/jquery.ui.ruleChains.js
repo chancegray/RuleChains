@@ -1316,8 +1316,8 @@
                                         .html('Source:')
                                         .css({ "padding-right":"15px"})
                                     ).append($(this).data().sourceSelect.css({ "float": "right" }))                            
-                                )
-                                ;
+                                );
+                                $(this).dialog("option","width",$(this).data().ruleSelect.width()*1.2);
                             },
                             buttons: {
                                 "Add Link": function() {
@@ -1733,6 +1733,8 @@
                                                 },{ 
                                                     mode: "text/x-groovy",
                                                     tabMode: "indent",
+                                                    indentWithTabs: true,
+                                                    indentUnit: 4,
                                                     lineNumbers: true,
                                                     matchBrackets: true,
                                                     theme: 'ambiance'
@@ -1765,6 +1767,8 @@
                                                 },{ 
                                                     mode: "text/x-groovy",
                                                     tabMode: "indent",
+                                                    indentWithTabs: true,
+                                                    indentUnit: 4,                                                    
                                                     lineNumbers: true,
                                                     matchBrackets: true,
                                                     theme: 'ambiance'
@@ -2442,6 +2446,8 @@
                                                     },{ 
                                                         mode: "text/x-mysql",
                                                         tabMode: "indent",
+                                                        indentWithTabs: true,
+                                                        indentUnit: 4,                                                        
                                                         lineNumbers: true,
                                                         matchBrackets: true,
                                                         theme: 'ambiance'
@@ -2474,6 +2480,8 @@
                                                     },{ 
                                                         mode: "text/x-groovy",
                                                         tabMode: "indent",
+                                                        indentWithTabs: true,
+                                                        indentUnit: 4,                                                        
                                                         lineNumbers: true,
                                                         matchBrackets: true,
                                                         theme: 'ambiance'
@@ -2506,6 +2514,8 @@
                                                     },{ 
                                                         mode: "text/x-mysql",
                                                         tabMode: "indent",
+                                                        indentWithTabs: true,
+                                                        indentUnit: 4,                                                        
                                                         lineNumbers: true,
                                                         matchBrackets: true,
                                                         theme: 'ambiance'
