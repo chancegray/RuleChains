@@ -16,7 +16,7 @@ class ConfigController {
     }
     def uploadChainData() {
         // println (params as JSON)
-        println params.upload
+        // println params.upload
         withFormat {
             html {
                 return configService.uploadChainData(JSON.parse(params.upload))

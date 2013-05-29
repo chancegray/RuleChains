@@ -19,19 +19,21 @@ class Chain {
                 size: 3..255,
                 unique: true,
                 //Custom constraint - only allow upper, lower, digits, dash and underscore
-                validator: { val, obj -> val ==~ /[A-Za-z0-9_-]+/ && {  
-                    boolean valid = true;
-                    Rule.withNewSession { session ->
-                        session.flushMode = FlushMode.MANUAL
-                        try {
-                            def r = Rule.findByName(val)
-                            valid = (!!!!r)?(r instanceof Snippet):true
-                        } finally {
-                            session.setFlushMode(FlushMode.AUTO)
+                validator: { val, obj -> 
+                    val ==~ /[A-Za-z0-9_.-]+/ && {  
+                        boolean valid = true;
+                        Rule.withNewSession { session ->
+                            session.flushMode = FlushMode.MANUAL
+                            try {
+                                def r = Rule.findByName(val)
+                                valid = (r instanceof Snippet)?!!!!r:!!!r
+                            } finally {
+                                session.setFlushMode(FlushMode.AUTO)
+                            }
                         }
-                    }
-                    return valid
-                }.call() }
+                        return valid
+                    }.call() 
+                }
             )               
     }
     /**

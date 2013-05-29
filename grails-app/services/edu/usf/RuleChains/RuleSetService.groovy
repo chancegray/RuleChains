@@ -94,9 +94,9 @@ class RuleSetService {
                         /** TODO
                          * Removed temporarily until the Chain interface is in place
                         **/
-//                        if(!chain) {
-//                            return [ error: "Chain '${name}' does not exist! You must specify a name for an existing chain to reference it as a snippet."]
-//                        }
+                        if(!chain) {
+                            return [ error: "Chain '${name}' does not exist! You must specify a name for an existing chain to reference it as a snippet."]
+                        }
                         rule = [ name: name, chain: chain ] as Snippet
                         break
                 }

@@ -10,7 +10,7 @@ class RuleSet {
             unique: true,
             size: 3..255,
             //Custom constraint - only allow upper, lower, digits, dash and underscore
-            validator: { val, obj -> val ==~ /[A-Za-z0-9_-]+/ }
+            validator: { val, obj -> val ==~ /[A-Za-z0-9_.-]+/ }
         )
     }        
 }

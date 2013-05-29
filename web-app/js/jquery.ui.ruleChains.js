@@ -1001,6 +1001,7 @@
                                 .html('Name:')
                                 .css({ "padding-right":"15px"})
                             ).append($(this).data().name);
+                            $(this).data().name.width($(this).data().name.parent().width()*0.73);
                         },
                         buttons: {
                             "Create New Chain": function() {
@@ -1295,7 +1296,7 @@
                                         })
                                         .html('Target Sequence Number:')
                                         .css({ "padding-right":"15px"})
-                                    ).append($(this).data().targetSequenceNumber.css({ "float": "right" }))
+                                    ).append($(this).data().targetSequenceNumber.css({ "float": "right" }).find('option:last').attr("selected","selected").end())
                                 )
                                 .append(
                                     $('<p />')
@@ -1488,7 +1489,12 @@
                             function(oObj) {
                                 return "<button type='button' id='details' />";
                             }
-                        },                        
+                        },                 
+                        { "bVisible": true,"mDataProp": null,"fnRender":
+                            function(oObj) {
+                                return [oObj.aData.rule.ruleSet.name,oObj.aData.rule.name].join(':');
+                            }
+                        },
                         { "bVisible": true,"mDataProp": "sequenceNumber","sDefaultContent":"","aDataSort": [ 1 ],"asSorting": [ "asc" ] },
                         { "bVisible": true,"mDataProp": null,"sDefaultContent":"","fnRender": 
                             function(oObj) {

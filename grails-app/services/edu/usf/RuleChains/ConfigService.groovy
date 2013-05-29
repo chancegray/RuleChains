@@ -23,6 +23,7 @@ class ConfigService {
                     if("error" in r) {
                         r = ruleSetService.addRuleSet(rs.name)
                         if("error" in r) {
+                            println "Error ${r.error}"
                             return null
                         }
                         return r.ruleSet
@@ -74,18 +75,7 @@ class ConfigService {
                             println "Modified chain link"
                             chainService.modifyChainLink(c.name,l.sequenceNumber,l)
                         }
-                        
-//                        if(!!!l.sequenceNumber || "error" in chainService.getChainLink(c.name,l.sequenceNumber)) {
-//                            l.sequenceNumber = (!!!l.sequenceNumber)?(chain.links.max { it.sequenceNumber } + 1):l.sequenceNumber
-//                            { ch ->
-//                                if(!("error" in ch)) {
-//                                    chain.refresh()
-//                                    // l.sequenceNumber = chain.links.max { it.sequenceNumber }
-//                                }
-//                            }.call(chainService.addChainLink(c.name,l))                            
-//                        }
                         println "${l.sequenceNumber}"
-//                        chainService.modifyChainLink(c.name,l.sequenceNumber,l)
                     }
                 } else {
                     println "error"

@@ -64,6 +64,7 @@
                   </tr>
                   <tr>
                     <th>&nbsp;</th>
+                    <th>Description</th>
                     <th>Id</th>
                     <th>Type</th>
                     <th>SourceName</th>
