@@ -17,7 +17,7 @@ abstract class Rule {
                         Chain.withNewSession { session ->
                             session.flushMode = FlushMode.MANUAL
                             try {
-                                valid = (obj instanceof Snippet)?(!!!!Chain.findByName(val) && !!!RuleSet.findByName(val)):(!!!Chain.findByName(val) && !!!RuleSet.findByName(val))                                
+                                valid = (obj instanceof Snippet)?(!!!!Chain.findByName(val) && !!!RuleSet.findByName(val) && !!!ChainServiceHandler.findByName(val)):(!!!Chain.findByName(val) && !!!RuleSet.findByName(val) && !!!ChainServiceHandler.findByName(val))                                
                             } finally {
                                 session.setFlushMode(FlushMode.AUTO)
                             }

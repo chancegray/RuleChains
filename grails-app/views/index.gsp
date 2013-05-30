@@ -11,6 +11,7 @@
               <li><a href="#schedule">Schedule</a></li>
               <li><a href="#chains">Chains</a></li>
               <li><a href="#ruleSets">RuleSets</a></li>
+              <li><a href="#handlers">Service Handlers</a></li>
               <li><a href="#backup">Backup</a></li>
             </ul>  
             <div id="monitor" role="main">
@@ -102,6 +103,8 @@
                   </tr>
                 </thead>
               </table>
+            </div>
+            <div id="handlers" role="main">
             </div>
             <div id="backup" role="main">
               <div id="backupButtonSet" style="display: inline-block;font-size:70%;">

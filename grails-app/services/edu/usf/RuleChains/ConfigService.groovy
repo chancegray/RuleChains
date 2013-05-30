@@ -90,7 +90,8 @@ class ConfigService {
     def downloadChainData() {
         return [
             ruleSets: RuleSet.list(),
-            chains: Chain.list()
+            chains: Chain.list(),
+            chainServiceHandlers: ChainServiceHandler.list()
         ]
     }
 }

@@ -66,6 +66,7 @@
                     schedule: $('div#schedule',el),
                     chains: $('div#chains',el),
                     ruleSets: $('div#ruleSets',el),
+                    handlers: $('div#handlers',el),
                     backup: $('div#backup',el)
                 });
             $.ruleChains.chain.GETgetSources({},function(sources) {
@@ -75,12 +76,19 @@
                 $(el).tabs();
                 self.buildChainsContent();
                 self.buildRuleSetsContent();
+                self.buildHandlersContent();
                 self.buildMonitorContent();
                 self.buildScheduleContent();
                 self.buildBackupContent();
             });            
         },
         buildMonitorContent: function() {
+            var self = this,
+                o = self.options,
+                el = self.element;
+            
+        },        
+        buildHandlersContent: function() {
             var self = this,
                 o = self.options,
                 el = self.element;

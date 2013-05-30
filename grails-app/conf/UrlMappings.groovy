@@ -44,6 +44,7 @@ class UrlMappings {
                 "/backup/upload"(controller:"config",parseRequest: true){ 
                     action = [GET:"error", PUT:"error", DELETE:"error", POST:"uploadChainData"] 
                 }
+                "/service/$handler"(controller:"chainServiceHandler",action: "handleChainService",parseRequest: true)
 		"/"(view:"/index")
 		"500"(view:'/error')
 	}

@@ -17,7 +17,7 @@ class RuleSet {
                     RuleSet.withNewSession { session ->
                         session.flushMode = FlushMode.MANUAL
                         try {
-                            valid = !((!!!!Rule.findByName(val)) || (!!!!Chain.findByName(val)))
+                            valid = !!!Rule.findByName(val) && !!!Chain.findByName(val) && !!!ChainServiceHandler.findByName(val)
                         } finally {
                             session.setFlushMode(FlushMode.AUTO)
                         }
