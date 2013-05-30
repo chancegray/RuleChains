@@ -26,7 +26,7 @@ class Chain {
                             session.flushMode = FlushMode.MANUAL
                             try {
                                 def r = Rule.findByName(val)
-                                valid = (r instanceof Snippet)?!!!!r:!!!r
+                                valid = ((r instanceof Snippet)?!!!!r:!!!r) && !!!RuleSet.findByName(val)
                             } finally {
                                 session.setFlushMode(FlushMode.AUTO)
                             }
