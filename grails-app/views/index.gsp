@@ -105,6 +105,27 @@
               </table>
             </div>
             <div id="handlers" role="main">
+              <label for="chainServiceHandlerSet" style="padding-right:15px;">Service Handler Options</label>
+              <table id="chainServiceHandlerTable" style="font-size:70%;">
+                <thead>
+                  <tr>
+                    <th colspan="4">
+                      <div id="chainServiceHandlerSet" style="display: inline-block;font-size:70%;">
+                        <button id="refreshHandlers">Refresh Handlers</button> 
+                        <button id="addHandler">Add new Handler</button> 
+                        <button id="modifyHandler">Modify Handler</button> 
+                        <button id="deleteHandler">Delete Handler</button> 
+                      </div>
+                    </th>
+                  </tr>
+                  <tr>
+                    <th>&nbsp;</th>
+                    <th>Name</th>
+                    <th>Chain</th>
+                    <th>Method</th>
+                  </tr>
+                </thead>
+              </table>
             </div>
             <div id="backup" role="main">
               <div id="backupButtonSet" style="display: inline-block;font-size:70%;">

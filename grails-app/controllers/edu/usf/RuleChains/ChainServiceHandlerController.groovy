@@ -19,4 +19,43 @@ class ChainServiceHandlerController {
             }
         }        
     }
+    def listChainServiceHandlers() {
+        withFormat {
+            html {
+                return chainServiceHandlerService.listChainServiceHandlers(params.pattern)
+            }
+            xml {
+                render chainServiceHandlerService.listChainServiceHandlers(params.pattern) as XML
+            }
+            json {
+                JSON.use("deep") { render chainServiceHandlerService.listChainServiceHandlers(params.pattern) as JSON }
+            }
+        }
+    }
+    def addChainServiceHandler() {
+        withFormat {
+            html {
+                return chainServiceHandlerService.addChainServiceHandler(params.name,params.chain)
+            }
+            xml {
+                render chainServiceHandlerService.addChainServiceHandler(params.name,params.chain) as XML
+            }
+            json {
+                render chainServiceHandlerService.addChainServiceHandler(params.name,params.chain) as JSON
+            }
+        }                            
+    }
+    def modifyChainServiceHandler() {
+        withFormat {
+            html {
+                return chainServiceHandlerService.modifyChainServiceHandler(params.name,params.chainServiceHandler)
+            }
+            xml {
+                render chainServiceHandlerService.modifyChainServiceHandler(params.name,params.chainServiceHandler) as XML
+            }
+            json {
+                JSON.use("deep") { render chainServiceHandlerService.modifyChainServiceHandler(params.name,params.chainServiceHandler) as JSON }
+            }
+        }                                    
+    }
 }

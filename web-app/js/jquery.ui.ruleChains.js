@@ -91,7 +91,463 @@
         buildHandlersContent: function() {
             var self = this,
                 o = self.options,
-                el = self.element;
+                el = self.element,
+                tabs = self.tabContents,
+                refreshHandlersButton = $(self.refreshHandlersButton = $('button#refreshHandlers',tabs.handlers)).button({
+                    text: false,
+                    icons: {
+                        primary: "ui-icon-refresh"
+                    }            
+                }).click(function() {
+                    $.ruleChains.chainServiceHandler.GETlistChainServiceHandlers({},function(response) {
+                        if("chainServiceHandlers" in response) {
+                            self.chainServiceHandlers=response.chainServiceHandlers;
+                            self.chainServiceHandlerDataTable.fnClearTable();
+                            self.chainServiceHandlerDataTable.fnAddData(self.chainServiceHandlers);
+                        } else {
+                            alert(response.error);
+                        }                        
+                    });
+                }),
+                addHandlerButton = $(self.addHandlerButton = $('button#addHandler',tabs.handlers)).button({
+                    text: false,
+                    icons: {
+                        primary: "ui-icon-plusthick"
+                    }            
+                }).click(function() {
+                    var chainSelect = self.chainSelect.clone().find('option:first').remove().end();
+                    if(chainSelect.children().length > 0) {
+                        $('<div />')
+                        .data({
+                            nameInput: $('<input />'),
+                            chainSelect: chainSelect
+                        })
+                        .addClass('ui-state-default ui-widget-content')
+                        .append(
+                            $('<p />')
+                            .css({
+                                "text-align": "center",
+                                "margin-top": "0px",
+                                "margin-bottom": "0px",
+                                "padding": "0px"
+                            })
+                        )
+                        .dialog({                    
+                            autoOpen: true,
+                            bgiframe: true,
+                            resizable: false,
+                            title: 'Create new Chain Service Handler',
+                            height:280,
+                            width:560,
+                            modal: true,
+                            zIndex: 3999,
+                            overlay: {
+                                backgroundColor: '#000',
+                                opacity: 0.5
+                            },
+                            open: function() {
+                                var dialog = $(this);
+                                $(this).dialog("option","width",($(this).dialog( "option", "width" ) > $(this).data().chainSelect.width()*1.2)?$(this).dialog( "option", "width" ):$(this).data().chainSelect.width()*1.2);
+                                dialog.data().nameInput.width(
+                                    $('<fieldset />')
+                                    .addClass('ui-widget-content')
+                                    .appendTo(dialog)
+                                    .append($('<legend />').addClass('ui-widget-header ui-corner-all').html("Handler Name: "))
+                                    .append(dialog.data().nameInput)
+                                    .width()
+                                );
+                                $('<fieldset />')
+                                .addClass('ui-widget-content')
+                                .appendTo(dialog)
+                                .append($('<legend />').addClass('ui-widget-header ui-corner-all').html("Chain Name: "))
+                                .append(dialog.data().chainSelect)
+                                .width(dialog.data().nameInput.parent().width());
+                            },
+                            buttons: {
+                                "Create New Chain": function() {
+                                    var dialog = $(this),
+                                        name = $.trim(dialog.data().nameInput.val()),
+                                        chainName = dialog.data().chainSelect.find('option:selected').text();
+                                    if(name.length < 3) {
+                                        alert('The name you provided is too short. Try another name');
+                                    } else {
+                                    $.ruleChains.chainServiceHandler.PUTaddChainServiceHandler(
+                                        {
+                                            name: name,
+                                            chain: {
+                                                name: chainName
+                                            }
+                                        },
+                                        function(response) {
+                                            if("chainServiceHandler" in response) {
+                                                self.refreshHandlersButton.trigger('click');
+                                                dialog.dialog('close');
+                                                dialog.dialog('destroy');
+                                                dialog.remove();                        
+                                            } else {
+                                                alert(response.error);
+                                            }
+                                        }
+                                    );
+                                    }
+                                },
+                                "Cancel": function() {
+                                    $(this).dialog('close');
+                                    $(this).dialog('destroy');
+                                    $(this).remove();                        
+                                }
+                            }
+                        });                        
+                    } else {
+                        alert('You must have at least one rule chain defined before you can define a handler for one');
+                    }                        
+                }),
+                modifyHandlerButton = $(self.modifyHandlerButton = $('button#modifyHandler',tabs.handlers)).button({
+                    text: false,
+                    icons: {
+                        primary: "ui-icon-wrench"
+                    }            
+                }).click(function() {
+                    
+                }),
+                deleteHandlerButton = $(self.deleteHandlerButton = $('button#deleteHandler',tabs.handlers)).button({
+                    text: false,
+                    icons: {
+                        primary: "ui-icon-trash"
+                    },
+                    disabled: true
+                }).click(function() {
+                    
+                }),
+                chainServiceHandlerSet = $('div#chainServiceHandlerSet',tabs.handlers).buttonset(),
+                chainServiceHandlerTable = $(self.chainServiceHandlerTable = $('table#chainServiceHandlerTable',tabs.handlers)),
+                chainServiceHandlerDataTable = $(self.chainServiceHandlerDataTable = chainServiceHandlerTable.dataTable({
+                    "aoColumns": [
+                        { "bSortable": false,"bVisible": true,"mDataProp": null, "fnRender":
+                            function(oObj) {
+                                return "<button type='button' id='details' />";
+                            }
+                        },                 
+                        { "bVisible": true,"mDataProp": null,"sDefaultContent":"","aDataSort": [ 1 ],"asSorting": [ "asc" ],"fnRender":
+                            function(oObj) {
+                                var div = $('<div />'),
+                                    container = $('<div />',{ id: "name"}).appendTo(div).append(oObj.aData.name);
+                                return div.html();
+                            }
+                        },
+                        { "bVisible": true,"mDataProp": null,"fnRender":
+                            function(oObj) {
+                                var div = $('<div />'),
+                                    select = self.chainSelect
+                                    .clone()
+                                    .find('option:first-child')
+                                    .remove()
+                                    .end()
+                                    .appendTo(div)
+                                    .each(function(ci,option) {
+                                        $(option).prop("selected", ($(option).text() === oObj.aData.chain.name));
+                                    });
+                                return div.html();                        
+                            }
+                        },
+                        { "bVisible": true,"mDataProp": null,"fnRender":
+                            function(oObj) {
+                                var div = $('<div />'),
+                                    select = $('<select />',{
+                                        id: "method",
+                                        name: "method"
+                                    }).appendTo(div);
+                                $.each(['GET', 'POST', 'PUT', 'DELETE'],function(si,name) {                                
+                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.method.name));
+                                });                            
+                                return div.html();                        
+                            }
+                        }
+                    ],                    
+                    "bJQueryUI": true,
+                    "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                    "aaData": [],
+                    "fnInitComplete": function(oSettings, json) {
+                        self.refreshHandlersButton.trigger("click");
+                    },
+                    "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+                        return $(nRow)
+                        .unbind('click')
+                        .click(function(event) {
+                            if($(nRow).hasClass('ui-widget-shadow')) {
+                                $(nRow).removeClass('ui-widget-shadow');
+                                // self.linkMoveButton.button("option","disabled",true);
+                                // self.linkDeleteButton.button("option","disabled",true);
+                            } else {
+                                $(self.chainServiceHandlerDataTable.fnGetNodes( )).each(function() {
+                                    $(this).removeClass('ui-widget-shadow');
+                                });
+                                $(nRow).addClass('ui-widget-shadow');                                    
+                                // self.linkMoveButton.button("option","disabled",false);
+                                // self.linkDeleteButton.button("option","disabled",false);
+                            }
+                        })
+                        .find('button#details',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        .find('select#method',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        .find('select#chain',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        .find('div#name',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        .each(function() {
+                            var nRowData = $(nRow).data(),
+                                detailsButton = $(nRowData.detailsButton = $(this).find('button#details'))
+                                .button({
+                                    text: false,
+                                    icons: {
+                                        primary: 'ui-icon-circle-triangle-e'
+                                    }
+                                })
+                                .unbind('toggle')
+                                .toggle(
+                                    function() {
+                                        nRowData.detailsButton.button( "option", "icons", {
+                                            primary: 'ui-icon-circle-triangle-s'
+                                        });
+                                        $(self.chainServiceHandlerDataTable.fnGetNodes( )).each(function (index,r) {
+                                            if ( self.chainServiceHandlerDataTable.fnIsOpen(r) ) {
+                                                $(r).find('button#details').click();
+                                            }                                                
+                                        });     
+                                        $(nRowData.detailsRow = $(self.chainServiceHandlerDataTable.fnOpen(
+                                            nRow,
+                                            "<fieldset id='handlerDetails' />",
+                                            'ui-widget-header'))
+                                        )
+                                        .find('fieldset#handlerDetails')
+                                        .addClass('ui-widget-content')
+                                        .append(
+                                            $('<legend />')
+                                            .html('Handler Details')
+                                            .addClass('ui-widget-header ui-corner-all')
+                                        )
+                                        .each(function() {
+                                            $(nRowData.detailsFieldset = $(this))
+                                            .append(
+                                                $(nRowData.inputReorderSide = $('<fieldset />'))
+                                                .css({
+                                                    'float': 'left',
+                                                    'width': '48%'
+                                                })
+                                                .addClass('ui-widget-content')
+                                                .append(
+                                                    $('<legend />')
+                                                    .html('Input Reorder')
+                                                    .addClass('ui-widget-header ui-corner-all')
+                                                )
+                                                .append(
+                                                    $(nRowData.inputReorder = $('<textarea />')).html(aData.inputReorder)
+                                                )
+                                            )
+                                            .append(
+                                                $(nRowData.outputReorderSide = $('<fieldset />'))
+                                                .css({
+                                                    'float': 'right',
+                                                    'width': '48%'
+                                                })
+                                                .addClass('ui-widget-content')
+                                                .append(
+                                                    $('<legend />')
+                                                    .html('Output Reorder')
+                                                    .addClass('ui-widget-header ui-corner-all')
+                                                )
+                                                .append(
+                                                    $(nRowData.outputReorder = $('<textarea />')).html(aData.outputReorder)
+                                                )
+                                            );
+                                            nRowData.inputEditor = new CodeMirrorUI(nRowData.inputReorder.get(0),{ 
+                                                path : 'js/codemirror-ui/js', 
+                                                imagePath: 'js/codemirror-ui/images/silk', 
+                                                searchMode : 'inline',
+                                                buttons : ['save','undo','redo','jump','reindent','about'],
+                                                saveCallback: function() {   
+                                                    $.ruleChains.chainServiceHandler.POSTmodifyChainServiceHandler({ 
+                                                        name: aData.name,
+                                                        chainServiceHandler: $.extend(aData,{
+                                                            inputReorder: nRowData.inputEditor.mirror.getValue(),
+                                                            chain: {
+                                                                name: aData.chain.name
+                                                            }
+                                                        })
+                                                    },function(response) {
+                                                        if("chainServiceHandler" in response) {
+                                                            if(self.chainServiceHandlerDataTable.fnIsOpen(nRow)) {
+                                                                nRowData.detailsButton.click();
+                                                                aData = response.chainServiceHandler;
+                                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow);
+                                                                nRowData.detailsButton.click();
+                                                            } else {
+                                                                aData = response.chainServiceHandler;
+                                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow);
+                                                            }
+                                                        } else {
+                                                            alert(response.error);
+                                                        }                                                                
+                                                    });                                                    
+                                                }
+                                            },{ 
+                                                mode: "text/x-groovy",
+                                                tabMode: "indent",
+                                                indentWithTabs: true,
+                                                indentUnit: 4,
+                                                lineNumbers: true,
+                                                matchBrackets: true,
+                                                theme: 'ambiance'
+                                            });
+                                            nRowData.outputEditor = new CodeMirrorUI(nRowData.outputReorder.get(0),{ 
+                                                path : 'js/codemirror-ui/js', 
+                                                imagePath: 'js/codemirror-ui/images/silk', 
+                                                searchMode : 'inline',
+                                                buttons : ['save','undo','redo','jump','reindent','about'],
+                                                saveCallback: function() {    
+                                                    $.ruleChains.chainServiceHandler.POSTmodifyChainServiceHandler({ 
+                                                        name: aData.name,
+                                                        chainServiceHandler: $.extend(aData,{
+                                                            outputReorder: nRowData.outputEditor.mirror.getValue(),
+                                                            chain: {
+                                                                name: aData.chain.name
+                                                            }
+                                                        })
+                                                    },function(response) {
+                                                        if("chainServiceHandler" in response) {
+                                                            if(self.chainServiceHandlerDataTable.fnIsOpen(nRow)) {
+                                                                nRowData.detailsButton.click();
+                                                                aData = response.chainServiceHandler;
+                                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow,undefined,false,false);
+                                                                nRowData.detailsButton.click();
+                                                            } else {
+                                                                aData = response.chainServiceHandler;
+                                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow,undefined,false,false);
+                                                            }
+                                                        } else {
+                                                            alert(response.error);
+                                                        }                                                                
+                                                    });                                                    
+                                                }
+                                            },{ 
+                                                mode: "text/x-groovy",
+                                                tabMode: "indent",
+                                                indentWithTabs: true,
+                                                indentUnit: 4,                                                    
+                                                lineNumbers: true,
+                                                matchBrackets: true,
+                                                theme: 'ambiance'
+                                            });
+                                                
+                                                
+                                                
+                                    
+                                        });                                        
+                                        
+                                        
+                                        
+                                    },
+                                    function() {
+                                        // Close the details
+                                        nRowData.detailsButton.button( "option", "icons", {
+                                            primary: 'ui-icon-circle-triangle-e'
+                                        });
+                                        self.chainServiceHandlerDataTable.fnClose(nRow);                                                                
+                                    }
+                                ),
+                                methodSelect = $(nRowData.methodSelect = $("select#method",nRow)).val(aData.method.name).change(function() {
+                                    var select = $(this),
+                                        methodName = select.val();
+                                    $.ruleChains.chainServiceHandler.POSTmodifyChainServiceHandler({ 
+                                        name: aData.name,
+                                        chainServiceHandler: $.extend(aData,{
+                                            method: {
+                                                name: methodName
+                                            },
+                                            chain: {
+                                                name: aData.chain.name
+                                            }
+                                        })
+                                    },function(response) {
+                                        if("chainServiceHandler" in response) {
+                                            if(self.chainServiceHandlerDataTable.fnIsOpen(nRow)) {
+                                                nRowData.detailsButton.click();
+                                                aData = response.chainServiceHandler;
+                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow,undefined,false,false);
+                                                nRowData.detailsButton.click();
+                                            } else {
+                                                aData = response.chainServiceHandler;
+                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow,undefined,false,false);
+                                            }
+                                            // self.refreshHandlersButton.trigger('click');
+                                        } else {
+                                            alert(response.error);
+                                        }                                                                
+                                    });                                    
+                                }),
+                                chainSelect = $(nRowData.chainSelect = $("select#chain",nRow)).val(nRowData.chainSelect.children().filter(function () { return $(this).html() === aData.chain.name; }).val()).change(function() {
+                                    var select = $(this),
+                                        chainName = select.find('option:selected').text();
+                                    $.ruleChains.chainServiceHandler.POSTmodifyChainServiceHandler({ 
+                                        name: aData.name,
+                                        chainServiceHandler: $.extend(aData,{
+                                            chain: {
+                                                name: chainName
+                                            }
+                                        })
+                                    },function(response) {
+                                        if("chainServiceHandler" in response) {
+                                            if(self.chainServiceHandlerDataTable.fnIsOpen(nRow)) {
+                                                nRowData.detailsButton.click();
+                                                aData = response.chainServiceHandler;
+                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow,undefined,false,false);
+                                                nRowData.detailsButton.click();
+                                            } else {
+                                                aData = response.chainServiceHandler;
+                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow,undefined,false,false);
+                                            }                                            
+                                            // self.refreshHandlersButton.trigger('click');
+                                        } else {
+                                            alert(response.error);
+                                        }                                                                
+                                    });                                    
+                                }),
+                                nameEditable = $(nRowData.nameEditable = $("div#name",nRow)).editable(function(value, settings) { 
+                                    var result = value;
+                                    $.ruleChains.chainServiceHandler.POSTmodifyChainServiceHandler({ 
+                                        name: aData.name,
+                                        chainServiceHandler: $.extend(aData,{
+                                            name: result,
+                                            chain: {
+                                                name: aData.chain.name
+                                            }
+                                        })
+                                    },function(response) {
+                                        if("chainServiceHandler" in response) {
+                                            if(self.chainServiceHandlerDataTable.fnIsOpen(nRow)) {
+                                                nRowData.detailsButton.click();
+                                                aData = response.chainServiceHandler;
+                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow,undefined,false,false);
+                                                nRowData.detailsButton.click();
+                                            } else {
+                                                aData = response.chainServiceHandler;
+                                                // self.chainServiceHandlerDataTable.fnUpdate(response.chainServiceHandler,nRow,undefined,false,false);
+                                            }                                            
+                                            // self.refreshHandlersButton.trigger('click');
+                                        } else {
+                                            alert(response.error);
+                                        }                                                                
+                                    });                                    
+                                    console.log(this);
+                                    console.log(value);
+                                    console.log(settings);
+                                    return(value);
+                                 }, { 
+                                    type    : 'text-ui',
+                                    submit  : 'Update',
+                                    event     : "dblclick",
+                                    tooltip   : 'Doubleclick to edit...'
+                                });                                    
+                        });
+                    }
+                }));
             
         },        
         buildBackupContent: function() {
@@ -1325,8 +1781,8 @@
                                         .html('Source:')
                                         .css({ "padding-right":"15px"})
                                     ).append($(this).data().sourceSelect.css({ "float": "right" }))                            
-                                );
-                                $(this).dialog("option","width",$(this).data().ruleSelect.width()*1.2);
+                                );                                
+                                $(this).dialog("option","width",($(this).dialog( "option", "width" ) > $(this).data().ruleSelect.width()*1.2)?$(this).dialog( "option", "width" ):$(this).data().ruleSelect.width()*1.2);
                             },
                             buttons: {
                                 "Add Link": function() {

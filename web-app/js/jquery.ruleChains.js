@@ -7,6 +7,85 @@
 (function($) {
 
     $.ruleChains = {
+        chainServiceHandler: {
+            GETlistChainServiceHandlers: function(json,callback) {
+                json = jQuery.extend({
+                    name: ""
+                },json);
+                $.ajax({
+                    url: "/RuleChains/chainServiceHandler/",
+                    type: "GET",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+//                    data: ($.trim(json.pattern).length < 1)?{}:{
+//                        pattern: $.trim(json.pattern)
+//                    },
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });        
+            },
+            PUTaddChainServiceHandler: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: ""
+                },json);
+                $.ajax({
+                    url: '/RuleChains/chainServiceHandler/',
+                    type: "PUT",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    data: JSON.stringify(json),
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                
+            },
+            POSTmodifyChainServiceHandler: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: "",
+                    newName: ""
+                },json);
+                $.ajax({
+                    url: '/RuleChains/chainServiceHandler/'+json.name,
+                    type: "POST",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    data: JSON.stringify({
+                        chainServiceHandler: json.chainServiceHandler
+                    }),
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                                                
+            }
+        },
         config: {
             POSTuploadChainData: function(json_text,callback) {
                 $.ajax({
