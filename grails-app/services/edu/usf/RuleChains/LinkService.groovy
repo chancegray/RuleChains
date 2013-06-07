@@ -3,6 +3,7 @@ import grails.converters.*
 import groovy.lang.GroovyShell
 import groovy.lang.Binding
 import org.hibernate.ScrollMode
+import edu.usf.RuleChains.*
 
 class LinkService {
     static transactional = true
@@ -103,8 +104,9 @@ class LinkService {
     }
     def justGroovy(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         return Link.withTransaction{ status ->
+            def sql = getSQLSource(sourceName)
             return new GroovyShell(new Binding([
-                longSQLplaceHolderUniqueVariable:getSQLSource(sourceName),
+                longSQLplaceHolderUniqueVariable:sql,
                 longSQLSplaceHolderUniqueVariable:getSQLSources(),
                 longROWplaceHolderVariable: input
             ])).evaluate("""\
@@ -116,8 +118,24 @@ class LinkService {
             """)    
         }
     }
-    
     def justSQL(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
+        Link.withTransaction {
+            def sql = getSQLSource(sourceName)
+            switch(resultEnum) {
+                case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
+                    return ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(rule.rule, input):sql.rows(rule.rule))[0..<2]
+                    break
+                case [ ResultEnum.RECORDSET ]: 
+                    return ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(rule.rule, input):sql.rows(rule.rule))
+                    break
+                case [ ResultEnum.NONE,ResultEnum.UPDATE ]:
+                    (executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.execute(rule.rule, input):sql.execute(rule.rule)
+                    return []
+                    break
+            }
+        }
+    }
+    def justSQLold(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         return Link.withTransaction{ status ->
             def session = getSourceSession(sourceName)
             // Link."${sourceName}"

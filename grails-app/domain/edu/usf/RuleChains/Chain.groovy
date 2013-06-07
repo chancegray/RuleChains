@@ -290,7 +290,7 @@ class Chain {
             String toBeEvaluated = """
 
                 def row = x
-                return ${rearrange}
+                ${rearrange}
             """        
             return new GroovyShell(new Binding(x:row)).evaluate(toBeEvaluated)
         }

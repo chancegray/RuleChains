@@ -277,14 +277,14 @@
                             if($(nRow).hasClass('ui-widget-shadow')) {
                                 $(nRow).removeClass('ui-widget-shadow');
                                 // self.linkMoveButton.button("option","disabled",true);
-                                // self.linkDeleteButton.button("option","disabled",true);
+                                self.deleteHandlerButton.button("option","disabled",true);
                             } else {
                                 $(self.chainServiceHandlerDataTable.fnGetNodes( )).each(function() {
                                     $(this).removeClass('ui-widget-shadow');
                                 });
                                 $(nRow).addClass('ui-widget-shadow');                                    
                                 // self.linkMoveButton.button("option","disabled",false);
-                                // self.linkDeleteButton.button("option","disabled",false);
+                                self.deleteHandlerButton.button("option","disabled",false);
                             }
                         })
                         .find('button#details',nRow).click(function(event) { event.stopPropagation(); }).end()
