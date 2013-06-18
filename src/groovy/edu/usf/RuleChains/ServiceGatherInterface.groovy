@@ -12,7 +12,7 @@ package edu.usf.RuleChains
 interface ServiceGatherInterface {
     List<DefinedService> buildReferencedDefinedServices(def chains)
     List<Snippet> buildReferencedSnippets(def chains)
-    List<NamedQuery> buildReferencedNamedQueries(def chains)
+    List<StoredProcedureQuery> buildReferencedNamedQueries(def chains)
     Sequence buildSequence(def chains)
 }
 

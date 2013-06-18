@@ -1,7 +1,16 @@
 package edu.usf.RuleChains
 
-class NamedQuery extends Rule {
+class StoredProcedureQuery extends Rule {
     String rule = ""
+    String closure = """ 
+{-> 
+    rows = [
+        [
+            
+        ]
+    ]
+}
+"""
     static constraints = {
     }
     static mapping = {

@@ -17,6 +17,10 @@ class Link {
     def output  = [[]] 
     static transients = ['input','output']
     static belongsTo = [chain: Chain]
+    static mapping = {
+        inputReorder type: 'text'
+        outputReorder type: 'text'
+    }    
     static constraints = {
         sourceName(
             blank: false,

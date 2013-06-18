@@ -2624,7 +2624,7 @@
                         serviceType: $('<select />').each(function(index,select) {
                             $.each([ 
                                 { id: 'SQLQUERY',name:"SQL Query" }, 
-                                { id: 'NAMEDQUERY',name:"Named Query" }, 
+                                { id: 'STOREDPROCEDUREQUERY',name:"StoredProcedure Query" }, 
                                 { id: 'GROOVY',name:"Groovy Script" }, 
                                 { id: 'DEFINEDSERVICE', name: "Defined Service" },
                                 { id: 'SNIPPET', name: "Snippet"} 
@@ -2809,9 +2809,6 @@
                             self.ruleDataTable.fnDeleteRow($.grep(self.ruleDataTable.fnGetNodes(),function(tr) {
                                 return $(tr).hasClass('ui-widget-shadow');
                             })[0]);
-                            dialog.dialog('close');
-                            dialog.dialog('destroy');
-                            dialog.remove();                                                                                                                                                                
                         } else {
                             alert(status.error);
                         }                        
@@ -2847,7 +2844,7 @@
                                 $(self.ruleDataTable.fnGetNodes( )).each(function() {
                                     $(this).removeClass('ui-widget-shadow');
                                 });
-                                $(nRow).addClass('ui-widget-shadow');                                    
+                                $(nRow).addClass('ui-widget-shadow');              
                                 self.ruleMoveButton.button("option","disabled",false);
                                 self.ruleDeleteButton.button("option","disabled",false);
                             }
@@ -2957,9 +2954,22 @@
                                                         theme: 'ambiance'
                                                     });
                                                     break;
-                                                case "edu.usf.RuleChains.NamedQuery":
-                                                    fieldset.find('legend:first').html('Named Query Details');
+                                                case "edu.usf.RuleChains.StoredProcedureQuery":
+                                                    fieldset.find('legend:first').html('Stored Procedure Query Details');
                                                     $(nRowData.rule = $('<textarea />')).appendTo(fieldset).html(aData.rule);
+                                                    $('<fieldset />',{
+                                                        "id": "storedProcedureCallback"
+                                                    })
+                                                    .appendTo(fieldset)
+                                                    .addClass('ui-widget-header ui-widget-content')
+                                                    .append(
+                                                        $('<legend />')
+                                                        .html('Stored Procedure Closure')
+                                                        .addClass('ui-widget-header ui-corner-all')
+                                                    )
+                                                    .append(
+                                                        $(nRowData.closure = $('<textarea />')).html(aData.closure)
+                                                    );
                                                     nRowData.editor = new CodeMirrorUI(nRowData.rule.get(0),{ 
                                                         path : 'js/codemirror-ui/js', 
                                                         imagePath: 'js/codemirror-ui/images/silk', 
@@ -2983,6 +2993,36 @@
                                                         }
                                                     },{ 
                                                         mode: "text/x-mysql",
+                                                        tabMode: "indent",
+                                                        indentWithTabs: true,
+                                                        indentUnit: 4,                                                        
+                                                        lineNumbers: true,
+                                                        matchBrackets: true,
+                                                        theme: 'ambiance'
+                                                    });
+                                                    nRowData.closureEditor = new CodeMirrorUI(nRowData.closure.get(0),{ 
+                                                        path : 'js/codemirror-ui/js', 
+                                                        imagePath: 'js/codemirror-ui/images/silk', 
+                                                        searchMode : 'inline',
+                                                        buttons : ['save','undo','redo','jump','reindent','about'],
+                                                        saveCallback: function() {                                                            
+                                                            var ajax = $.extend({},aData,{
+                                                                rule: {
+                                                                    closure: nRowData.closureEditor.mirror.getValue()
+                                                                },
+                                                                ruleSetName: self.ruleSetSelect.find('option:selected').text()
+                                                            });
+                                                            $.ruleChains.ruleSet.POSTupdateRule(ajax,function(rule) {
+                                                                if("rule" in rule) {                                                                    
+                                                                    aData.rule = nRowData.editor.mirror.getValue();
+                                                                } else {
+                                                                    nRowData.closureEditor.mirror.setValue(aData.closure);
+                                                                    alert(rule.error);
+                                                                }
+                                                            });
+                                                        }
+                                                    },{ 
+                                                        mode: "text/x-groovy",
                                                         tabMode: "indent",
                                                         indentWithTabs: true,
                                                         indentUnit: 4,                                                        

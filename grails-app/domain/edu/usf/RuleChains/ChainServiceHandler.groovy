@@ -6,6 +6,10 @@ class ChainServiceHandler {
     String inputReorder = ''
     String outputReorder = ''
     MethodEnum method = MethodEnum.GET
+    static mapping = {
+        inputReorder type: 'text'
+        outputReorder type: 'text'
+    }    
     
     static constraints = {
         inputReorder(blank:true)

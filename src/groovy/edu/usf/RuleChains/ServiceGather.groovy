@@ -16,7 +16,7 @@ class ServiceGather implements ServiceGatherInterface {
     List<Snippet> buildReferencedSnippets(def chains) {
         
     }
-    List<NamedQuery> buildReferencedNamedQueries(def chains) {
+    List<StoredProcedureQuery> buildReferencedNamedQueries(def chains) {
         
     }
     Sequence buildSequence(def chains) {

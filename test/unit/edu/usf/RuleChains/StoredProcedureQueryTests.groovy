@@ -8,8 +8,8 @@ import org.junit.*
 /**
  * See the API for {@link grails.test.mixin.domain.DomainClassUnitTestMixin} for usage instructions
  */
-@TestFor(NamedQuery)
-class NamedQueryTests {
+@TestFor(StoredProcedureQuery)
+class StoredProcedureQueryTests {
 
     void testSomething() {
        fail "Implement me"

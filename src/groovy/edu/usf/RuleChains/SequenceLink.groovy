@@ -31,8 +31,8 @@ class SequenceLink extends Link {
 					sn.name.toUpperCase() == rule.rule.tokenize(':')[1].trim().toUpperCase()
 				},snippets,definedServices,namedQueries)
 				break
-			case ServiceTypeEnum.NAMEDQUERY:
-				service = namedQueries.find { NamedQuery nq ->
+			case ServiceTypeEnum.STOREDPROCEDUREQUERY:
+				service = namedQueries.find { StoredProcedureQuery nq ->
 					nq.name.toUpperCase() == rule.rule.tokenize(':')[1].trim().toUpperCase()
 				}
 				break

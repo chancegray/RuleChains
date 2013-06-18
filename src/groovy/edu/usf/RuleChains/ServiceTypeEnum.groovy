@@ -12,7 +12,7 @@ package edu.usf.RuleChains
 enum ServiceTypeEnum {
     SQLQUERY,
     GROOVY,
-    NAMEDQUERY, 
+    STOREDPROCEDUREQUERY, 
     DEFINEDSERVICE,
     SNIPPET;
         

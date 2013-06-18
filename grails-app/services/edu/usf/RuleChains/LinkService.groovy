@@ -4,6 +4,7 @@ import groovy.lang.GroovyShell
 import groovy.lang.Binding
 import org.hibernate.ScrollMode
 import edu.usf.RuleChains.*
+import groovy.sql.Sql
 
 class LinkService {
     static transactional = true
@@ -135,63 +136,27 @@ class LinkService {
             }
         }
     }
-    def justSQLold(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
-        return Link.withTransaction{ status ->
-            def session = getSourceSession(sourceName)
-            // Link."${sourceName}"
-            def query = session.createSQLQuery(rule.rule).setResultTransformer(org.hibernate.transform.Transformers.TO_LIST).setReadOnly(true).setFetchSize(Integer.MIN_VALUE).setCacheable(false)
-            switch(executeEnum) {
-                case ExecuteEnum.EXECUTE_USING_ROW: 
-                    switch(rule) {
-                        case { it instanceof NamedQuery }:
-                            query.setProperties(input.collectEntries { [(it.key): it.value.toString()] })                                
-                            break
-                        case { it instanceof SQLQuery }:
-                            input.eachWithIndex { p,index ->
-                                query.setParameter(index, p.toString());
-                            }                                                
-                            break
-                    }
-                    break
-            }
+    def justStoredProcedure(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
+        Link.withTransaction {
+            //println input as JSON
+            def sql = getSQLSource(sourceName)
+            def binding = new Binding()
+            def closure = new GroovyShell(binding).evaluate(rule.closure)
+            closure.delegate=this
+            // Execute the stored procedure to populate the "rows" bound variable
+            ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.call(rule.rule, input,closure):sql.call(rule.rule, closure))
             switch(resultEnum) {
                 case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
-                    return { s ->
-                        def row = (s.next())?s.get():[]
-                        s.close()
-                        session.flush()
-                        return row
-                    }.call(query.scroll(ScrollMode.FORWARD_ONLY))
-                    break
+                    return binding.rows[0..<2]
+                    break;
                 case [ ResultEnum.RECORDSET ]: 
-                    return { s ->
-                        def out = []
-                        while(s.next()) {
-                            out.add(s.get()[0])
-                        }
-                        s.close()
-                        session.flush() 
-                        println "Recordset out is ${out}"
-                        return out
-                    }.call(query.scroll(ScrollMode.FORWARD_ONLY))                
+                    return binding.rows
                     break
-                case [ ResultEnum.NONE ]: 
-                    return { s ->
-                        s.close()
-                        session.flush()
-                        return []
-                    }.call(query.scroll(ScrollMode.FORWARD_ONLY))
+                case [ ResultEnum.NONE,ResultEnum.UPDATE ]:
+                    return []
                     break
-                case [ ResultEnum.UPDATE ]:
-                    return [ 
-                        { s ->
-                            session.flush()
-                            return [ s ]
-                        }.call(query.executeUpdate()) 
-                    ]            
-                    break                
             }
         }
-    }    
-    
+    }
+        
 }

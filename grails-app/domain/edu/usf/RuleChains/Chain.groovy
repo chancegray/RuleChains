@@ -85,7 +85,7 @@ class Chain {
             for(int i = 0; i < orderedLinks.size(); i++) {
                 // Execute the rule based on it's type
                 switch(orderedLinks[i].rule) {
-                    case { it instanceof SQLQuery || it instanceof NamedQuery }:
+                    case { it instanceof SQLQuery }:
                         println "Detected an SQLQuery"
                         orderedLinks[i].output = linkService.justSQL(
                             orderedLinks[i].rule,
@@ -104,9 +104,39 @@ class Chain {
                             }.call(orderedLinks[i].executeEnum)
                         ).collect {
                             if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
+                                // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
                             } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
+                                // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                            }
+                            return Chain.rearrange(it,orderedLinks[i].outputReorder)
+                        }
+                        break
+                    case { it instanceof StoredProcedureQuery }:
+                        println "Detected a StoredProcedureQuery Script"
+                        orderedLinks[i].output = linkService.justStoredProcedure(
+                            orderedLinks[i].rule,
+                            orderedLinks[i].sourceName,
+                            orderedLinks[i].executeEnum,    
+                            orderedLinks[i].resultEnum,
+                            { e ->
+                                switch(e) {
+                                    case ExecuteEnum.EXECUTE_USING_ROW: 
+                                        return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
+                                        break
+                                    default:
+                                        return []
+                                        break
+                                }                                        
+                            }.call(orderedLinks[i].executeEnum)
+                        ).collect {
+                            if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
+                                return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
+                                // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                            } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
+                                return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
+                                // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
                             }
                             return Chain.rearrange(it,orderedLinks[i].outputReorder)
                         }
@@ -147,9 +177,11 @@ class Chain {
                             }.call(orderedLinks[i].executeEnum)
                         )).collect {
                             if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
+                                // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
                             } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
+                                // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
                             }
                             return Chain.rearrange(it,orderedLinks[i].outputReorder)
                         }
@@ -176,9 +208,11 @@ class Chain {
                                     orderedLinks[i].rule.springSecurityBaseURL
                                 ).collect {
                                     if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                        return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
+                                        // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
                                     } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                        return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
+                                        // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
                                     }
                                     return Chain.rearrange(it,orderedLinks[i].outputReorder)
                                 }
@@ -202,9 +236,11 @@ class Chain {
                                     }.call(orderedLinks[i].executeEnum)
                                 ).collect {
                                     if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                        return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
+                                        // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
                                     } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                        return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
+                                        // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
                                     }
                                     return Chain.rearrange(it,orderedLinks[i].outputReorder)
                                 }                                
@@ -230,9 +266,11 @@ class Chain {
                                     }.call(orderedLinks[i].executeEnum)
                                 ).collect {
                                     if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                        return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
+                                        // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
                                     } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                        return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
+                                        // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
                                     }
                                     return Chain.rearrange(it,orderedLinks[i].outputReorder)
                                 }
@@ -253,9 +291,11 @@ class Chain {
                             }.call(orderedLinks[i].executeEnum)
                         ).collect {
                             if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
+                                // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
                             } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
+                                // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
                             }
                             return Chain.rearrange(it,orderedLinks[i].outputReorder)
                         }
@@ -288,6 +328,7 @@ class Chain {
     static def rearrange(def row,String rearrange){
         if(!!rearrange) {
             String toBeEvaluated = """
+                import groovy.sql.Sql
 
                 def row = x
                 ${rearrange}

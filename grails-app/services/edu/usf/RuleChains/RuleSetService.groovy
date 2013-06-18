@@ -83,8 +83,8 @@ class RuleSetService {
                     case ServiceTypeEnum.GROOVY:
                         rule = [ name: name, rule: "" ] as Groovy
                         break
-                    case ServiceTypeEnum.NAMEDQUERY:
-                        rule = [ name: name ] as NamedQuery
+                    case ServiceTypeEnum.STOREDPROCEDUREQUERY:
+                        rule = [ name: name ] as StoredProcedureQuery
                         break
                     case ServiceTypeEnum.DEFINEDSERVICE:
                         rule = [ name: name ] as DefinedService
@@ -135,8 +135,8 @@ class RuleSetService {
                         case { it instanceof Groovy }:
                             er = r as Groovy
                             break
-                        case { it instanceof NamedQuery }:
-                            er = r as NamedQuery
+                        case { it instanceof StoredProcedureQuery }:
+                            er = r as StoredProcedureQuery
                             break
                         case { it instanceof DefinedService }:                            
                             er = r as DefinedService
@@ -187,8 +187,8 @@ class RuleSetService {
                         case { it instanceof Groovy }:
                             er = r as Groovy
                             break
-                        case { it instanceof NamedQuery }:
-                            er = r as NamedQuery
+                        case { it instanceof StoredProcedureQuery }:
+                            er = r as StoredProcedureQuery
                             break
                         case { it instanceof DefinedService }:                            
                             er = r as DefinedService
@@ -280,8 +280,8 @@ class RuleSetService {
                         case { it instanceof Groovy }:
                             er = r as Groovy
                             break
-                        case { it instanceof NamedQuery }:
-                            er = r as NamedQuery
+                        case { it instanceof StoredProcedureQuery }:
+                            er = r as StoredProcedureQuery
                             break
                         case { it instanceof DefinedService }:                            
                             er = r as DefinedService
