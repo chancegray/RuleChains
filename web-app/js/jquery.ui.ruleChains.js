@@ -164,7 +164,7 @@
                                 .width(dialog.data().nameInput.parent().width());
                             },
                             buttons: {
-                                "Create New Chain": function() {
+                                "Create New Service Handler": function() {
                                     var dialog = $(this),
                                         name = $.trim(dialog.data().nameInput.val()),
                                         chainName = dialog.data().chainSelect.find('option:selected').text();
