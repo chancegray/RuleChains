@@ -44,7 +44,7 @@ class UrlMappings {
                     action = [GET:"listChainServiceHandlers", PUT:"addChainServiceHandler", DELETE:"error", POST:"error"] 
                 }
                 "/chainServiceHandler/$name"(controller:"chainServiceHandler",parseRequest: true){ 
-                    action = [GET:"error", PUT:"error", DELETE:"error", POST:"modifyChainServiceHandler" ] 
+                    action = [GET:"error", PUT:"error", DELETE:"deleteChainServiceHandler", POST:"modifyChainServiceHandler" ] 
                 }
                 "/backup/download"(controller:"config",action: "downloadChainData",parseRequest: true)
                 "/backup/upload"(controller:"config",parseRequest: true){ 

@@ -58,4 +58,17 @@ class ChainServiceHandlerController {
             }
         }                                    
     }
+    def deleteChainServiceHandler() {
+        withFormat {
+            html {
+                return chainServiceHandlerService.deleteChainServiceHandler(params.name)
+            }
+            xml {
+                render chainServiceHandlerService.deleteChainServiceHandler(params.name) as XML
+            }
+            json {
+                JSON.use("deep") { render chainServiceHandlerService.deleteChainServiceHandler(params.name) as JSON }
+            }
+        }                                    
+    }
 }

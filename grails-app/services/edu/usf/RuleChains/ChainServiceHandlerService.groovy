@@ -78,5 +78,15 @@ class ChainServiceHandlerService {
         }
         return [ error : "Chain Service Handler named ${name} not found!"]
     }
-    
+    def deleteChainServiceHandler(String name) {
+        if(!!name) {
+            def chainServiceHandler = ChainServiceHandler.findByName(name.trim())
+            if(!!chainServiceHandler) {
+                chainServiceHandler.delete()
+                return [ success : "Chain Service Handler deleted" ]
+            }
+            return [ error : "Chain Service Handler named ${name} not found!"]
+        }
+        return [ error : "You must supply a name for the target Chain Service Handler"]        
+    }
 }

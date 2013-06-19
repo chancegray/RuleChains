@@ -84,6 +84,134 @@
                         }
                     }
                 });                                                                
+            },
+            DELETEdeleteChainServiceHandler: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: ""
+                },json);
+                $.ajax({
+                    url: '/RuleChains/chainServiceHandler/'+json.name,
+                    type: "DELETE",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    // data: JSON.stringify(json),
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                                                
+            },
+            GEThandleChainService: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: "",
+                    input: []
+                },json);
+                $.ajax({
+                    url: '/RuleChains/service/'+json.name+'?'+$.param(json.input),
+                    type: "GET",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    // data: JSON.stringify(json),
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                                
+            },
+            PUThandleChainService: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: "",
+                    input: []
+                },json);
+                $.ajax({
+                    url: '/RuleChains/service/'+json.name,
+                    type: "PUT",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    data: JSON.stringify({ 
+                        input: ("input" in json)?json.input:[]
+                    }),
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                
+            },
+            POSThandleChainService: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: "",
+                    input: []
+                },json);
+                $.ajax({
+                    url: '/RuleChains/service/'+json.name,
+                    type: "POST",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    data: JSON.stringify({
+                        input: ("input" in json)?json.input:[]
+                    }),
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                                
+            },
+            DELETEhandleChainService: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: "",
+                    input: []
+                },json);
+                $.ajax({
+                    url: '/RuleChains/service/'+json.name+'?'+$.param(json.input),
+                    type: "DELETE",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    // data: JSON.stringify(json),
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                                                
             }
         },
         config: {
