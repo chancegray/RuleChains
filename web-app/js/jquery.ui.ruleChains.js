@@ -202,14 +202,6 @@
                         alert('You must have at least one rule chain defined before you can define a handler for one');
                     }                        
                 }),
-                modifyHandlerButton = $(self.modifyHandlerButton = $('button#modifyHandler',tabs.handlers)).button({
-                    text: false,
-                    icons: {
-                        primary: "ui-icon-wrench"
-                    }            
-                }).click(function() {
-                    
-                }),
                 deleteHandlerButton = $(self.deleteHandlerButton = $('button#deleteHandler',tabs.handlers)).button({
                     text: false,
                     icons: {
@@ -217,7 +209,21 @@
                     },
                     disabled: true
                 }).click(function() {
-                    
+                    var aData = self.chainServiceHandlerDataTable.fnGetData($.grep(self.chainServiceHandlerDataTable.fnGetNodes(),function(tr) {
+                        return $(tr).hasClass('ui-widget-shadow');
+                    })[0]);
+                    $.ruleChains.chainServiceHandler.DELETEdeleteChainServiceHandler(
+                        {
+                            name: aData.name
+                        },
+                        function(response) {
+                            if("success" in response) {
+                                self.refreshHandlersButton.trigger('click');
+                            } else {
+                                alert(response.error);
+                            }                            
+                        }
+                    );
                 }),
                 chainServiceHandlerSet = $('div#chainServiceHandlerSet',tabs.handlers).buttonset(),
                 chainServiceHandlerTable = $(self.chainServiceHandlerTable = $('table#chainServiceHandlerTable',tabs.handlers)),
@@ -276,14 +282,12 @@
                         .click(function(event) {
                             if($(nRow).hasClass('ui-widget-shadow')) {
                                 $(nRow).removeClass('ui-widget-shadow');
-                                // self.linkMoveButton.button("option","disabled",true);
                                 self.deleteHandlerButton.button("option","disabled",true);
                             } else {
                                 $(self.chainServiceHandlerDataTable.fnGetNodes( )).each(function() {
                                     $(this).removeClass('ui-widget-shadow');
                                 });
                                 $(nRow).addClass('ui-widget-shadow');                                    
-                                // self.linkMoveButton.button("option","disabled",false);
                                 self.deleteHandlerButton.button("option","disabled",false);
                             }
                         })

@@ -113,7 +113,6 @@
                       <div id="chainServiceHandlerSet" style="display: inline-block;font-size:70%;">
                         <button id="refreshHandlers">Refresh Handlers</button> 
                         <button id="addHandler">Add new Handler</button> 
-                        <button id="modifyHandler">Modify Handler</button> 
                         <button id="deleteHandler">Delete Handler</button> 
                       </div>
                     </th>
