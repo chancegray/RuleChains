@@ -106,17 +106,32 @@ class LinkService {
     def justGroovy(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         return Link.withTransaction{ status ->
             def sql = getSQLSource(sourceName)
-            return new GroovyShell(new Binding([
-                longSQLplaceHolderUniqueVariable:sql,
-                longSQLSplaceHolderUniqueVariable:getSQLSources(),
-                longROWplaceHolderVariable: input
-            ])).evaluate("""\
-                def sql = longSQLplaceHolderUniqueVariable
-                def sqls = longSQLSplaceHolderUniqueVariable
-                def row = longROWplaceHolderVariable
+            {rows->
+                switch(resultEnum) {
+                    case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
+                        return (rows.size() > 0)?rows[0..0]:rows
+                        break
+                    case [ ResultEnum.RECORDSET ]: 
+                        return rows
+                        break
+                    case [ ResultEnum.NONE,ResultEnum.UPDATE ]:
+                        return []
+                        break
+                }
+                (rows.size() > 0)?rows[0..0]:rows
+            }.call(
+                new GroovyShell(new Binding([
+                    longSQLplaceHolderUniqueVariable:sql,
+                    longSQLSplaceHolderUniqueVariable:getSQLSources(),
+                    longROWplaceHolderVariable: input
+                ])).evaluate("""\
+                    def sql = longSQLplaceHolderUniqueVariable
+                    def sqls = longSQLSplaceHolderUniqueVariable
+                    def row = longROWplaceHolderVariable
 
-                ${rule.rule}
-            """)    
+                    ${rule.rule}
+                """)    
+            )
         }
     }
     def justSQL(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
@@ -124,7 +139,8 @@ class LinkService {
             def sql = getSQLSource(sourceName)
             switch(resultEnum) {
                 case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
-                    return ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(rule.rule, input):sql.rows(rule.rule))[0..<2]
+                    println input.toString()
+                    return {rows-> (rows.size() > 0)?rows[0..0]:rows }.call((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(rule.rule, input):sql.rows(rule.rule))
                     break
                 case [ ResultEnum.RECORDSET ]: 
                     return ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(rule.rule, input):sql.rows(rule.rule))
@@ -147,7 +163,7 @@ class LinkService {
             ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.call(rule.rule, input,closure):sql.call(rule.rule, closure))
             switch(resultEnum) {
                 case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
-                    return binding.rows[0..<2]
+                    return {rows-> (rows.size() > 0)?rows[0..0]:rows }.call(binding.rows)
                     break;
                 case [ ResultEnum.RECORDSET ]: 
                     return binding.rows

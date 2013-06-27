@@ -75,7 +75,7 @@ class Chain {
             /**
              * Pre-populate input based on incoming data array
             **/
-           println "Made it this far with ${row}"
+            println "Made it this far with ${row}"
             for(int i = 0; i < orderedLinks.size(); i++) {
                 orderedLinks[i].input = row
             }
@@ -104,11 +104,9 @@ class Chain {
                             }.call(orderedLinks[i].executeEnum)
                         ).collect {
                             if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
-                                // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                return Chain.rearrange((([:] << orderedLinks[i].input) << it),orderedLinks[i].outputReorder)
                             } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
-                                // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                return Chain.rearrange((([:] << it) << orderedLinks[i].input),orderedLinks[i].outputReorder)
                             }
                             return Chain.rearrange(it,orderedLinks[i].outputReorder)
                         }
@@ -132,11 +130,9 @@ class Chain {
                             }.call(orderedLinks[i].executeEnum)
                         ).collect {
                             if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
-                                // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                return Chain.rearrange((([:] << orderedLinks[i].input) << it),orderedLinks[i].outputReorder)
                             } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
-                                // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                return Chain.rearrange((([:] << it) << orderedLinks[i].input),orderedLinks[i].outputReorder)
                             }
                             return Chain.rearrange(it,orderedLinks[i].outputReorder)
                         }
@@ -177,11 +173,9 @@ class Chain {
                             }.call(orderedLinks[i].executeEnum)
                         )).collect {
                             if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
-                                // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                return Chain.rearrange((([:] << orderedLinks[i].input) << it),orderedLinks[i].outputReorder)
                             } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
-                                // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                return Chain.rearrange((([:] << it) << orderedLinks[i].input),orderedLinks[i].outputReorder)
                             }
                             return Chain.rearrange(it,orderedLinks[i].outputReorder)
                         }
@@ -208,11 +202,9 @@ class Chain {
                                     orderedLinks[i].rule.springSecurityBaseURL
                                 ).collect {
                                     if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                        return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
-                                        // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange((([:] << orderedLinks[i].input) << it),orderedLinks[i].outputReorder)
                                     } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                        return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
-                                        // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange((([:] << it) << orderedLinks[i].input),orderedLinks[i].outputReorder)
                                     }
                                     return Chain.rearrange(it,orderedLinks[i].outputReorder)
                                 }
@@ -236,11 +228,9 @@ class Chain {
                                     }.call(orderedLinks[i].executeEnum)
                                 ).collect {
                                     if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                        return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
-                                        // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange((([:] << orderedLinks[i].input) << it),orderedLinks[i].outputReorder)
                                     } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                        return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
-                                        // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange((([:] << it) << orderedLinks[i].input),orderedLinks[i].outputReorder)
                                     }
                                     return Chain.rearrange(it,orderedLinks[i].outputReorder)
                                 }                                
@@ -266,11 +256,9 @@ class Chain {
                                     }.call(orderedLinks[i].executeEnum)
                                 ).collect {
                                     if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                        return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
-                                        // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange((([:] << orderedLinks[i].input) << it),orderedLinks[i].outputReorder)
                                     } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                        return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
-                                        // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                        return Chain.rearrange((([:] << it) << orderedLinks[i].input),orderedLinks[i].outputReorder)
                                     }
                                     return Chain.rearrange(it,orderedLinks[i].outputReorder)
                                 }
@@ -291,11 +279,9 @@ class Chain {
                             }.call(orderedLinks[i].executeEnum)
                         ).collect {
                             if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
-                                return Chain.rearrange([:].putAll(orderedLinks[i].input).putAll(it),orderedLinks[i].outputReorder)
-                                // return Chain.rearrange(orderedLinks[i].input + it,orderedLinks[i].outputReorder)
+                                return Chain.rearrange((([:] << orderedLinks[i].input) << it),orderedLinks[i].outputReorder)
                             } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
-                                return Chain.rearrange([:].putAll(it).putAll(orderedLinks[i].input),orderedLinks[i].outputReorder)
-                                // return Chain.rearrange(it + orderedLinks[i].input,orderedLinks[i].outputReorder)
+                                return Chain.rearrange((([:] << it) << orderedLinks[i].input),orderedLinks[i].outputReorder)
                             }
                             return Chain.rearrange(it,orderedLinks[i].outputReorder)
                         }
@@ -314,8 +300,8 @@ class Chain {
                         case [ LinkEnum.LOOP ]:
                             def endLoopIndex = Chain.findEndLoop(orderedLinks,i)
                             if(endLoopIndex != i) {
-                                orderedLinks[endLoopIndex].output = execute(orderedLinks[i].output,orderedLinks[(i+1)..endLoopIndex])
-                                i = endLoopIndex
+                                orderedLinks[endLoopIndex-1].output = execute(orderedLinks[i].output,orderedLinks[(i+1)..<endLoopIndex])
+                                i = endLoopIndex-1
                             }
                             break
                     }
