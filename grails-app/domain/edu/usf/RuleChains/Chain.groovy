@@ -5,6 +5,8 @@ import grails.util.GrailsNameUtils
 import grails.converters.*
 import edu.usf.RuleChains.*
 import org.hibernate.FlushMode
+import groovy.sql.Sql
+import oracle.jdbc.driver.OracleTypes
 
 class Chain {
     String name
@@ -86,7 +88,7 @@ class Chain {
                 // Execute the rule based on it's type
                 switch(orderedLinks[i].rule) {
                     case { it instanceof SQLQuery }:
-                        println "Detected an SQLQuery"
+                        println "Detected an SQLQuery for ${orderedLinks[i].rule.name}"
                         orderedLinks[i].output = linkService.justSQL(
                             orderedLinks[i].rule,
                             orderedLinks[i].sourceName,
@@ -112,7 +114,7 @@ class Chain {
                         }
                         break
                     case { it instanceof StoredProcedureQuery }:
-                        println "Detected a StoredProcedureQuery Script"
+                        println "Detected a StoredProcedureQuery Script for ${orderedLinks[i].rule.name}"
                         orderedLinks[i].output = linkService.justStoredProcedure(
                             orderedLinks[i].rule,
                             orderedLinks[i].sourceName,
@@ -121,6 +123,7 @@ class Chain {
                             { e ->
                                 switch(e) {
                                     case ExecuteEnum.EXECUTE_USING_ROW: 
+                                        println "Before input reorder ${orderedLinks[i].input.toString()}"
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
@@ -138,7 +141,7 @@ class Chain {
                         }
                         break
                     case { it instanceof Groovy }:
-                        println "Detected a Groovy Script"
+                        println "Detected a Groovy Script for ${orderedLinks[i].rule.name}"
                         orderedLinks[i].output = { r ->
                             if([Collection, Object[]].any { it.isAssignableFrom(r.getClass()) }) {
                                 switch(r) {
@@ -289,7 +292,7 @@ class Chain {
                 }
                 // Handle result (aka: output)
                 if((i+1) < orderedLinks.size() && orderedLinks[i].resultEnum in [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]) {
-                    orderedLinks[i+1].input = orderedLinks[i].output.first() 
+                    orderedLinks[i+1].input = (orderedLinks[i].output)?orderedLinks[i].output.first():[] 
                 }
                 // Handle link enum
                 if((i+1) < orderedLinks.size()) {

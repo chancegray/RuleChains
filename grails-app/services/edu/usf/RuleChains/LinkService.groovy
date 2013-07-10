@@ -5,6 +5,7 @@ import groovy.lang.Binding
 import org.hibernate.ScrollMode
 import edu.usf.RuleChains.*
 import groovy.sql.Sql
+import oracle.jdbc.driver.OracleTypes
 
 class LinkService {
     static transactional = true
