@@ -149,17 +149,17 @@ class ChainService {
     def deleteChainLink(String name,def sequenceNumber) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            def link = chain.links.find { it.sequenceNumber == sequenceNumber }
+            def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber }            
             if(!!link) {
-                if(!chain.removeFromLinks(link).save(failOnError:false, flush: true, validate: true)) {
+                if(!chain.removeFromLinks(link).save(failOnError:false, flush: false, validate: true)) {
                     chain.errors.allErrors.each {
                         println "Error:"+it
                     }           
                     return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                    
                 } else {
-                    chain.refresh()
+                    link.delete()
                     sequenceNumber = 1
-                    System.out.println("New Sequence"+link.sequenceNumber)
+                    System.out.println("New Sequence "+link.sequenceNumber)
                     chain.links.sort { a, b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
                         l.sequenceNumber = sequenceNumber
                         sequenceNumber++
