@@ -95,3 +95,21 @@ log4j = {
            'org.hibernate',
            'net.sf.ehcache.hibernate'
 }
+
+// Added by the Spring Security CAS (USF) plugin:
+grails.plugins.springsecurity.userLookup.userDomainClassName = 'edu.usf.cims.UsfCasUser'
+grails.plugins.springsecurity.cas.active = true
+grails.plugins.springsecurity.cas.sendRenew = false
+grails.plugins.springsecurity.cas.key = '9a3433aca7184008df30ee8f5c62f160' //unique value for each app
+grails.plugins.springsecurity.cas.artifactParameter = 'ticket'
+grails.plugins.springsecurity.cas.serviceParameter = 'service'
+grails.plugins.springsecurity.cas.filterProcessesUrl = '/j_spring_cas_security_check'
+grails.plugins.springsecurity.cas.proxyCallbackUrl = 'http://localhost:8080/RuleChains/secure/receptor' 
+grails.plugins.springsecurity.cas.proxyReceptorUrl = '/secure/receptor'
+grails.plugins.springsecurity.cas.useSingleSignout = false
+grails.plugins.springsecurity.cas.driftTolerance = 120000
+grails.plugins.springsecurity.cas.loginUri = '/login'
+grails.plugins.springsecurity.cas.useSamlValidator = true
+grails.plugins.springsecurity.cas.authorityAttribute = 'eduPersonEntitlement'
+grails.plugins.springsecurity.cas.serverUrlPrefix = 'https://authtest.it.usf.edu'
+grails.plugins.springsecurity.cas.serviceUrl = 'http://localhost:8080/RuleChains/j_spring_cas_security_check'
