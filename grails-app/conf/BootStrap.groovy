@@ -14,72 +14,14 @@ import grails.plugin.quartz2.ClosureJob
 import org.quartz.*
 import static org.quartz.CronScheduleBuilder.cronSchedule
 import edu.usf.RuleChains.Groovy
+import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 
 class BootStrap {
     def grailsApplication
     def quartzScheduler
     def jobService
+    def springSecurityService
     def init = { servletContext ->
-
-
-//        def c = new Chain([ name: "TestChain" ])
-//        if(!c.save(failOnError:true, flush: true, insert: true, validate: true)) {
-//            c.errors.allErrors.each {
-//                println it
-//            }                
-//        } else {
-//            println "Created new Chain ${c.name}" 
-//            def rs = new RuleSet([ name: "TestRuleSet"])
-//            if(!rs.save(failOnError:true, flush: true, insert: true, validate: true)) {
-//                rs.errors.allErrors.each {
-//                    println it
-//                }                
-//            } else {
-//                println "Created new RuleSet ${rs.name}" 
-//                def sequenceNum = 1
-//                [
-//                    [ rule: [name:"SQLTest1", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
-//                    [ rule: [name:"SQLTest2", rule: "INSERT INTO testtable (test) VALUES (?)"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "UPDATE", linkEnum: "ENDLOOP"] as Link,
-//                    [ rule: [name:"SQLTest3", rule: "SELECT field1 FROM testsource"] as SQLQuery, sourceName: "baggageclaim", executeEnum: "NORMAL", resultEnum: "RECORDSET", linkEnum: "LOOP"] as Link,
-//                    [ rule: [name:"GroovyTest1", rule: "return row"] as Groovy, sourceName: "baggageclaim", executeEnum: "EXECUTE_USING_ROW", resultEnum: "NONE", linkEnum: "ENDLOOP"] as Link,
-//                ].eachWithIndex { l,i ->
-//                    l.sequenceNumber = i + 1
-//                    try {
-//                        if(!rs.addToRules(l.rule).save(failOnError:false, flush: true, validate: true)) {
-//                            rs.errors.allErrors.each {
-//                                println it
-//                            }           
-//                            println "'${rs.errors.fieldError.field}' value '${rs.errors.fieldError.rejectedValue}' rejected" 
-//                        } else {
-//                            println "Created new rule ${l.rule.name} in ${rs.name}"                             
-//                            try {
-//                                if(!c.addToLinks(l).save(failOnError:false, flush: true, validate: true)) {
-//                                    c.errors.allErrors.each {
-//                                        println it
-//                                    }
-//                                    println "'${c.errors.fieldError.field}' value '${c.errors.fieldError.rejectedValue}' rejected" 
-//                                } else {
-//                                    println "Created new link ${l.sequenceNumber} in ${c.name}" 
-//                                    
-//                                }
-//                            } catch(Exception ex) {    
-//                                l.errors.allErrors.each {
-//                                    println it
-//                                }           
-//                                println "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" 
-//                            }
-//                        }                    
-//                    } catch(Exception ex) {
-//                        l.rule.errors.allErrors.each {
-//                            println it
-//                        }           
-//                        println "'${l.rule.errors.fieldError.field}' value '${l.rule.errors.fieldError.rejectedValue}' rejected" 
-//                    }
-//                    
-//                    
-//                }
-//            }            
-//        }        
         if(!!!quartzScheduler) {
             print "Didn't get set!"
         } else {
@@ -363,15 +305,11 @@ class BootStrap {
                     return [ (b[sfRoot.size()..-1]) : new Sql(grailsApplication.mainContext."${b}".currentSession.connection()) ]
                 }
             }
-//        ChainJob.unschedule()
-//    }
             print jobService.listChainJobs()
         }
         switch(GrailsUtil.environment){
             case "development":
                 println "#### Development Mode (Start Up)"
-                Chain chain = new Chain()
-                chain.input = ["fart"]
                 break
             case "test":
                 println "#### Test Mode (Start Up)"
