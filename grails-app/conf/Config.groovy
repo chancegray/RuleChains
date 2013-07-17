@@ -11,7 +11,7 @@
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }
 
-grails.config.locations = [ "file:/usr/local/etc/grails/RuleChains.groovy"]
+grails.config.locations = [ "file:/usr/local/etc/grails/RuleChains.groovy","file:/usr/local/etc/grails/RuleChainsAuth.groovy"]
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
