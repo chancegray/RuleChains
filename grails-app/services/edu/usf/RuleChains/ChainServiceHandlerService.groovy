@@ -16,7 +16,7 @@ class ChainServiceHandlerService {
                 return [ error: "Chain not found ${chainServiceHandlerResponse.chainServiceHandler.chain.name}" ]
             }            
         } else {
-            return [ error: "Method '${name}' for handler '${name}'" ]
+            return [ error: "Method '${method}' for handler '${name}' not defined" ]
         }
     }
     def getChainServiceHandler(String name) {
