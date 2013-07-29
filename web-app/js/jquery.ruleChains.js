@@ -504,7 +504,6 @@
                         }
                     }
                 });                                
-
             },
             POSTmodifyChain: function(json,callback) {
                 json = jQuery.extend(true,{
@@ -683,7 +682,6 @@
                     }
                 });                                                                
             }
-        
         },
         ruleSet: {
             GETlistRuleSets: function(json,callback) {
