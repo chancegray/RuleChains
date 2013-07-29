@@ -1883,7 +1883,7 @@
                                             }
                                         ),
                                         function(ri,link) {
-                                            $('<option />').html(link.sequenceNumber).val(link.sequenceNumber).appendTo(optgroup);
+                                            $('<option />').html([link.sequenceNumber,(("rule" in link)?[link.rule.ruleSet.name,link.rule.name].join(':'):"LAST LINK POSITION")].join(' - ')).val(link.sequenceNumber).appendTo(optgroup);
                                         }
                                     );
                                 });
@@ -1919,10 +1919,68 @@
                                         "for": "chainSelect"
                                     }).html("Select Destination Sequence Number")
                                 )
-                                .append($(this).data().chainDestinationSequenceNumberSelect);
+                                .append($(this).data().chainDestinationSequenceNumberSelect)
+                                .dialog("option","width",$(this).data().chainDestinationSequenceNumberSelect.width()*1.05)
+                                .dialog('option', 'position', { my: "center", at: "center", of: window });
+                            },
+                            buttons: {
+                                "Move Link": function() {
+                                    var dialog = $(this),
+                                        aData = self.chainDataTable.fnGetData($.grep(self.chainDataTable.fnGetNodes(),function(tr) {
+                                            return $(tr).hasClass('ui-widget-shadow');
+                                        })[0]),
+                                        targetSequenceNumber = dialog.data().chainDestinationSequenceNumberSelect.val(),
+                                        targetChainName = dialog.data().chainDestinationSequenceNumberSelect.find('option:selected').parent().attr("label"),
+                                        sourceChainName = self.chainSelect.find('option:selected').text(),
+                                        deleteJson = {
+                                            name: sourceChainName,
+                                            sequenceNumber: aData.sequenceNumber
+                                        },
+                                        addJson = {                                            
+                                            name : targetChainName,
+                                            link: {
+                                                sequenceNumber: targetSequenceNumber,
+                                                rule: {
+                                                    name: aData.rule.name
+                                                },
+                                                sourceName: aData.sourceName,
+                                                executeEnum: (aData.executeEnum.hasOwnProperty("name"))?aData.executeEnum.name:aData.executeEnum,
+                                                linkEnum: (aData.linkEnum.hasOwnProperty("name"))?aData.linkEnum.name:aData.linkEnum,
+                                                resultEnum: (aData.resultEnum.hasOwnProperty("name"))?aData.resultEnum.name:aData.resultEnum,
+                                                inputReorder: aData.inputReorder,
+                                                outputReorder: aData.outputReorder
+                                            }
+                                        };
+                                    // Remove then add back in the correct space then refresh
+                                    $.ruleChains.chain.DELETEdeleteChainLink(deleteJson,function(chain) {
+                                        if("chain" in chain) {
+                                            // self.chainDataTable.fnClearTable();
+                                            // self.chainDataTable.fnAddData(chain.chain.links);  
+                                            self.linkDeleteButton.button("option","disabled",true);
+                                            self.linkMoveButton.button("option","disabled",true);
+                                            $.ruleChains.chain.PUTaddChainLink(addJson,function(chain) {
+                                                if("chain" in chain) {
+                                                    // Change to the target chain
+                                                    self.chainSelect.val(chain.chain.id).change();
+                                                    dialog.dialog('close');
+                                                    dialog.dialog('destroy');
+                                                    dialog.remove();                                                                                                                    
+                                                } else {
+                                                    alert(chain.error);
+                                                }
+                                            });
+                                        } else {
+                                            alert(chain.error);
+                                        }
+                                    });
+                                },
+                                "Cancel": function() {
+                                    $(this).dialog('close');
+                                    $(this).dialog('destroy');
+                                    $(this).remove();                        
+                                }                        
                             }
                         });
-                            
                     });
                 }),
                 linkDeleteButton = $(self.linkDeleteButton = $('button#deleteLink',chainTable)).button({
@@ -1994,7 +2052,7 @@
                                 $.each(self.actions.execute.sort(function(a,b) {
                                     return (a > b) ? 1 : (a < b) ? -1 : 0;
                                 }),function(si,name) {                                
-                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.sourceName));
+                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.executeEnum.name));
                                 });                            
                                 return div.html();
                             } 
@@ -2009,7 +2067,7 @@
                                 $.each(self.actions.result.sort(function(a,b) {
                                     return (a > b) ? 1 : (a < b) ? -1 : 0;
                                 }),function(si,name) {                                
-                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.sourceName));
+                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.resultEnum.name));
                                 });                            
                                 return div.html();
                             } 
@@ -2024,7 +2082,7 @@
                                 $.each(self.actions.link.sort(function(a,b) {
                                     return (a > b) ? 1 : (a < b) ? -1 : 0;
                                 }),function(si,name) {                                
-                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.sourceName));
+                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.linkEnum.name));
                                 });                            
                                 return div.html();
                             } 
@@ -2280,7 +2338,7 @@
                                     $.ruleChains.chain.POSTmodifyChainLink({ 
                                         name: self.chainSelect.find('option:selected').text(),
                                         link: $.extend(aData,{
-                                            executeEnum: executeAction
+                                            executeEnum: { name: executeAction }
                                         })
                                     },function(link) {
                                         if("link" in link) {
@@ -2296,7 +2354,7 @@
                                     $.ruleChains.chain.POSTmodifyChainLink({ 
                                         name: self.chainSelect.find('option:selected').text(),
                                         link: $.extend(aData,{
-                                            resultEnum: resultAction
+                                            resultEnum: { name: resultAction }
                                         })
                                     },function(link) {
                                         if("link" in link) {
@@ -2312,7 +2370,7 @@
                                     $.ruleChains.chain.POSTmodifyChainLink({ 
                                         name: self.chainSelect.find('option:selected').text(),
                                         link: $.extend(aData,{
-                                            linkEnum: linkAction
+                                            linkEnum: { name: linkAction }
                                         })
                                     },function(link) {
                                         if("link" in link) {
