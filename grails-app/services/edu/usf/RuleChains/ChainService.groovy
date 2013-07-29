@@ -231,30 +231,5 @@ class ChainService {
         }
         return [ error : "Chain named ${name} not found!"]
     }
-    def modifyChainLinks(String name,def links) {
-        def chain = Chain.findByName(name.trim())
-        if(!!chain) {
-            chain.links.clear()
-            if(!chain.save(failOnError:false, flush: true, validate: true)) {
-                chain.errors.allErrors.each {
-                    println it
-                }           
-                return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                
-            } else {
-                links.sort { it.sequenceNumber }.each { l ->
-                    chain.addToLinks(l as Link)
-                }
-                if(!chain.save(failOnError:false, flush: true, validate: true)) {
-                    chain.errors.allErrors.each {
-                        println it
-                    }           
-                    return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                
-                } else {
-                    return [ chain : chain ]
-                }
-            }
-        }
-        return [ error : "Chain named ${name} not found!"]
-    }
     
 }
