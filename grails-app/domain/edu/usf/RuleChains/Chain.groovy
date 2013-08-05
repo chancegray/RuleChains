@@ -85,6 +85,7 @@ class Chain {
              * Distinguish what kind of "rules" and handle them by type
             **/
             for(int i = 0; i < orderedLinks.size(); i++) {
+                println "Unmodified input for link ${i} is ${orderedLinks[i].input as JSON}"
                 // Execute the rule based on it's type
                 switch(orderedLinks[i].rule) {
                     case { it instanceof SQLQuery }:
@@ -292,19 +293,23 @@ class Chain {
                 }
                 // Handle result (aka: output)
                 if((i+1) < orderedLinks.size() && orderedLinks[i].resultEnum in [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]) {
+                    println "Setting the next output"
                     orderedLinks[i+1].input = (orderedLinks[i].output)?orderedLinks[i].output.first():[] 
+                } else {
+                    println "Not setting the next output for i=${i+1} and size ${orderedLinks.size()}"
                 }
                 // Handle link enum
-                if((i+1) < orderedLinks.size()) {
+                if((i+1) <= orderedLinks.size()) {
                     switch(orderedLinks[i].linkEnum) {
                         case [LinkEnum.NEXT]:
                             orderedLinks[i+1].input = Chain.rearrange(orderedLinks[i].input ,orderedLinks[i].outputReorder)
                             break
                         case [ LinkEnum.LOOP ]:
                             def endLoopIndex = Chain.findEndLoop(orderedLinks,i)
+                            println "Detected a LOOP with End Loop Index ${endLoopIndex} starting at ${i+1}"
                             if(endLoopIndex != i) {
-                                orderedLinks[endLoopIndex-1].output = execute(orderedLinks[i].output,orderedLinks[(i+1)..<endLoopIndex])
-                                i = endLoopIndex-1
+                                orderedLinks[endLoopIndex].output = execute(orderedLinks[i].output,orderedLinks[(i+1)..endLoopIndex])
+                                i = endLoopIndex
                             }
                             break
                     }
@@ -318,11 +323,16 @@ class Chain {
         if(!!rearrange) {
             String toBeEvaluated = """
                 import groovy.sql.Sql
+                import oracle.jdbc.driver.OracleTypes
 
-                def row = x
+                row
                 ${rearrange}
             """        
-            return new GroovyShell(new Binding(x:row)).evaluate(toBeEvaluated)
+            try {
+                return new GroovyShell(new Binding("row":row)).evaluate(toBeEvaluated)
+            } catch(Exception e) {
+                System.out.println("${row.toString()} error: ${e.message} on closure: ${toBeEvaluated}")
+            }
         }
         return row
     }    
