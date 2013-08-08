@@ -108,4 +108,17 @@ class JobController {
             }
         }   
     }
+    def listCurrentlyExecutingJobs() {
+        withFormat {
+            html {
+                return jobService.listCurrentlyExecutingJobs()
+            }
+            xml {
+                render jobService.listCurrentlyExecutingJobs() as XML
+            }
+            json {
+                JSON.use("deep") { render jobService.listCurrentlyExecutingJobs() as JSON }
+            }
+        }   
+    }
 }
