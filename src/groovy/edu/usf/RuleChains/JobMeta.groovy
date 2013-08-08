@@ -273,7 +273,24 @@ class JobMeta {
             }
             return [ error: "One of the jobs was not found" ]
         }
-
+        JobService.metaClass.listCurrentlyExecutingJobs {->
+            return [
+                executingJobs: quartzScheduler.getCurrentlyExecutingJobs().collect { jec->
+                    return [
+                        chain: jec.getJobDetail().getJobDataMap().get("chain"),
+                        name: jec.getJobDetail().getKey().getName(),
+                        description: jec.getJobDetail().getDescription(),
+                        group: jec.getJobDetail().getKey().getGroup(),
+                        cron: { t ->
+                            return t.metaClass.respondsTo(t, 'getCronExpression')?t.getCronExpression():""
+                        }.call(jec.getTrigger()),
+                        fireTime: jec.getFireTime(),
+                        scheduledFireTime: jec.getScheduledFireTime(),
+                        input: jec.getJobDetail().getJobDataMap().get("input")
+                    ]
+                }
+            ]
+        }
     }
 }
 
