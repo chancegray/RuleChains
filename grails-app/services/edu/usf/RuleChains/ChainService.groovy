@@ -188,8 +188,8 @@ class ChainService {
                 result: ResultEnum.values().collect { it.name() },
                 link: LinkEnum.values().collect { it.name() }
             ],
-            jobGroups: jobService.listChainJobs().jobGroups
-            
+            jobGroups: jobService.listChainJobs().jobGroups,
+            executingJobs: jobService.listCurrentlyExecutingJobs()?.executingJobs            
         ]
         
     }
