@@ -85,8 +85,58 @@
         buildMonitorContent: function() {
             var self = this,
                 o = self.options,
-                el = self.element;
-            
+                el = self.element,
+                tabs = self.tabContents,
+                refreshRunningJobsButton = $(self.refreshRunningJobsButton = $('button#refreshRunningJobsButton',tabs.monitor)).button({
+                    text: true,
+                    icons: {
+                        primary: "ui-icon-refresh"
+                    }            
+                }).click(function() {
+                    $.ruleChains.job.GETlistCurrentlyExecutingJobs({},function(response) {
+                        if("executingJobs" in response) {
+                            self.executingJobs=response.executingJobs;
+                            self.chainServiceHandlerDataTable.fnClearTable();
+                            self.chainServiceHandlerDataTable.fnAddData(self.executingJobs);
+                        } else {
+                            alert(response.error);
+                        }                        
+                    });                    
+                }),
+                runningJobsButtonSet = $('div#runningJobsButtonSet',tabs.monitor).buttonset(),
+                runningJobsTable = $(self.runningJobsTable = $('table#runningJobsTable',tabs.monitor)),
+                runningJobsDataTable = $(self.runningJobsDataTable = runningJobsTable.dataTable({
+                    "aoColumns": [
+                        { "bSortable": false,"bVisible": true,"mDataProp": null, "fnRender":
+                            function(oObj) {
+                                return "<button type='button' id='details' />";
+                            }
+                        },                 
+                        { "bVisible": true,"mDataProp": null,"sDefaultContent":"","aDataSort": [ 1 ],"asSorting": [ "asc" ],"fnRender":
+                            function(oObj) {
+                                var div = $('<div />'),
+                                    container = $('<div />',{ id: "chain"}).appendTo(div).append(oObj.aData.chain);
+                                return div.html();
+                            }
+                        },
+                        { "bVisible": true,"mDataProp": "name","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "description","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "group","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "cron","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "fireTime","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "scheduledFireTime","sDefaultContent":"" }
+                    ],
+                    "bJQueryUI": true,
+                    "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                    "aaData": [],
+                    "fnInitComplete": function(oSettings, json) {
+                        self.refreshRunningJobsButton.trigger("click");
+                    },
+                    "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+                
+                    }
+                }));
+            // runningJobsTable
         },        
         buildHandlersContent: function() {
             var self = this,
