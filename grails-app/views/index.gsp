@@ -15,6 +15,23 @@
               <li><a href="#backup">Backup</a></li>
             </ul>  
             <div id="monitor" role="main">
+              <div id="runningJobsButtonSet" style="display: inline-block;font-size:70%;">
+                <button id="refreshRunningJobsButton">Refresh Running Jobs</button> 
+              </div>
+              <table id="runningJobsTable" style="font-size:70%;">
+                <thead>
+                  <tr>
+                    <th>&nbsp;</th>
+                    <th>TargetChain</th>
+                    <th>JobName</th>
+                    <th>JobGroup</th>
+                    <th>JobDescription</th>
+                    <th>CRON</th>
+                    <th>FireTime</th>
+                    <th>ScheduledFireTime</th>
+                  </tr>
+                </thead>
+              </table>
             </div>
             <div id="schedule" role="main">              
               <div id="jobsButtonSet" style="display: inline-block;font-size:70%;">
