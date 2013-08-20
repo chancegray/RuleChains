@@ -133,10 +133,71 @@
                         self.refreshRunningJobsButton.trigger("click");
                     },
                     "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
-                
+                        return $(nRow)
+                        .unbind('click')
+                        .click(function(event) {
+                            if($(nRow).hasClass('ui-widget-shadow')) {
+                                $(nRow).removeClass('ui-widget-shadow');
+                                // self.deleteHandlerButton.button("option","disabled",true);
+                            } else {
+                                $(self.runningJobsDataTable.fnGetNodes( )).each(function() {
+                                    $(this).removeClass('ui-widget-shadow');
+                                });
+                                $(nRow).addClass('ui-widget-shadow');                                    
+                                // self.deleteHandlerButton.button("option","disabled",false);
+                            }
+                        })
+                        // .find('button#details',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        // .find('select#method',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        // .find('select#chain',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        // .find('div#name',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        .each(function() {
+                            var nRowData = $(nRow).data(),
+                                detailsButton = $(nRowData.detailsButton = $(this).find('button#details'))
+                                .button({
+                                    text: false,
+                                    icons: {
+                                        primary: 'ui-icon-circle-triangle-e'
+                                    }
+                                })
+                                .unbind('toggle')
+                                .toggle(
+                                    function() {
+                                        nRowData.detailsButton.button( "option", "icons", {
+                                            primary: 'ui-icon-circle-triangle-s'
+                                        });
+                                        $(self.runningJobsDataTable.fnGetNodes( )).each(function (index,r) {
+                                            if ( self.runningJobsDataTable.fnIsOpen(r) ) {
+                                                $(r).find('button#details').click();
+                                            }                                                
+                                        });     
+                                        $(nRowData.detailsRow = $(self.runningJobsDataTable.fnOpen(
+                                            nRow,
+                                            "<fieldset id='runningJobDetails' />",
+                                            'ui-widget-header'))
+                                        )
+                                        .find('fieldset#runningJobDetails')
+                                        .addClass('ui-widget-content')
+                                        .append(
+                                            $('<legend />')
+                                            .html('Running Job Details')
+                                            .addClass('ui-widget-header ui-corner-all')
+                                        )
+                                        .each(function() {
+                                            $(nRowData.detailsFieldset = $(this));
+                                        });                                
+                                    },
+                                    function() {
+                                        // Close the details
+                                        nRowData.detailsButton.button( "option", "icons", {
+                                            primary: 'ui-icon-circle-triangle-e'
+                                        });
+                                        self.runningJobsDataTable.fnClose(nRow);                                                                                                
+                                    }
+                                );
+                        });                
                     }
                 }));
-            // runningJobsTable
         },        
         buildHandlersContent: function() {
             var self = this,
