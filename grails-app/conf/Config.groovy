@@ -10,9 +10,8 @@
 // if (System.properties["${appName}.config.location"]) {
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }
-
-grails.config.locations = [ "file:/usr/local/etc/grails/RuleChains.groovy","file:/usr/local/etc/grails/RuleChainsAuth.groovy"]
-
+grails.config.folder = '/usr/local/etc/grails/RuleChains'
+grails.config.locations = (new File(grails.config.folder)).listFiles().collect { "file:" + it.canonicalPath }
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
 grails.mime.use.accept.header = true
@@ -104,7 +103,7 @@ grails.plugins.springsecurity.cas.key = '9a3433aca7184008df30ee8f5c62f160' //uni
 grails.plugins.springsecurity.cas.artifactParameter = 'ticket'
 grails.plugins.springsecurity.cas.serviceParameter = 'service'
 grails.plugins.springsecurity.cas.filterProcessesUrl = '/j_spring_cas_security_check'
-grails.plugins.springsecurity.cas.proxyCallbackUrl = 'http://localhost:8080/RuleChains/secure/receptor' 
+grails.plugins.springsecurity.cas.proxyCallbackUrl = "${grails.serverURL}/secure/receptor"
 grails.plugins.springsecurity.cas.proxyReceptorUrl = '/secure/receptor'
 grails.plugins.springsecurity.cas.useSingleSignout = false
 grails.plugins.springsecurity.cas.driftTolerance = 120000
@@ -112,4 +111,4 @@ grails.plugins.springsecurity.cas.loginUri = '/login'
 grails.plugins.springsecurity.cas.useSamlValidator = true
 grails.plugins.springsecurity.cas.authorityAttribute = 'eduPersonEntitlement'
 grails.plugins.springsecurity.cas.serverUrlPrefix = 'https://authtest.it.usf.edu'
-grails.plugins.springsecurity.cas.serviceUrl = 'http://localhost:8080/RuleChains/j_spring_cas_security_check'
+grails.plugins.springsecurity.cas.serviceUrl = "${grails.serverURL}/j_spring_cas_security_check"
