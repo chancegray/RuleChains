@@ -96,8 +96,8 @@
                     $.ruleChains.job.GETlistCurrentlyExecutingJobs({},function(response) {
                         if("executingJobs" in response) {
                             self.executingJobs=response.executingJobs;
-                            self.chainServiceHandlerDataTable.fnClearTable();
-                            self.chainServiceHandlerDataTable.fnAddData(self.executingJobs);
+                            self.runningJobsDataTable.fnClearTable();
+                            self.runningJobsDataTable.fnAddData(self.executingJobs);
                         } else {
                             alert(response.error);
                         }                        
