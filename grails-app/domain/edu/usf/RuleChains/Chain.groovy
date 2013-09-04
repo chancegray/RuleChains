@@ -73,7 +73,8 @@ class Chain {
         }
         
         def linkService = new LinkService()
-        for(def row in input) {
+        input.each { row ->
+//         for(def row in input) {
             /**
              * Pre-populate input based on incoming data array
             **/
@@ -294,6 +295,7 @@ class Chain {
                 // Handle result (aka: output)
                 if((i+1) < orderedLinks.size() && orderedLinks[i].resultEnum in [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]) {
                     println "Setting the next output"
+                    println orderedLinks[i].output as JSON
                     orderedLinks[i+1].input = (orderedLinks[i].output)?orderedLinks[i].output.first():[] 
                 } else {
                     println "Not setting the next output for i=${i+1} and size ${orderedLinks.size()}"
