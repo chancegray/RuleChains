@@ -7,11 +7,12 @@ import edu.usf.RuleChains.*
 import org.hibernate.FlushMode
 import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
+import groovy.text.*
 
 class Chain {
     String name
     List<Link> links
-    List<List> input = [[]]
+    List<List> input = [[:]]
     static hasMany = [links:Link]
     static transients = ['orderedLinks','input','output']
     static constraints = {
@@ -66,7 +67,7 @@ class Chain {
     def getOutput() {
         getOrderedLinks().last().output
     }
-    def execute(def input = [[]],List<Link> orderedLinks) {
+    def execute(def input = [[:]],List<Link> orderedLinks) {
         println "I'm running"
         if(!!!orderedLinks) {
             orderedLinks = getOrderedLinks()
@@ -88,21 +89,31 @@ class Chain {
             for(int i = 0; i < orderedLinks.size(); i++) {
                 println "Unmodified input for link ${i} is ${orderedLinks[i].input as JSON}"
                 // Execute the rule based on it's type
+                println "Modified rearranged input for link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}"
+
                 switch(orderedLinks[i].rule) {
                     case { it instanceof SQLQuery }:
                         println "Detected an SQLQuery for ${orderedLinks[i].rule.name}"
                         orderedLinks[i].output = linkService.justSQL(
-                            orderedLinks[i].rule,
+                            { p ->
+                                def gStringTemplateEngine = new GStringTemplateEngine()
+                                def rule = [:]
+                                rule << p
+                                rule.rule = gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString()
+                                println rule.rule
+                                return rule
+                            }.call(orderedLinks[i].rule.properties),
                             orderedLinks[i].sourceName,
                             orderedLinks[i].executeEnum,    
                             orderedLinks[i].resultEnum,
                             { e ->
                                 switch(e) {
                                     case ExecuteEnum.EXECUTE_USING_ROW: 
+                                        println "Modified input for link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}"
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
-                                        return []
+                                        return [:]
                                         break
                                 }                                        
                             }.call(orderedLinks[i].executeEnum)
@@ -118,7 +129,14 @@ class Chain {
                     case { it instanceof StoredProcedureQuery }:
                         println "Detected a StoredProcedureQuery Script for ${orderedLinks[i].rule.name}"
                         orderedLinks[i].output = linkService.justStoredProcedure(
-                            orderedLinks[i].rule,
+                            { p ->
+                                def gStringTemplateEngine = new GStringTemplateEngine()
+                                def rule = [:]
+                                rule << p
+                                rule.rule = gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString()
+                                println rule.rule
+                                return rule
+                            }.call(orderedLinks[i].rule.properties),
                             orderedLinks[i].sourceName,
                             orderedLinks[i].executeEnum,    
                             orderedLinks[i].resultEnum,
@@ -129,7 +147,7 @@ class Chain {
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
-                                        return []
+                                        return [:]
                                         break
                                 }                                        
                             }.call(orderedLinks[i].executeEnum)
@@ -146,6 +164,7 @@ class Chain {
                         println "Detected a Groovy Script for ${orderedLinks[i].rule.name}"
                         orderedLinks[i].output = { r ->
                             if([Collection, Object[]].any { it.isAssignableFrom(r.getClass()) }) {
+                                println "Spying on r as "+(r as JSON)
                                 switch(r) {
                                     case r.isEmpty():
                                         return r
@@ -154,12 +173,16 @@ class Chain {
                                         return r
                                         break
                                     default:
-                                        return [ r ]
+                                        println "Looks like there is something inside the array that looks like an object "+(r as JSON)
+                                        // return [ r ]
+                                        return r
                                         break
                                 }
                                 return r
                             } else {
-                                return [ [ r ] ]
+                                println "I don't think you are an array of arrays so you get this"
+                                // return [ [ r ] ]
+                                return [ r ] 
                             }
                         }.call(linkService.justGroovy(
                             orderedLinks[i].rule,
@@ -172,7 +195,7 @@ class Chain {
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
-                                        return []
+                                        return [:]
                                         break
                                 }                                        
                             }.call(orderedLinks[i].executeEnum)
@@ -200,7 +223,7 @@ class Chain {
                                                 return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                                 break
                                             default:
-                                                return []
+                                                return [:]
                                                 break
                                         }                                        
                                     }.call(orderedLinks[i].executeEnum),
@@ -227,7 +250,7 @@ class Chain {
                                                 return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                                 break
                                             default:
-                                                return []
+                                                return [:]
                                                 break
                                         }                                        
                                     }.call(orderedLinks[i].executeEnum)
@@ -255,7 +278,7 @@ class Chain {
                                                 return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                                 break
                                             default:
-                                                return []
+                                                return [:]
                                                 break
                                         }                                        
                                     }.call(orderedLinks[i].executeEnum)
@@ -278,7 +301,7 @@ class Chain {
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
-                                        return [[]]
+                                        return [[:]]
                                         break
                                 }                                        
                             }.call(orderedLinks[i].executeEnum)
@@ -296,7 +319,9 @@ class Chain {
                 if((i+1) < orderedLinks.size() && orderedLinks[i].resultEnum in [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]) {
                     println "Setting the next output"
                     println orderedLinks[i].output as JSON
-                    orderedLinks[i+1].input = (orderedLinks[i].output)?orderedLinks[i].output.first():[] 
+                    orderedLinks[i+1].input = (orderedLinks[i].output)?orderedLinks[i].output.first():[:] 
+                    println "Thinks the next input is "+((orderedLinks[i].output)?orderedLinks[i].output.first():[:] as JSON)
+                    println "Next input is: "+(orderedLinks[i+1].input as JSON)
                 } else {
                     println "Not setting the next output for i=${i+1} and size ${orderedLinks.size()}"
                 }
@@ -318,7 +343,7 @@ class Chain {
                 }
             }
         }
-        return (orderedLinks.isEmpty())?[[]]:orderedLinks.last().output
+        return (orderedLinks.isEmpty())?[[:]]:orderedLinks.last().output
     }
     
     static def rearrange(def row,String rearrange){
