@@ -120,9 +120,12 @@ class LinkService {
         return Link.withTransaction{ status ->
             def sql = getSQLSource(sourceName)
             try {
-                {rows->
+                return {rows->
+                    println "Groovy script raw returned "+(rows as JSON)
                     switch(resultEnum) {
                         case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
+                            println "Before ${rows as JSON}"
+                            println "After ${((rows.size() > 0)?rows[0..0]:rows) as JSON}"
                             return (rows.size() > 0)?rows[0..0]:rows
                             break
                         case [ ResultEnum.RECORDSET ]: 
@@ -132,7 +135,6 @@ class LinkService {
                             return []
                             break
                     }
-                    (rows.size() > 0)?rows[0..0]:rows
                 }.call(
                     new GroovyShell(new Binding([
                         longSQLplaceHolderUniqueVariable:sql,
@@ -158,47 +160,46 @@ class LinkService {
             }
         }
     }
-    def justSQL(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
+    def justSQL(def rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         Link.withTransaction {
             def sql = getSQLSource(sourceName)
-            def gStringTemplateEngine = new GStringTemplateEngine()
             try {
+                 println "Input is "+(input as JSON)
                 switch(resultEnum) {
-                    case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
-                        println input.toString()
-                        return {rows-> (rows.size() > 0)?rows[0..0]:rows }.call((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(gStringTemplateEngine.createTemplate(rule.rule).make(input).toString(), input):sql.rows(gStringTemplateEngine.createTemplate(rule.rule).make(input).toString()))
-                        break
-                    case [ ResultEnum.RECORDSET ]: 
-                        return ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(gStringTemplateEngine.createTemplate(rule.rule).make(input).toString(), input):sql.rows(gStringTemplateEngine.createTemplate(rule.rule).make(input).toString()))
-                        break
-                    case [ ResultEnum.NONE,ResultEnum.UPDATE ]:
-                        (executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.execute(gStringTemplateEngine.createTemplate(rule.rule).make(input).toString(), input):sql.execute(gStringTemplateEngine.createTemplate(rule.rule).make(input).toString())
-                        return []
-                        break
-                }
-            } catch(Exception e) {
-                log.debug "${rule.name} error: ${e.printStackTrace()} on source named ${sourceName}"
-                System.out.println("${rule.name} error: ${e.printStackTrace()} on source named ${sourceName}")
-                return [
-                    error: e.message,
-                    rule: rule.name,
-                    type: "SQL",
-                    source: sourceName
-                ]
-            }
+                     case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
+                         println input as JSON
+                         return {rows-> (rows.size() > 0)?rows[0..0]:rows }.call((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(rule.rule, input):sql.rows(rule.rule))
+                         break
+                     case [ ResultEnum.RECORDSET ]: 
+                         return ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.rows(rule.rule, input):sql.rows(rule.rule))
+                         break
+                     case [ ResultEnum.NONE,ResultEnum.UPDATE ]:
+                         (executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.execute(rule.rule, input):sql.execute(rule.rule)
+                         return []
+                         break
+                 }
+             } catch(Exception e) {
+                 log.debug "${rule.name} error: ${e.printStackTrace()} on source named ${sourceName}"
+                 System.out.println("${rule.name} error: ${e.printStackTrace()} on source named ${sourceName}")
+                 return [
+                     error: e.message,
+                     rule: rule.name,
+                     type: "SQL",
+                     source: sourceName
+                 ]
+             }
         }
     }
-    def justStoredProcedure(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
+    def justStoredProcedure(def rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         Link.withTransaction {
             //println input as JSON
             def sql = getSQLSource(sourceName)
-            def gStringTemplateEngine = new GStringTemplateEngine()
             def binding = new Binding()
             def closure = new GroovyShell(binding).evaluate(rule.closure)
             closure.delegate=this
             // Execute the stored procedure to populate the "rows" bound variable
             try {
-                ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.call(gStringTemplateEngine.createTemplate(rule.rule).make(input).toString(), input,closure):sql.call(gStringTemplateEngine.createTemplate(rule.rule).make(input).toString(), closure))
+                ((executeEnum in [ExecuteEnum.EXECUTE_USING_ROW])?sql.call(rule.rule, input,closure):sql.call(rule.rule, closure))
                 switch(resultEnum) {
                     case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
                         return {rows-> (rows.size() > 0)?rows[0..0]:rows }.call(binding.rows)
