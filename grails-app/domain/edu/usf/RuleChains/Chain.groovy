@@ -13,8 +13,9 @@ class Chain {
     String name
     List<Link> links
     List<List> input = [[:]]
+    JobHistory jobHistory
     static hasMany = [links:Link]
-    static transients = ['orderedLinks','input','output']
+    static transients = ['orderedLinks','input','output','jobHistory']
     static constraints = {
         name(   
                 blank: false,
