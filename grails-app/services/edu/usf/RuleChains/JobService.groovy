@@ -25,35 +25,26 @@ import grails.plugin.quartz2.ClosureJob
 class JobService {
     static transactional = true
     def grailsApplication
-    // def scheduler
-    // def quartzScheduler
     
-    
-    // def createChainJob(String cronExpression,String name,Map params) { }
-    
-    // def listChainJobs() {   }
-    
-//    def listChainTriggers() {        
-//        // ChainJob.getTriggers()
-//        return [
-//            triggers: grailsApplication.getJobClass("ChainJob").getTriggers()
-//        ]
-////        ((GrailsJobClass) ChainJob.class)
-////        getTriggers()
-////        List<Trigger> jobTriggers = ChainJob.schedule.getTriggersOfJob(jobKey("jobName", "jobGroup"));
-//    }
-//    def listChainJobs(String groupName = "") {
-//        return [
-//            groups: (ChainJob.schedule.getJobGroupNames().contains(groupName)?[ groupName ]:ChainJob.schedule.getJobGroupNames()).collect { g ->
-//                return [
-//                    group: g,
-//                    jobKeys: ChainJob.schedule.getJobKeys(groupEquals(g)).collect { it }
-//                ]
-//            }
-//        ]
-//    }
-//    
-//    def removeChainJob() {
-//        ChainJob.unschedule()
-//    }
+    def addJobHistory(String name) {
+        if(!!name) {
+            def jobHistory = [ name: name.trim() ] as JobHistory
+            if(!jobHistory.save(failOnError:false, flush: true, insert: true, validate: true)) {
+                return [ error : "Name value '${jobHistory.errors.fieldError.rejectedValue}' rejected" ]
+            } else {
+                return [ jobHistory: jobHistory ]
+            }
+        }
+        return [ error: "You must supply a name" ]
+    }
+    def findJobHistory(String name) {
+        if(!!name) {
+            def jobHistory = JobHistory.findByName(name.trim())
+            if(!!jobHistory) {
+                return [ jobHistory: jobHistory ]
+            }
+            return [ error : "Job History named ${name} not found!"]            
+        }
+        return [ error: "You must supply a name" ]
+    }
 }
