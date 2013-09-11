@@ -67,9 +67,17 @@ class JobMeta {
                 try {
                     def jobDetail = ClosureJob.createJob(name:"${name}:${suffix}",durability:true,concurrent:false,jobData: [input: input,chain: name]){ jobCtx , appCtx->
                         println "************* it ran ***********"
-                        //do something  
-                        def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))
+                        //do something                          
+                        def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))                        
                         if(!!chain) {
+                            // Attaches a JobHistory to the Chain as a transient
+                            chain.jobHistory = { jh,d -> 
+                                if('error' in jh) {
+                                    jh = d.addJobHistory("${name}:${suffix}")
+                                    return ('error' in jh)?null:jh.jobHistory
+                                }
+                                return jh.jobHistory
+                            }.call(delegate.findJobHistory("${name}:${suffix}"),delegate)
                             def result = chain.execute(jobCtx.mergedJobDataMap.get('input'))
                             println "Result is ${result}"
                         } else {
