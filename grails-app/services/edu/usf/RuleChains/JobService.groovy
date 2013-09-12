@@ -30,7 +30,7 @@ class JobService {
         if(!!name) {
             def jobHistory = [ name: name.trim() ] as JobHistory
             if(!jobHistory.save(failOnError:false, flush: true, insert: true, validate: true)) {
-                return [ error : "Name value '${jobHistory.errors.fieldError.rejectedValue}' rejected" ]
+                return [ error : "'${jobHistory.errors.fieldError.field}' value '${jobHistory.errors.fieldError.rejectedValue}' rejected" ]
             } else {
                 return [ jobHistory: jobHistory ]
             }
