@@ -88,20 +88,28 @@ class Chain {
              * Distinguish what kind of "rules" and handle them by type
             **/
             for(int i = 0; i < orderedLinks.size(); i++) {
-                println "Unmodified input for link ${i} is ${orderedLinks[i].input as JSON}"
+                log.info "Unmodified input for link ${i} is ${orderedLinks[i].input as JSON}"
                 // Execute the rule based on it's type
-                println "Modified rearranged input for link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}"
+                log.info "Modified rearranged input for link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}"
 
                 switch(orderedLinks[i].rule) {
                     case { it instanceof SQLQuery }:
-                        println "Detected an SQLQuery for ${orderedLinks[i].rule.name}"
+                        jobHistory.appendToLog("[SQLQuery] Detected a SQLQuery for ${orderedLinks[i].rule.name}")
+                        log.info "Detected an SQLQuery for ${orderedLinks[i].rule.name}"
                         orderedLinks[i].output = linkService.justSQL(
                             { p ->
                                 def gStringTemplateEngine = new GStringTemplateEngine()
                                 def rule = [:]
                                 rule << p
-                                rule.rule = gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString()
-                                println rule.rule
+                                rule << [
+                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString(),
+                                    jobHistory: jobHistory
+                                ]
+                                log.info rule.rule
+                                jobHistory.appendToLog("[SQLQuery] Untemplated Rule is: ${p.rule}")
+                                jobHistory.appendToLog("[SQLQuery] Unmodified input for Templating Rule on link ${i} is ${orderedLinks[i].input as JSON}")
+                                jobHistory.appendToLog("[SQLQuery] Modified input for Templating Rule on link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")
+                                jobHistory.appendToLog("[SQLQuery] Templated Rule is: ${rule.rule}")
                                 return rule
                             }.call(orderedLinks[i].rule.properties),
                             orderedLinks[i].sourceName,
@@ -110,7 +118,9 @@ class Chain {
                             { e ->
                                 switch(e) {
                                     case ExecuteEnum.EXECUTE_USING_ROW: 
-                                        println "Modified input for link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}"
+                                        jobHistory.appendToLog("[SQLQuery] Execute Using Row being used")
+                                        jobHistory.appendToLog("[SQLQuery] Unmodified input for Executing Row on link ${i} is ${orderedLinks[i].input as JSON}")
+                                        jobHistory.appendToLog("[SQLQuery] Modified input for Executing Row link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
@@ -128,13 +138,22 @@ class Chain {
                         }
                         break
                     case { it instanceof StoredProcedureQuery }:
-                        println "Detected a StoredProcedureQuery Script for ${orderedLinks[i].rule.name}"
+                        jobHistory.appendToLog("[StoredProcedureQuery] Detected a Stored Procedure for ${orderedLinks[i].rule.name}")                        
+                        log.info "Detected a StoredProcedureQuery Script for ${orderedLinks[i].rule.name}"
                         orderedLinks[i].output = linkService.justStoredProcedure(
                             { p ->
                                 def gStringTemplateEngine = new GStringTemplateEngine()
                                 def rule = [:]
                                 rule << p
-                                rule.rule = gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString()
+                                rule << [
+                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString(),
+                                    jobHistory: jobHistory
+                                ]
+                                log.info rule.rule
+                                jobHistory.appendToLog("[StoredProcedureQuery] Untemplated Rule is: ${p.rule}")
+                                jobHistory.appendToLog("[StoredProcedureQuery] Unmodified input for Templating Rule on link ${i} is ${orderedLinks[i].input as JSON}")
+                                jobHistory.appendToLog("[StoredProcedureQuery] Modified input for Templating Rule on link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")
+                                jobHistory.appendToLog("[StoredProcedureQuery] Templated Rule is: ${rule.rule}")
                                 println rule.rule
                                 return rule
                             }.call(orderedLinks[i].rule.properties),
@@ -144,7 +163,9 @@ class Chain {
                             { e ->
                                 switch(e) {
                                     case ExecuteEnum.EXECUTE_USING_ROW: 
-                                        println "Before input reorder ${orderedLinks[i].input.toString()}"
+                                        jobHistory.appendToLog("[StoredProcedureQuery] Execute Using Row being used")
+                                        jobHistory.appendToLog("[StoredProcedureQuery] Unmodified input for Executing Row on link ${i} is ${orderedLinks[i].input as JSON}")
+                                        jobHistory.appendToLog("[StoredProcedureQuery] Modified input for Executing Row link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")                                        
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
@@ -162,10 +183,11 @@ class Chain {
                         }
                         break
                     case { it instanceof Groovy }:
-                        println "Detected a Groovy Script for ${orderedLinks[i].rule.name}"
+                        jobHistory.appendToLog("[Groovy] Detected a Groovy script for ${orderedLinks[i].rule.name}")                        
+                        log.info "Detected a Groovy Script for ${orderedLinks[i].rule.name}"
+                        orderedLinks[i].rule.jobHistory = jobHistory
                         orderedLinks[i].output = { r ->
                             if([Collection, Object[]].any { it.isAssignableFrom(r.getClass()) }) {
-                                println "Spying on r as "+(r as JSON)
                                 switch(r) {
                                     case r.isEmpty():
                                         return r
@@ -174,15 +196,12 @@ class Chain {
                                         return r
                                         break
                                     default:
-                                        println "Looks like there is something inside the array that looks like an object "+(r as JSON)
-                                        // return [ r ]
                                         return r
                                         break
                                 }
                                 return r
                             } else {
-                                println "I don't think you are an array of arrays so you get this"
-                                // return [ [ r ] ]
+                                jobHistory.appendToLog("[Groovy] Object needs to be an array of objects so wrapping it as an array like this ${[r] as JSON}") 
                                 return [ r ] 
                             }
                         }.call(linkService.justGroovy(
@@ -193,6 +212,9 @@ class Chain {
                             { e ->
                                 switch(e) {
                                     case ExecuteEnum.EXECUTE_USING_ROW: 
+                                        jobHistory.appendToLog("[Groovy] Execute Using Row being used")
+                                        jobHistory.appendToLog("[Groovy] Unmodified input for Executing Row on link ${i} is ${orderedLinks[i].input as JSON}")
+                                        jobHistory.appendToLog("[Groovy] Modified input for Executing Row link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")                                        
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
@@ -210,8 +232,12 @@ class Chain {
                         }
                         break
                     case { it instanceof DefinedService }:
+                        jobHistory.appendToLog("[DefinedService] Detected a Defined service for ${orderedLinks[i].rule.name}")                        
+                        log.info "Detected a Defined Service ${orderedLinks[i].rule.name}" 
+                        orderedLinks[i].rule.jobHistory = jobHistory
                         switch(orderedLinks[i].rule.authType) {
                             case AuthTypeEnum.CASSPRING:
+                                jobHistory.appendToLog("[DefinedService] Detected a CASSPRING service") 
                                 orderedLinks[i].output = linkService.casSpringSecurityRest(
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method.name(),
@@ -221,6 +247,9 @@ class Chain {
                                     { e ->
                                         switch(e) {
                                             case ExecuteEnum.EXECUTE_USING_ROW: 
+                                                jobHistory.appendToLog("[DefinedService] Execute Using Row being used")
+                                                jobHistory.appendToLog("[DefinedService] Unmodified input for Executing Row on link ${i} is ${orderedLinks[i].input as JSON}")
+                                                jobHistory.appendToLog("[DefinedService] Modified input for Executing Row link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")                                        
                                                 return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                                 break
                                             default:
@@ -239,6 +268,7 @@ class Chain {
                                 }
                                 break;
                             case AuthTypeEnum.CAS:
+                                jobHistory.appendToLog("[DefinedService] Detected a CAS service") 
                                 orderedLinks[i].output = linkService.casRest(
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method.name(),
@@ -248,6 +278,9 @@ class Chain {
                                     { e ->
                                         switch(e) {
                                             case ExecuteEnum.EXECUTE_USING_ROW: 
+                                                jobHistory.appendToLog("[DefinedService] Execute Using Row being used")
+                                                jobHistory.appendToLog("[DefinedService] Unmodified input for Executing Row on link ${i} is ${orderedLinks[i].input as JSON}")
+                                                jobHistory.appendToLog("[DefinedService] Modified input for Executing Row link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")                                        
                                                 return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                                 break
                                             default:
@@ -265,6 +298,7 @@ class Chain {
                                 }                                
                                 break;
                             case [AuthTypeEnum.BASIC,AuthTypeEnum.DIGEST,AuthTypeEnum.NONE]:
+                                jobHistory.appendToLog("[DefinedService] Detected a REST service")                                 
                                 orderedLinks[i].output = linkService.justRest(
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method,
@@ -276,6 +310,9 @@ class Chain {
                                     { e ->
                                         switch(e) {
                                             case ExecuteEnum.EXECUTE_USING_ROW: 
+                                                jobHistory.appendToLog("[DefinedService] Execute Using Row being used")
+                                                jobHistory.appendToLog("[DefinedService] Unmodified input for Executing Row on link ${i} is ${orderedLinks[i].input as JSON}")
+                                                jobHistory.appendToLog("[DefinedService] Modified input for Executing Row link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")                                        
                                                 return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                                 break
                                             default:
@@ -295,10 +332,16 @@ class Chain {
                         }
                         break
                     case { it instanceof Snippet }:
+                        jobHistory.appendToLog("[Snippet] Detected a Snippet for ${orderedLinks[i].rule.name}")                        
+                        log.info "Detected a Snippet ${orderedLinks[i].rule.name}"   
+                        orderedLinks[i].rule.chain.jobHistory = jobHistory
                         orderedLinks[i].output = orderedLinks[i].rule.chain.execute(
                             { e ->
                                 switch(e) {
                                     case ExecuteEnum.EXECUTE_USING_ROW: 
+                                        jobHistory.appendToLog("[Snippet] Execute Using Row being used")
+                                        jobHistory.appendToLog("[Snippet] Unmodified input for Executing Row on link ${i} is ${orderedLinks[i].input as JSON}")
+                                        jobHistory.appendToLog("[Snippet] Modified input for Executing Row link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")                                        
                                         return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
                                         break
                                     default:
@@ -318,27 +361,27 @@ class Chain {
                 }
                 // Handle result (aka: output)
                 if((i+1) < orderedLinks.size() && orderedLinks[i].resultEnum in [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]) {
-                    println "Setting the next output"
-                    println orderedLinks[i].output as JSON
+                    log.info "Setting the next output"
+                    jobHistory.appendToLog("[NextInput] Setting the next input ${((orderedLinks[i].output)?orderedLinks[i].output.first():[:] as JSON)}")
                     orderedLinks[i+1].input = (orderedLinks[i].output)?orderedLinks[i].output.first():[:] 
-                    println "Thinks the next input is "+((orderedLinks[i].output)?orderedLinks[i].output.first():[:] as JSON)
-                    println "Next input is: "+(orderedLinks[i+1].input as JSON)
                 } else {
-                    println "Not setting the next output for i=${i+1} and size ${orderedLinks.size()}"
+                    jobHistory.appendToLog("[NextInput] Not setting the next input for i=${i+1} and size ${orderedLinks.size()}")
                 }
                 // Handle link enum
                 if((i+1) <= orderedLinks.size()) {
                     switch(orderedLinks[i].linkEnum) {
                         case [LinkEnum.NEXT]:
                             orderedLinks[i+1].input = Chain.rearrange(orderedLinks[i].input ,orderedLinks[i].outputReorder)
+                            jobHistory.appendToLog("[Next] Carrying the current input to the following input ${orderedLinks[i+1].input as JSON}")
                             break
                         case [ LinkEnum.LOOP ]:
                             def endLoopIndex = Chain.findEndLoop(orderedLinks,i)
-                            println "Detected a LOOP with End Loop Index ${endLoopIndex} starting at ${i+1}"
+                            jobHistory.appendToLog("[LOOP] Detected a LOOP with End Loop Index ${endLoopIndex} starting at ${i+1}")
                             if(endLoopIndex != i) {
                                 orderedLinks[endLoopIndex].output = execute(orderedLinks[i].output,orderedLinks[(i+1)..endLoopIndex])
                                 i = endLoopIndex
                             }
+                            jobHistory.appendToLog("[LOOP] is ended at i=${i}")
                             break
                     }
                 }
