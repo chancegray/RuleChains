@@ -9,10 +9,11 @@ import static org.quartz.TriggerBuilder.*
 import grails.plugin.quartz2.ClosureJob
 import org.quartz.*
 import static org.quartz.CronScheduleBuilder.cronSchedule
+import grails.converters.*
 
 /**
  *
- * @author james
+ * @author James Jones
  */
 class JobMeta {
     def buildMeta = {quartzScheduler->
@@ -21,7 +22,6 @@ class JobMeta {
                 jobGroups: quartzScheduler.getJobGroupNames().collect { g ->
                     return [
                         name: g,
-                        // jobKeys: quartzScheduler.getJobKeys(groupEquals(g)),
                         jobs: quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
                             return [
                                 name: jk.name,
@@ -45,10 +45,10 @@ class JobMeta {
                 try {
                     try {
                         def trigger = newTrigger()
-                            .withIdentity("${name}:${suffix}")
-                            .withSchedule(cronSchedule(cronExpression))
-                            .forJob(jobKey)
-                            .build();  
+                        .withIdentity("${name}:${suffix}")
+                        .withSchedule(cronSchedule(cronExpression))
+                        .forJob(jobKey)
+                        .build();  
 
                         return [
                             date: quartzScheduler.scheduleJob(trigger)                                
@@ -66,28 +66,33 @@ class JobMeta {
             } else {
                 try {
                     def jobDetail = ClosureJob.createJob(name:"${name}:${suffix}",durability:true,concurrent:false,jobData: [input: input,chain: name]){ jobCtx , appCtx->
-                        println "************* it ran ***********"
-                        //do something                          
+                        log.info "************* it ran ***********"
                         def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))                        
                         if(!!chain) {
                             // Attaches a JobHistory to the Chain as a transient
                             chain.jobHistory = { jh,d -> 
                                 if('error' in jh) {
+                                    log.info "Creating a new job history"
                                     jh = d.addJobHistory("${name}:${suffix}")
                                     return ('error' in jh)?null:jh.jobHistory
                                 }
                                 return jh.jobHistory
                             }.call(delegate.findJobHistory("${name}:${suffix}"),delegate)
+                            if(!!chain.jobHistory) {
+                                chain.jobHistory.updateJobProperties(jobCtx)
+                            } else {
+                                log.error "Job History is NULL and won't be used to log execution"
+                            }
                             def result = chain.execute(jobCtx.mergedJobDataMap.get('input'))
                             println "Result is ${result}"
                         } else {
-                            println "Chain not found ${jobCtx.mergedJobDataMap.get('chain')}"
+                            log.error "Chain not found ${jobCtx.mergedJobDataMap.get('chain')}"
                         }
                     }
                     try {
                         def trigger = newTrigger().withIdentity("${name}:${suffix}")
-                            .withSchedule(cronSchedule(cronExpression))
-                            .build()
+                        .withSchedule(cronSchedule(cronExpression))
+                        .build()
                         return [
                             date: quartzScheduler.scheduleJob(jobDetail, trigger)                                
                         ]
@@ -106,33 +111,45 @@ class JobMeta {
         JobService.metaClass.updateChainJob { String name,String newName ->
             def suffix = System.currentTimeMillis()
             if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
-                    println "${jk.name} and ${name}"
-                    jk.name 
-                }.contains(name) }.size() > 0)) {
+                            jk.name 
+                        }.contains(name) }.size() > 0)) {
                 def jobKey = quartzScheduler.getJobKeys(
                     groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
                 ).find { jk -> return (jk.name == name) }
                 def jobDataMap = quartzScheduler.getJobDetail(jobKey).getJobDataMap()
-
-
-                //.usingJobData("jobSays", "Hello World!")
                 def jobDetail = ClosureJob.createJob(name:"${newName}:${suffix}",durability:true,concurrent:false,jobData: [input: jobDataMap.get("input"),chain: newName]){ jobCtx , appCtx->
-                    println "************* it ran ***********"
-                    //do something  
+                    log.info "************* it ran ***********"
                     def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))
                     if(!!chain) {
-                        chain.execute(jobCtx.mergedJobDataMap.get('input'))
+                        // Attaches a JobHistory to the Chain as a transient
+                        chain.jobHistory = { jh,d -> 
+                            if('error' in jh) {
+                                log.info "Creating a new job history"
+                                jh = d.addJobHistory("${name}:${suffix}")
+                                return ('error' in jh)?null:jh.jobHistory
+                            }
+                            return jh.jobHistory
+                        }.call(delegate.findJobHistory("${name}:${suffix}"),delegate)
+                        if(!!chain.jobHistory) {
+                            chain.jobHistory.updateJobProperties(jobCtx)
+                        } else {
+                            log.error "Job History is NULL and won't be used to log execution"
+                        }
+                        def result = chain.execute(jobCtx.mergedJobDataMap.get('input'))
+                        println "Result is ${result}"
+                    } else {
+                        log.error "Chain not found ${jobCtx.mergedJobDataMap.get('chain')}"                        
                     }
                 }
                 quartzScheduler.scheduleJobs([
-                    (jobDetail):  quartzScheduler.getTriggersOfJob(jobKey).collect { t ->
-                        return newTrigger()
-                        .withIdentity("${name}:${suffix}")
-                        .withSchedule(cronSchedule(t.getCronExpression()))
-                        .forJob(jobDetail.getKey())
-                        .build()
-                    }
-                ],true)
+                        (jobDetail):  quartzScheduler.getTriggersOfJob(jobKey).collect { t ->
+                            return newTrigger()
+                            .withIdentity("${name}:${suffix}")
+                            .withSchedule(cronSchedule(t.getCronExpression()))
+                            .forJob(jobDetail.getKey())
+                            .build()
+                        }
+                    ],true)
                 return [
                     updated: quartzScheduler.deleteJob(jobKey)
                 ]
@@ -233,18 +250,18 @@ class JobMeta {
         JobService.metaClass.addscheduleChainJob { String cronExpression, String name ->
             def suffix = System.currentTimeMillis()
             if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
-                    println "${jk.name} and ${name}"
-                    jk.name 
-                }.contains(name) }.size() > 0)) {
+                            println "${jk.name} and ${name}"
+                            jk.name 
+                        }.contains(name) }.size() > 0)) {
                 def jobKey = quartzScheduler.getJobKeys(
                     groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
                 ).find { jk -> return (jk.name == name) }
                 try {
                     def trigger = newTrigger()
-                        .withIdentity("${name.split(":")[0]}:${suffix}")
-                        .withSchedule(cronSchedule(cronExpression))
-                        .forJob(jobKey)
-                        .build()
+                    .withIdentity("${name.split(":")[0]}:${suffix}")
+                    .withSchedule(cronSchedule(cronExpression))
+                    .forJob(jobKey)
+                    .build()
                     return [
                         date: quartzScheduler.scheduleJob(trigger)                                
                     ]
@@ -258,26 +275,24 @@ class JobMeta {
         }
         JobService.metaClass.mergescheduleChainJob { String mergeName, String name ->
             if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
-                    println "${jk.name} and ${name}"
-                    jk.name 
-                }.contains(name) }.size() > 0) &&
+                            jk.name 
+                        }.contains(name) }.size() > 0) &&
                 (quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
-                    println "${jk.name} and ${mergeName}"
-                    jk.name 
-                }.contains(name) }.size() > 0)) {
-                    def jobKey = quartzScheduler.getJobKeys(
-                        groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
-                    ).find { jk -> return (jk.name == name) }
-                    def removedJobKey = quartzScheduler.getJobKeys(
-                        groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
-                    ).find { jk -> return (jk.name == mergeName) }  
-                    def results = [
-                        mergedTriggers: quartzScheduler.getTriggersOfJob(removedJobKey).findAll{ t -> !!!(t.getCronExpression() in quartzScheduler.getTriggersOfJob(jobKey).collect { it.getCronExpression() }) }.collect { t ->
-                            return quartzScheduler.scheduleJob(t.getTriggerBuilder().withIdentity("${name.split(":")[0]}:${System.currentTimeMillis()}").forJob(jobKey).build())
-                        }
-                    ]
-                    results.delete = quartzScheduler.deleteJob(removedJobKey)
-                    return results
+                            jk.name 
+                        }.contains(name) }.size() > 0)) {
+                def jobKey = quartzScheduler.getJobKeys(
+                    groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
+                ).find { jk -> return (jk.name == name) }
+                def removedJobKey = quartzScheduler.getJobKeys(
+                    groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
+                ).find { jk -> return (jk.name == mergeName) }  
+                def results = [
+                    mergedTriggers: quartzScheduler.getTriggersOfJob(removedJobKey).findAll{ t -> !!!(t.getCronExpression() in quartzScheduler.getTriggersOfJob(jobKey).collect { it.getCronExpression() }) }.collect { t ->
+                        return quartzScheduler.scheduleJob(t.getTriggerBuilder().withIdentity("${name.split(":")[0]}:${System.currentTimeMillis()}").forJob(jobKey).build())
+                    }
+                ]
+                results.delete = quartzScheduler.deleteJob(removedJobKey)
+                return results
             }
             return [ error: "One of the jobs was not found" ]
         }
