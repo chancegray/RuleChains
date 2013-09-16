@@ -140,7 +140,9 @@ class LinkService {
                         longSQLplaceHolderUniqueVariable:sql,
                         longSQLSplaceHolderUniqueVariable:getSQLSources(),
                         longROWplaceHolderVariable: input
-                    ])).evaluate("""\
+                    ])).evaluate("""
+                        import grails.converters.*
+
                         def sql = longSQLplaceHolderUniqueVariable
                         def sqls = longSQLSplaceHolderUniqueVariable
                         def row = longROWplaceHolderVariable
