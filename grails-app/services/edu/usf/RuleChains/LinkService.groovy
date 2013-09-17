@@ -121,7 +121,6 @@ class LinkService {
             def sql = getSQLSource(sourceName)
             try {
                 return {rows->
-                    println "Groovy script raw returned "+(rows as JSON)
                     switch(resultEnum) {
                         case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
                             println "Before ${rows as JSON}"
@@ -166,7 +165,7 @@ class LinkService {
         Link.withTransaction {
             def sql = getSQLSource(sourceName)
             try {
-                 println "Input is "+(input as JSON)
+                println "Input is "+(input as JSON)
                 switch(resultEnum) {
                      case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
                          println input as JSON
