@@ -47,4 +47,14 @@ class JobService {
         }
         return [ error: "You must supply a name" ]
     }
+    def getJobLogs(String name,Integer records = 20,Integer offset = 0) {
+        if(!!name) {
+            def jobHistory = JobHistory.findByName(name.trim())
+            if(!!jobHistory) {
+                [ jobLogs: JobLog.findAllByJobHistory(jobHistory, [sort: 'logTime', order:'desc', max: records, offset: offset]) ]
+            }
+            return [ error : "Job History named ${name} not found!"]  
+        }
+        return [ error: "You must supply a name" ]
+    }
 }
