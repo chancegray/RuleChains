@@ -57,4 +57,13 @@ class JobService {
         }
         return [ error: "You must supply a name" ]
     }
+    def getJobHistories() {
+        return [ 
+            jobHistories: JobHistory.list().collect { jh -> 
+                def p = [:]
+                bindData(p, jh.properties, [exclude: 'jobLogs'])
+                return p
+            }
+        ]
+    }
 }
