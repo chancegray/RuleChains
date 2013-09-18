@@ -147,4 +147,17 @@ class JobController {
             }
         }   
     }
+    def deleteJobHistory() {
+        withFormat {
+            html {
+                return jobService.deleteJobHistory(params.name)
+            }
+            xml {
+                render jobService.deleteJobHistory(params.name) as XML
+            }
+            json {
+                JSON.use("deep") { render jobService.deleteJobHistory(params.name) as JSON }
+            }
+        }
+    }
 }
