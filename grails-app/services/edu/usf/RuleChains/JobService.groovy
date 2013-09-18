@@ -66,4 +66,15 @@ class JobService {
             }
         ]
     }
+    def deleteJobHistory(String name) {
+        if(!!name) {
+            def jobHistory = JobHistory.findByName(name.trim())
+            if(!!jobHistory) {
+                jobHistory.delete()
+                return [ success : "Job History deleted" ]
+            }
+            return [ error : "Job History named ${name} not found!"]
+        }
+        return [ error: "You must supply a name" ]
+    }
 }
