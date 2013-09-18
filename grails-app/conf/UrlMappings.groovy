@@ -41,7 +41,7 @@ class UrlMappings {
                     action = [GET:"getJobHistories", PUT:"error", DELETE:"error", POST:"error"] 
                 }
                 "/history/$name"(controller:"job",parseRequest: true){ 
-                    action = [GET:"getJobLogs", PUT:"error", DELETE:"error", POST:"error"] 
+                    action = [GET:"getJobLogs", PUT:"error", DELETE:"deleteJobHistory", POST:"error"] 
                 }
                 "/running"(controller:"job",parseRequest: true){ 
                     action = [GET:"listCurrentlyExecutingJobs", PUT:"error", DELETE:"error", POST:"error"] 
