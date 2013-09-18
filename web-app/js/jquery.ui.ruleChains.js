@@ -68,12 +68,17 @@
                     ruleSets: $('div#ruleSets',el),
                     handlers: $('div#handlers',el),
                     backup: $('div#backup',el)
+                }),
+                monitorTabs = $(self.monitorTabContents ={
+                    runningJobs: $('div#runningJobs',tabs.monitor),
+                    jobHistories: $('div#jobHistories',tabs.monitor)
                 });
             $.ruleChains.chain.GETgetSources({},function(sources) {
                 self.sources = sources.sources;
                 self.actions = sources.actions;
                 self.jobGroups = sources.jobGroups;
                 $(el).tabs();
+                $('div#monitorTabs',tabs.monitor).tabs();
                 self.buildChainsContent();
                 self.buildRuleSetsContent();
                 self.buildHandlersContent();
@@ -87,7 +92,8 @@
                 o = self.options,
                 el = self.element,
                 tabs = self.tabContents,
-                refreshRunningJobsButton = $(self.refreshRunningJobsButton = $('button#refreshRunningJobsButton',tabs.monitor)).button({
+                monitorTabs = self.monitorTabContents,
+                refreshRunningJobsButton = $(self.refreshRunningJobsButton = $('button#refreshRunningJobsButton',monitorTabs.runningJobs)).button({
                     text: true,
                     icons: {
                         primary: "ui-icon-refresh"
@@ -103,8 +109,8 @@
                         }                        
                     });                    
                 }),
-                runningJobsButtonSet = $('div#runningJobsButtonSet',tabs.monitor).buttonset(),
-                runningJobsTable = $(self.runningJobsTable = $('table#runningJobsTable',tabs.monitor)),
+                runningJobsButtonSet = $('div#runningJobsButtonSet',monitorTabs.runningJobs).buttonset(),
+                runningJobsTable = $(self.runningJobsTable = $('table#runningJobsTable',monitorTabs.runningJobs)),
                 runningJobsDataTable = $(self.runningJobsDataTable = runningJobsTable.dataTable({
                     "aoColumns": [
                         { "bSortable": false,"bVisible": true,"mDataProp": null, "fnRender":
