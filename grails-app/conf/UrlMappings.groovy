@@ -37,6 +37,9 @@ class UrlMappings {
                 "/job/$name/$cronExpression"(controller:"job",parseRequest: true){ 
                     action = [GET:"error", PUT:"addscheduleChainJob", DELETE:"unscheduleChainJob", POST:"rescheduleChainJob"] 
                 }
+                "/history/$name"(controller:"job",parseRequest: true){ 
+                    action = [GET:"getJobLogs", PUT:"error", DELETE:"error", POST:"error"] 
+                }
                 "/running"(controller:"job",parseRequest: true){ 
                     action = [GET:"listCurrentlyExecutingJobs", PUT:"error", DELETE:"error", POST:"error"] 
                 }
