@@ -134,4 +134,17 @@ class JobController {
             }
         }           
     }
+    def getJobHistories() {
+        withFormat {
+            html {
+                return jobService.getJobHistories()
+            }
+            xml {
+                render jobService.getJobHistories() as XML
+            }
+            json {
+                JSON.use("deep") { render jobService.getJobHistories() as JSON }
+            }
+        }   
+    }
 }
