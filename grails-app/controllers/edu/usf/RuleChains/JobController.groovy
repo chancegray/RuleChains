@@ -121,4 +121,17 @@ class JobController {
             }
         }   
     }
+    def getJobLogs() {
+        withFormat {
+            html {                
+                return jobService.getJobLogs(params.name,(Math.min( params.records ? params.records.toInteger() : 20,  100) ),(params?.offset?.toInteger() ?: 0))
+            }
+            xml {
+                render jobService.getJobLogs(params.name,(Math.min( params.records ? params.records.toInteger() : 20,  100) ),(params?.offset?.toInteger() ?: 0)) as XML
+            }
+            json {
+                JSON.use("deep") { render jobService.getJobLogs(params.name,(Math.min( params.records ? params.records.toInteger() : 20,  100) ),(params?.offset?.toInteger() ?: 0)) as JSON }
+            }
+        }           
+    }
 }
