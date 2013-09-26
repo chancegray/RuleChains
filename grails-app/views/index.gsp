@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta name="layout" content="main"/>
-        <title>Welcome to Grails</title>
+        <title>RuleChains - Aggregate Processor</title>
     </head>
     <body>
         <div id="tabs">
@@ -41,7 +41,30 @@
                     </div>
                     <div id="jobHistories" role="main">
                         <job:jobHistorySelect />
-                    
+                        <div id="jobHistoryButtonSet" style="display: inline-block;font-size:70%;">
+                            <button id="refreshJobHistoryButton">Refresh Job History</button> 
+                            <!-- <button id="addChain">Add new Chain</button> 
+                            <button id="modifyChain">Modify Chain</button> -->
+                            <button id="removeJobHistoryButton">Delete Selected Job History</button> 
+                        </div>
+                        
+                        <table id="jobHistoriesTable" style="font-size:70%;">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">
+                                        <div id="jobHistorySummaryHeader">
+                                            <button id="addLink">Add new Link</button> 
+                                            <button id="moveLink">Move Link</button> 
+                                            <button id="deleteLink">Delete Link</button> 
+                                        </div>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Log&nbsp;Entry</th>
+                                </tr>
+                            </thead>
+                        </table>                    
                     
                     
                     </div>
@@ -87,23 +110,23 @@
                     <thead>
                         <tr>
                             <th colspan="7">
-                    <div id="chainButtonSet">
-                        <button id="addLink">Add new Link</button> 
-                        <button id="moveLink">Move Link</button> 
-                        <button id="deleteLink">Delete Link</button> 
-                    </div>
-                    </th>
-                    </tr>
-                    <tr>
-                        <th>&nbsp;</th>
-                        <th>Description</th>
-                        <th>Id</th>
-                        <th>Type</th>
-                        <th>SourceName</th>
-                        <th>Execute Action</th>
-                        <th>Result Action</th>
-                        <th>Link Action</th>                    
-                    </tr>
+                                <div id="chainButtonSet">
+                                    <button id="addLink">Add new Link</button> 
+                                    <button id="moveLink">Move Link</button> 
+                                    <button id="deleteLink">Delete Link</button> 
+                                </div>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th>&nbsp;</th>
+                            <th>Description</th>
+                            <th>Id</th>
+                            <th>Type</th>
+                            <th>SourceName</th>
+                            <th>Execute Action</th>
+                            <th>Result Action</th>
+                            <th>Link Action</th>                    
+                        </tr>
                     </thead>
                 </table>
             </div>
