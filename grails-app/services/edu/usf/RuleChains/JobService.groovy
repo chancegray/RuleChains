@@ -14,6 +14,8 @@ package edu.usf.RuleChains
 //import static org.quartz.impl.matchers.OrMatcher.*;
 //import static org.quartz.impl.matchers.EverythingMatcher.*;
 //import static org.quartz.TriggerBuilder.newTrigger;
+import org.hibernate.criterion.CriteriaSpecification
+import groovy.time.*
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.*;
 import static org.quartz.SimpleScheduleBuilder.*;
@@ -51,7 +53,18 @@ class JobService {
         if(!!name) {
             def jobHistory = JobHistory.findByName(name.trim())
             if(!!jobHistory) {
-                [ jobLogs: JobLog.findAllByJobHistory(jobHistory, [sort: 'logTime', order:'desc', max: records, offset: offset]) ]
+                return [
+                    jobLogs: JobLog.createCriteria().list(sort: 'logTime', order:'desc', max: records, offset: offset) {
+                        eq('jobHistory',jobHistory)
+                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                        projections {
+                            property('logTime', 'logTime')
+                            property('line', 'line')
+                        }
+                    },
+                    // jobLogs: JobLog.findAllByJobHistory(jobHistory, [sort: 'logTime', order:'desc', max: records, offset: offset]) ,
+                    total: JobLog.countByJobHistory(jobHistory)
+                ]
             }
             return [ error : "Job History named ${name} not found!"]  
         }
@@ -59,10 +72,32 @@ class JobService {
     }
     def getJobHistories() {
         return [ 
-            jobHistories: JobHistory.list().collect { jh -> 
-                def p = [:]
-                bindData(p, jh.properties, [exclude: 'jobLogs'])
-                return p
+            jobHistories: JobHistory.withCriteria {
+                resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                projections {
+                    property('id', 'id')
+                    property('name', 'name')
+                    property('chain', 'chain')
+                    property('groupName', 'groupName')
+                    property('description', 'description')
+                    property('cron', 'cron')
+                    property('fireTime', 'fireTime')
+                    property('scheduledFireTime', 'scheduledFireTime')
+                }                
+            }.collect { jh ->
+                def jobHistory = JobHistory.findByName(jh.name)
+                jh.endTime = JobLog.createCriteria().get {
+                    projections {
+                        max("logTime")
+                    }
+                }
+                jh.startTime = JobLog.createCriteria().get {
+                    projections {
+                        min("logTime")
+                    }
+                }
+                jh.duration = TimeCategory.minus(jh.endTime, jh.startTime).toString()
+                return jh
             }
         ]
     }
