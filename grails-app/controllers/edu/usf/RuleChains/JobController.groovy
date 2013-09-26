@@ -123,14 +123,30 @@ class JobController {
     }
     def getJobLogs() {
         withFormat {
-            html {                
-                return jobService.getJobLogs(params.name,(Math.min( params.records ? params.records.toInteger() : 20,  100) ),(params?.offset?.toInteger() ?: 0))
+            html {   
+                return (jobService.getJobLogs(
+                    params.name,
+                    params.iDisplayLength?(Math.min( params.iDisplayLength ? params.iDisplayLength.toInteger() : 20,  100) ):(Math.min( params.records ? params.records.toInteger() : 20,  100) ),
+                    params.iDisplayStart?(params?.iDisplayStart?.toInteger() ?: 0):(params?.offset?.toInteger() ?: 0)
+                ) << [ sEcho: params.sEcho ])
             }
             xml {
-                render jobService.getJobLogs(params.name,(Math.min( params.records ? params.records.toInteger() : 20,  100) ),(params?.offset?.toInteger() ?: 0)) as XML
+                render jobService.getJobLogs(
+                    params.name,
+                    params.iDisplayLength?(Math.min( params.iDisplayLength ? params.iDisplayLength.toInteger() : 20,  100) ):(Math.min( params.records ? params.records.toInteger() : 20,  100) ),
+                    params.iDisplayStart?(params?.iDisplayStart?.toInteger() ?: 0):(params?.offset?.toInteger() ?: 0)
+                ) as XML
             }
             json {
-                JSON.use("deep") { render jobService.getJobLogs(params.name,(Math.min( params.records ? params.records.toInteger() : 20,  100) ),(params?.offset?.toInteger() ?: 0)) as JSON }
+                JSON.use("deep") { 
+                    def jobLogsResponse = jobService.getJobLogs(
+                        params.name,
+                        params.iDisplayLength?(Math.min( params.iDisplayLength ? params.iDisplayLength.toInteger() : 20,  100) ):(Math.min( params.records ? params.records.toInteger() : 20,  100) ),
+                        params.iDisplayStart?(params?.iDisplayStart?.toInteger() ?: 0):(params?.offset?.toInteger() ?: 0)
+                    )
+                    jobLogsResponse.sEcho = params.sEcho
+                    render jobLogsResponse as JSON
+                }
             }
         }           
     }
