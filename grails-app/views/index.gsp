@@ -19,6 +19,7 @@
                     <ul>
                         <li><a href="#runningJobs">Running Jobs</a></li>
                         <li><a href="#jobHistories">Job Histories</a></li>
+                        <li><a href="#jobChainRuleTimings">Job ChainRule Timings</a></li>
                     </ul>
                     <div id="runningJobs" role="main">
                         <div id="runningJobsButtonSet" style="display: inline-block;font-size:70%;">
@@ -46,18 +47,10 @@
                             <!-- <button id="addChain">Add new Chain</button> 
                             <button id="modifyChain">Modify Chain</button> -->
                             <button id="removeJobHistoryButton">Delete Selected Job History</button> 
-                        </div>
-                        
+                        </div>                        
                         <table id="jobHistoriesTable" style="font-size:70%;">
                             <thead>
                                 <tr>
-                                    <th colspan="2">
-                                        <div id="jobHistorySummaryHeader">
-                                            <button id="addLink">Add new Link</button> 
-                                            <button id="moveLink">Move Link</button> 
-                                            <button id="deleteLink">Delete Link</button> 
-                                        </div>
-                                    </th>
                                 </tr>
                                 <tr>
                                     <th>Date</th>
@@ -65,8 +58,23 @@
                                 </tr>
                             </thead>
                         </table>                    
-                    
-                    
+                    </div>
+                    <div id="jobChainRuleTimings" role="main">
+                        <job:jobHistorySelect />
+                        <div id="jobChainRuleTimingButtonSet" style="display: inline-block;font-size:70%;">
+                            <button id="refreshJobChainRuleTimingButton">Refresh Job History</button> 
+                        </div>                        
+                        <table id="jobChainRuleTimingsTable" style="font-size:70%;">
+                            <thead>
+                                <tr>
+                                </tr>
+                                <tr>
+                                    <th>ExecutionTime</th>
+                                    <th>RuleName</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                        </table>                    
                     </div>
                 </div>
             </div>
