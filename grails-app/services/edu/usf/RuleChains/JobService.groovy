@@ -70,6 +70,41 @@ class JobService {
         }
         return [ error: "You must supply a name" ]
     }
+    def getJobRuleTimings(String name,Integer records = 20,Integer offset = 0) {
+        if(!!name) {
+            def jobHistory = JobHistory.findByName(name.trim())
+            if(!!jobHistory) {
+                def endTime
+                return [
+                    jobLogs: JobLog.createCriteria().list(sort: 'logTime', order:'asc', max: records, offset: offset) {
+                        eq('jobHistory',jobHistory)
+                        like('line','[%] Detected a % for%')
+                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                        projections {
+                            property('logTime', 'logTime')
+                            property('line', 'line')
+                        }
+                    }.reverse().collect { jl ->
+                        if(!!!endTime) {
+                            endTime = JobLog.createCriteria().get {
+                                eq('jobHistory',jobHistory)
+                                projections {
+                                    max("logTime")
+                                }
+                            }
+                        }
+                        jl.duration = TimeCategory.minus(endTime, jl.logTime).toString()
+                        endTime = jl.logTime
+                        jl.ruleName = jl.line.tokenize().last()
+                        return jl
+                    }.reverse(),                    
+                    total: JobLog.countByJobHistoryAndLineLike(jobHistory,'[%] Detected a % for%')
+                ]
+            }
+            return [ error : "Job History named ${name} not found!"]             
+        }
+        return [ error: "You must supply a name" ]
+    }
     def getJobHistories() {
         return [ 
             jobHistories: JobHistory.withCriteria {
@@ -87,11 +122,13 @@ class JobService {
             }.collect { jh ->
                 def jobHistory = JobHistory.findByName(jh.name)
                 jh.endTime = JobLog.createCriteria().get {
+                    eq('jobHistory',jobHistory)
                     projections {
                         max("logTime")
                     }
                 }
                 jh.startTime = JobLog.createCriteria().get {
+                    eq('jobHistory',jobHistory)
                     projections {
                         min("logTime")
                     }
