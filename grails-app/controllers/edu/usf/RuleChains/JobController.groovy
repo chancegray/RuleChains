@@ -150,6 +150,35 @@ class JobController {
             }
         }           
     }
+    def getJobRuleTimings() {
+        withFormat {
+            html {   
+                return (jobService.getJobRuleTimings(
+                    params.name,
+                    params.iDisplayLength?(Math.min( params.iDisplayLength ? params.iDisplayLength.toInteger() : 20,  100) ):(Math.min( params.records ? params.records.toInteger() : 20,  100) ),
+                    params.iDisplayStart?(params?.iDisplayStart?.toInteger() ?: 0):(params?.offset?.toInteger() ?: 0)
+                ) << [ sEcho: params.sEcho ])
+            }
+            xml {
+                render jobService.getJobRuleTimings(
+                    params.name,
+                    params.iDisplayLength?(Math.min( params.iDisplayLength ? params.iDisplayLength.toInteger() : 20,  100) ):(Math.min( params.records ? params.records.toInteger() : 20,  100) ),
+                    params.iDisplayStart?(params?.iDisplayStart?.toInteger() ?: 0):(params?.offset?.toInteger() ?: 0)
+                ) as XML
+            }
+            json {
+                JSON.use("deep") { 
+                    def jobRuleTimingsResponse = jobService.getJobRuleTimings(
+                        params.name,
+                        params.iDisplayLength?(Math.min( params.iDisplayLength ? params.iDisplayLength.toInteger() : 20,  100) ):(Math.min( params.records ? params.records.toInteger() : 20,  100) ),
+                        params.iDisplayStart?(params?.iDisplayStart?.toInteger() ?: 0):(params?.offset?.toInteger() ?: 0)
+                    )
+                    jobRuleTimingsResponse.sEcho = params.sEcho
+                    render jobRuleTimingsResponse as JSON
+                }
+            }
+        }           
+    }
     def getJobHistories() {
         withFormat {
             html {
