@@ -70,13 +70,13 @@ class Chain {
     }
     def execute(def input = [[:]],List<Link> orderedLinks) {
         println "I'm running"
+        jobHistory.appendToLog("[START_EXECUTE] Chain ${name}")
         if(!!!orderedLinks) {
             orderedLinks = getOrderedLinks()
         }
         
         def linkService = new LinkService()
         input.each { row ->
-//         for(def row in input) {
             /**
              * Pre-populate input based on incoming data array
             **/
@@ -387,6 +387,7 @@ class Chain {
                 }
             }
         }
+        jobHistory.appendToLog("[END_EXECUTE] Chain ${name}")
         return (orderedLinks.isEmpty())?[[:]]:orderedLinks.last().output
     }
     
