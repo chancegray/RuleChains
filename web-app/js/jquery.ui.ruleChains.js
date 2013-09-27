@@ -70,7 +70,8 @@
                 }),
                 monitorTabs = $(self.monitorTabContents ={
                     runningJobs: $('div#runningJobs',tabs.monitor),
-                    jobHistories: $('div#jobHistories',tabs.monitor)
+                    jobHistories: $('div#jobHistories',tabs.monitor),
+                    jobChainRuleTimings: $('div#jobChainRuleTimings',tabs.monitor)
                 });
             $.ruleChains.chain.GETgetSources({},function(sources) {
                 self.sources = sources.sources;
@@ -83,9 +84,221 @@
                 self.buildHandlersContent();
                 self.buildMonitorContent();
                 self.buildJobHistoriesContent();
+                self.buildJobChainRuleTimingsContent();
                 self.buildScheduleContent();
                 self.buildBackupContent();
             });            
+        },
+        buildJobChainRuleTimingsContent: function() {
+            var self = this,
+                o = self.options,
+                el = self.element,
+                tabs = self.tabContents,
+                monitorTabs = self.monitorTabContents,
+                jobChainRuleTimingHistorySelect = $(self.jobChainRuleTimingHistorySelect = $('select#jobHistory',monitorTabs.jobChainRuleTimings)).change(function() {
+                    var select = $(this),
+                        jobHistoryId = select.val(),
+                        jobHistoryName = select.find('option:selected').text();
+                    if(jobHistoryId !== "") {
+                        self.jobChainRuleTimingsSummaryHeader.each(function() {
+                            var header = $(this),
+                            headerData = header.data(),
+                            jobHistory = $.grep(select.data('jobHistories'),function(jh,i) { return jh.id.toString() === jobHistoryId.toString(); })[0];
+                            if("dataTable" in headerData) {
+                                headerData.dataTable.fnDestroy();
+                                header.removeData("dataTable");
+                            }
+                            header
+                            .empty()
+                            .append(
+                                $('<th />',{
+                                    "colspan": "3"
+                                })
+                                .append(
+                                    $(headerData.table = $('<table />'))
+                                    .append(
+                                        $('<thead />')
+                                        .append(
+                                            $('<tr />')
+                                            .append(
+                                                $('<th />').html('chain')
+                                            )
+                                            .append(
+                                                $('<th />').html('cron')
+                                            )
+                                            .append(
+                                                $('<th />').html('fireTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('scheduledFireTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('startTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('endTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('duration')
+                                            )
+                                        )
+                                    )
+                                    .append(
+                                        $('<tbody />')
+                                        .append(
+                                            $('<tr />')
+                                            .append(
+                                                $('<td />').html(jobHistory.chain)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.cron)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.fireTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.scheduledFireTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.startTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.endTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.duration)
+                                            )
+                                        )
+                                    )
+                                )
+                            ).find('table').width('99%').end();
+                            headerData.dataTable = headerData.table.dataTable({
+                                "bJQueryUI": true,
+                                "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                                "sDom": "rt",
+                                "aoColumnDefs": [
+                                    { "sType": "date", "aTargets": [ 2,3 ] }
+                                ]
+                            });
+                        }).fadeIn();
+                        $.ruleChains.job.GETgetJobRuleTimings({
+                                name: jobHistoryName,
+                                offset: self.jobChainRuleTimingsDataTable.fnSettings()._iDisplayLength,
+                                records: self.jobChainRuleTimingsDataTable.fnSettings()._iDisplayStart
+                            },
+                            function(jobLogs) {
+                                if("jobLogs" in jobLogs) {
+                                    self.jobChainRuleTimingHistorySelect.data(jobLogs);
+                                    self.jobChainRuleTimingsDataTable.fnClearTable();
+                                    self.jobChainRuleTimingsDataTable.fnAddData(jobLogs.jobLogs);
+                                } else {
+                                    alert(jobLogs.error);
+                                }
+                            }
+                        );
+                    } else {
+                        self.jobChainRuleTimingsDataTable.fnClearTable();
+                        self.jobChainRuleTimingsSummaryHeader.each(function() {
+                            var header = $(this),
+                            headerData = header.data();
+                            if("dataTable" in headerData) {
+                                headerData.dataTable.fnDestroy();
+                                header.removeData("dataTable");
+                            }                            
+                        }).empty().fadeOut();
+                    }
+                
+                }),
+                refreshJobChainRuleTimingButton = $(self.refreshJobChainRuleTimingButton = $('button#refreshJobChainRuleTimingButton',monitorTabs.jobChainRuleTimings)).button({
+                    text: true,
+                    icons: {
+                        primary: "ui-icon-refresh"
+                    }            
+                }).click(function() {
+                    if(self.jobChainRuleTimingHistorySelect.val() === "") {
+                        $.ruleChains.job.GETgetJobHistories({},function(jobHistories) {
+                            self.jobChainRuleTimingHistorySelect.each(function() {
+                                var firstOption = self.jobChainRuleTimingHistorySelect.find('option:first-child').detach();
+                                self.jobChainRuleTimingHistorySelect.empty();
+                                $.each(jobHistories.jobHistories.sort(function(a,b) {
+                                    return a.name === b.name ? 0 : a.name < b.name ? -1 : 1;
+                                }),function(index,jobHistory) {
+                                    $('<option />').val(jobHistory.id).html(jobHistory.name).appendTo(self.jobChainRuleTimingHistorySelect);
+                                });
+                                self.jobChainRuleTimingHistorySelect.data(jobHistories);
+                                self.jobChainRuleTimingHistorySelect.prepend(firstOption); 
+                            });                            
+                        });
+                    } else {
+                        // refresh only the current chain
+                        self.jobChainRuleTimingHistorySelect.change();
+                    }                    
+                }).trigger('click'),
+                jobChainRuleTimingButtonSet = $('div#jobChainRuleTimingButtonSet',monitorTabs.jobChainRuleTimings).buttonset(),                
+                jobChainRuleTimingsTable = $(self.jobChainRuleTimingsTable = $('table#jobChainRuleTimingsTable',monitorTabs.jobChainRuleTimings).width('100%')),
+                jobChainRuleTimingsSummaryHeader = $(self.jobChainRuleTimingsSummaryHeader = self.jobChainRuleTimingsTable.find('thead').find('tr:first')).hide(),
+                jobChainRuleTimingsDataTable = $(self.jobChainRuleTimingsDataTable = jobChainRuleTimingsTable.dataTable({
+                    "aoColumns": [
+                        { "bVisible": true,"mDataProp": "logTime","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "ruleName","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "duration","sDefaultContent":"" }
+                    ],
+                    "bJQueryUI": true,
+                    "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                    "bProcessing": true,
+                    "bServerSide": true,
+                    "sAjaxSource": "xhr.php",
+                    "aaData": [],
+                    "fnInitComplete": function(oSettings, json) {
+                        // self.refreshJobHistoryButton.trigger("click");
+                    },
+                    "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
+                        if(self.jobChainRuleTimingHistorySelect.val() === "") {
+                            fnCallback({
+                                "sEcho": $.grep(aoData,function(pair,i) { return pair.name === "sEcho"; })[0].value,
+                                "iTotalRecords": 0,
+                                "iTotalDisplayRecords": 0,
+                                "aaData": []
+                            });                            
+                        } else {
+                            $.ajax({
+                                url: '/RuleChains/timing/'+self.jobChainRuleTimingHistorySelect.find('option:selected').text(),
+                                type: "GET",
+                                dataType : "json",
+                                beforeSend: function (XMLHttpRequest, settings) {
+                                    XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                                    XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                                },
+                                data: aoData,
+                                success: function(jobLogs) { 
+                                    if('error' in jobLogs) {
+                                        fnCallback({
+                                            "sEcho": jobLogs.sEcho,
+                                            "iTotalRecords": 0,
+                                            "iTotalDisplayRecords": 0,
+                                            "aaData": []
+                                        });
+                                    } else {
+                                        fnCallback({
+                                            "sEcho": jobLogs.sEcho,
+                                            "iTotalRecords": jobLogs.total,
+                                            "iTotalDisplayRecords": jobLogs.total,
+                                            "aaData": jobLogs.jobLogs
+                                        });
+                                    }
+                                },
+                                error: function (jqXHR,  textStatus, errorThrown) {
+                                    if (jqXHR.status === 0) {
+                                        // Session has probably expired and needs to reload and let CAS take care of the rest
+                                        alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                                        // reload entire page - this leads to login page
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }));
         },
         buildJobHistoriesContent: function() {
             var self = this,
@@ -97,7 +310,7 @@
                     var select = $(this),
                         jobHistoryId = select.val(),
                         jobHistoryName = select.find('option:selected').text();
-                    // chainModifyButton.button("option","disabled",(chainId === ""));
+                    // chainModifyButton.button("option","disabled",(chainId === ""));                    
                     removeJobHistoryButton.button("option","disabled",(jobHistoryId === ""));
                     // ruleSetRefreshButton.button("option","disabled",(ruleSetId === ""));
                     if(jobHistoryId !== "") {
