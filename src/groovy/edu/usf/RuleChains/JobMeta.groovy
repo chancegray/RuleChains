@@ -85,6 +85,7 @@ class JobMeta {
                             }
                             def result = chain.execute(jobCtx.mergedJobDataMap.get('input'))
                             println "Result is ${result}"
+                            chain.jobHistory.appendToLog("[Finished] ${name}:${suffix}")                            
                         } else {
                             log.error "Chain not found ${jobCtx.mergedJobDataMap.get('chain')}"
                         }
