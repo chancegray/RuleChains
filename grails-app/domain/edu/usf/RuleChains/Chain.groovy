@@ -410,7 +410,7 @@ class Chain {
     }    
     static def findEndLoop(List<Link> links,int i) {
         def endFound = false
-        def endIndex = links.size()
+        def endIndex = links.size()-1
         int loopCount = 1
         for( int l = (i+1) ; ( l < links.size() && !endFound) ; l++ ) {
             LinkEnum linkEnum = links[l].linkEnum
