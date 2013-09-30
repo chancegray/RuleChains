@@ -62,7 +62,7 @@ class JobService {
                             property('line', 'line')
                         }
                     },
-                    // jobLogs: JobLog.findAllByJobHistory(jobHistory, [sort: 'logTime', order:'desc', max: records, offset: offset]) ,
+                    jobHistories: getJobHistories().jobHistories,
                     total: JobLog.countByJobHistory(jobHistory)
                 ]
             }
@@ -76,28 +76,31 @@ class JobService {
             if(!!jobHistory) {
                 def endTime
                 return [
-                    jobLogs: JobLog.createCriteria().list(sort: 'logTime', order:'asc', max: records, offset: offset) {
+                    jobLogs: { jls ->                        
+                        endTime = JobLog.createCriteria().get {
+                            eq('jobHistory',jobHistory)
+                            gt('id',jls.last().id)
+                            projections {
+                                min('logTime')
+                            }
+                        }
+                        return jls.reverse().collect { jl ->
+                            jl.duration = TimeCategory.minus(endTime, jl.logTime).toString()
+                            endTime = jl.logTime
+                            jl.ruleName = jl.line.tokenize().last()
+                            return jl                            
+                        }.reverse()                        
+                    }.call(JobLog.createCriteria().list(sort: 'id', order:'asc', max: records, offset: offset) {
                         eq('jobHistory',jobHistory)
                         like('line','[%] Detected a % for%')
                         resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
                         projections {
                             property('logTime', 'logTime')
                             property('line', 'line')
+                            property('id','id')
                         }
-                    }.reverse().collect { jl ->
-                        if(!!!endTime) {
-                            endTime = JobLog.createCriteria().get {
-                                eq('jobHistory',jobHistory)
-                                projections {
-                                    max("logTime")
-                                }
-                            }
-                        }
-                        jl.duration = TimeCategory.minus(endTime, jl.logTime).toString()
-                        endTime = jl.logTime
-                        jl.ruleName = jl.line.tokenize().last()
-                        return jl
-                    }.reverse(),                    
+                    }),
+                    jobHistories: getJobHistories().jobHistories,
                     total: JobLog.countByJobHistoryAndLineLike(jobHistory,'[%] Detected a % for%')
                 ]
             }
