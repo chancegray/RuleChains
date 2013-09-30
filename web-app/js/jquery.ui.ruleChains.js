@@ -183,8 +183,8 @@
                         }).fadeIn();
                         $.ruleChains.job.GETgetJobRuleTimings({
                                 name: jobHistoryName,
-                                offset: self.jobChainRuleTimingsDataTable.fnSettings()._iDisplayLength,
-                                records: self.jobChainRuleTimingsDataTable.fnSettings()._iDisplayStart
+                                offset: self.jobChainRuleTimingsDataTable.fnSettings()._iDisplayStart,
+                                records: self.jobChainRuleTimingsDataTable.fnSettings()._iDisplayLength
                             },
                             function(jobLogs) {
                                 if("jobLogs" in jobLogs) {
@@ -279,6 +279,11 @@
                                             "aaData": []
                                         });
                                     } else {
+                                        self.jobChainRuleTimingHistorySelect.data("jobHistories",jobLogs.jobHistories);
+                                        var jobHistory = $.grep(self.jobChainRuleTimingHistorySelect.data('jobHistories'),function(jh,i) { return jh.id.toString() === self.jobChainRuleTimingHistorySelect.val().toString(); })[0];
+                                        var dataTr = self.jobChainRuleTimingsSummaryHeader.find('table').find('tr').eq(1);
+                                        dataTr.find('td:eq(5)').html(jobHistory.endTime);
+                                        dataTr.find('td:eq(6)').html(jobHistory.duration);                                        
                                         fnCallback({
                                             "sEcho": jobLogs.sEcho,
                                             "iTotalRecords": jobLogs.total,
@@ -510,6 +515,11 @@
                                             "aaData": []
                                         });
                                     } else {
+                                        self.jobHistorySelect.data("jobHistories",jobLogs.jobHistories);
+                                        var jobHistory = $.grep(self.jobHistorySelect.data('jobHistories'),function(jh,i) { return jh.id.toString() === self.jobHistorySelect.val().toString(); })[0];
+                                        var dataTr = self.jobHistorySummaryHeader.find('table').find('tr').eq(1);
+                                        dataTr.find('td:eq(5)').html(jobHistory.endTime);
+                                        dataTr.find('td:eq(6)').html(jobHistory.duration);
                                         fnCallback({
                                             "sEcho": jobLogs.sEcho,
                                             "iTotalRecords": jobLogs.total,
