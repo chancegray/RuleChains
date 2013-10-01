@@ -54,12 +54,13 @@ class JobService {
             def jobHistory = JobHistory.findByName(name.trim())
             if(!!jobHistory) {
                 return [
-                    jobLogs: JobLog.createCriteria().list(sort: 'logTime', order:'desc', max: records, offset: offset) {
+                    jobLogs: JobLog.createCriteria().list(sort: 'id', order:'desc', max: records, offset: offset) {
                         eq('jobHistory',jobHistory)
                         resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
                         projections {
                             property('logTime', 'logTime')
                             property('line', 'line')
+                            property('id','id')
                         }
                     },
                     jobHistories: getJobHistories().jobHistories,
@@ -80,6 +81,10 @@ class JobService {
                         endTime = JobLog.createCriteria().get {
                             eq('jobHistory',jobHistory)
                             gt('id',jls.last().id)
+                            or {
+                                like('line','[%] Detected a % for%')
+                                like('line','[Finished] %')
+                            }
                             projections {
                                 min('logTime')
                             }
