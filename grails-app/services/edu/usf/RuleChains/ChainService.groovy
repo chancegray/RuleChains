@@ -149,17 +149,17 @@ class ChainService {
     def deleteChainLink(String name,def sequenceNumber) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            def link = chain.links.find { it.sequenceNumber == sequenceNumber }
+            def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber }            
             if(!!link) {
-                if(!chain.removeFromLinks(link).save(failOnError:false, flush: true, validate: true)) {
+                if(!chain.removeFromLinks(link).save(failOnError:false, flush: false, validate: true)) {
                     chain.errors.allErrors.each {
                         println "Error:"+it
                     }           
                     return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                    
                 } else {
-                    chain.refresh()
+                    link.delete()
                     sequenceNumber = 1
-                    System.out.println("New Sequence"+link.sequenceNumber)
+                    System.out.println("New Sequence "+link.sequenceNumber)
                     chain.links.sort { a, b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
                         l.sequenceNumber = sequenceNumber
                         sequenceNumber++
@@ -188,8 +188,8 @@ class ChainService {
                 result: ResultEnum.values().collect { it.name() },
                 link: LinkEnum.values().collect { it.name() }
             ],
-            jobGroups: jobService.listChainJobs().jobGroups
-            
+            jobGroups: jobService.listChainJobs().jobGroups,
+            executingJobs: jobService.listCurrentlyExecutingJobs()?.executingJobs            
         ]
         
     }
@@ -228,31 +228,6 @@ class ChainService {
                 println "Didn't Find link"
             }
             return [ error : "Link with sequence ${sequenceNumber} not found!"]
-        }
-        return [ error : "Chain named ${name} not found!"]
-    }
-    def modifyChainLinks(String name,def links) {
-        def chain = Chain.findByName(name.trim())
-        if(!!chain) {
-            chain.links.clear()
-            if(!chain.save(failOnError:false, flush: true, validate: true)) {
-                chain.errors.allErrors.each {
-                    println it
-                }           
-                return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                
-            } else {
-                links.sort { it.sequenceNumber }.each { l ->
-                    chain.addToLinks(l as Link)
-                }
-                if(!chain.save(failOnError:false, flush: true, validate: true)) {
-                    chain.errors.allErrors.each {
-                        println it
-                    }           
-                    return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                
-                } else {
-                    return [ chain : chain ]
-                }
-            }
         }
         return [ error : "Chain named ${name} not found!"]
     }

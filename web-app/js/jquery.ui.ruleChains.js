@@ -54,8 +54,7 @@
                     .empty();
                 }
             });
-            self.buildTabContent();
-            
+            self.buildTabContent();            
         },      
         buildTabContent: function() {
             var self = this,
@@ -68,25 +67,597 @@
                     ruleSets: $('div#ruleSets',el),
                     handlers: $('div#handlers',el),
                     backup: $('div#backup',el)
+                }),
+                monitorTabs = $(self.monitorTabContents ={
+                    runningJobs: $('div#runningJobs',tabs.monitor),
+                    jobHistories: $('div#jobHistories',tabs.monitor),
+                    jobChainRuleTimings: $('div#jobChainRuleTimings',tabs.monitor)
                 });
             $.ruleChains.chain.GETgetSources({},function(sources) {
                 self.sources = sources.sources;
                 self.actions = sources.actions;
                 self.jobGroups = sources.jobGroups;
                 $(el).tabs();
+                $('div#monitorTabs',tabs.monitor).tabs();
                 self.buildChainsContent();
                 self.buildRuleSetsContent();
                 self.buildHandlersContent();
                 self.buildMonitorContent();
+                self.buildJobHistoriesContent();
+                self.buildJobChainRuleTimingsContent();
                 self.buildScheduleContent();
                 self.buildBackupContent();
             });            
         },
+        buildJobChainRuleTimingsContent: function() {
+            var self = this,
+                o = self.options,
+                el = self.element,
+                tabs = self.tabContents,
+                monitorTabs = self.monitorTabContents,
+                jobChainRuleTimingHistorySelect = $(self.jobChainRuleTimingHistorySelect = $('select#jobHistory',monitorTabs.jobChainRuleTimings)).change(function() {
+                    var select = $(this),
+                        jobHistoryId = select.val(),
+                        jobHistoryName = select.find('option:selected').text();
+                    if(jobHistoryId !== "") {
+                        self.jobChainRuleTimingsSummaryHeader.each(function() {
+                            var header = $(this),
+                            headerData = header.data(),
+                            jobHistory = $.grep(select.data('jobHistories'),function(jh,i) { return jh.id.toString() === jobHistoryId.toString(); })[0];
+                            if("dataTable" in headerData) {
+                                headerData.dataTable.fnDestroy();
+                                header.removeData("dataTable");
+                            }
+                            header
+                            .empty()
+                            .append(
+                                $('<th />',{
+                                    "colspan": "3"
+                                })
+                                .append(
+                                    $(headerData.table = $('<table />'))
+                                    .append(
+                                        $('<thead />')
+                                        .append(
+                                            $('<tr />')
+                                            .append(
+                                                $('<th />').html('chain')
+                                            )
+                                            .append(
+                                                $('<th />').html('cron')
+                                            )
+                                            .append(
+                                                $('<th />').html('fireTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('scheduledFireTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('startTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('endTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('duration')
+                                            )
+                                        )
+                                    )
+                                    .append(
+                                        $('<tbody />')
+                                        .append(
+                                            $('<tr />')
+                                            .append(
+                                                $('<td />').html(jobHistory.chain)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.cron)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.fireTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.scheduledFireTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.startTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.endTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.duration)
+                                            )
+                                        )
+                                    )
+                                )
+                            ).find('table').width('99%').end();
+                            headerData.dataTable = headerData.table.dataTable({
+                                "bJQueryUI": true,
+                                "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                                "sDom": "rt",
+                                "aoColumnDefs": [
+                                    { "sType": "date", "aTargets": [ 2,3 ] }
+                                ]
+                            });
+                        }).fadeIn();
+                        $.ruleChains.job.GETgetJobRuleTimings({
+                                name: jobHistoryName,
+                                offset: self.jobChainRuleTimingsDataTable.fnSettings()._iDisplayStart,
+                                records: self.jobChainRuleTimingsDataTable.fnSettings()._iDisplayLength
+                            },
+                            function(jobLogs) {
+                                if("jobLogs" in jobLogs) {
+                                    self.jobChainRuleTimingHistorySelect.data(jobLogs);
+                                    self.jobChainRuleTimingsDataTable.fnClearTable();
+                                    self.jobChainRuleTimingsDataTable.fnAddData(jobLogs.jobLogs);
+                                } else {
+                                    alert(jobLogs.error);
+                                }
+                            }
+                        );
+                    } else {
+                        self.jobChainRuleTimingsDataTable.fnClearTable();
+                        self.jobChainRuleTimingsSummaryHeader.each(function() {
+                            var header = $(this),
+                            headerData = header.data();
+                            if("dataTable" in headerData) {
+                                headerData.dataTable.fnDestroy();
+                                header.removeData("dataTable");
+                            }                            
+                        }).empty().fadeOut();
+                    }
+                
+                }),
+                refreshJobChainRuleTimingButton = $(self.refreshJobChainRuleTimingButton = $('button#refreshJobChainRuleTimingButton',monitorTabs.jobChainRuleTimings)).button({
+                    text: true,
+                    icons: {
+                        primary: "ui-icon-refresh"
+                    }            
+                }).click(function() {
+                    if(self.jobChainRuleTimingHistorySelect.val() === "") {
+                        $.ruleChains.job.GETgetJobHistories({},function(jobHistories) {
+                            self.jobChainRuleTimingHistorySelect.each(function() {
+                                var firstOption = self.jobChainRuleTimingHistorySelect.find('option:first-child').detach();
+                                self.jobChainRuleTimingHistorySelect.empty();
+                                $.each(jobHistories.jobHistories.sort(function(a,b) {
+                                    return a.name === b.name ? 0 : a.name < b.name ? -1 : 1;
+                                }),function(index,jobHistory) {
+                                    $('<option />').val(jobHistory.id).html(jobHistory.name).appendTo(self.jobChainRuleTimingHistorySelect);
+                                });
+                                self.jobChainRuleTimingHistorySelect.data(jobHistories);
+                                self.jobChainRuleTimingHistorySelect.prepend(firstOption); 
+                            });                            
+                        });
+                    } else {
+                        // refresh only the current chain
+                        self.jobChainRuleTimingHistorySelect.change();
+                    }                    
+                }).trigger('click'),
+                jobChainRuleTimingButtonSet = $('div#jobChainRuleTimingButtonSet',monitorTabs.jobChainRuleTimings).buttonset(),                
+                jobChainRuleTimingsTable = $(self.jobChainRuleTimingsTable = $('table#jobChainRuleTimingsTable',monitorTabs.jobChainRuleTimings).width('100%')),
+                jobChainRuleTimingsSummaryHeader = $(self.jobChainRuleTimingsSummaryHeader = self.jobChainRuleTimingsTable.find('thead').find('tr:first')).hide(),
+                jobChainRuleTimingsDataTable = $(self.jobChainRuleTimingsDataTable = jobChainRuleTimingsTable.dataTable({
+                    "aoColumns": [
+                        { "bVisible": true,"mDataProp": "logTime","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "ruleName","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "duration","sDefaultContent":"" }
+                    ],
+                    "bJQueryUI": true,
+                    "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                    "bProcessing": true,
+                    "bServerSide": true,
+                    "sAjaxSource": "xhr.php",
+                    "aaData": [],
+                    "fnInitComplete": function(oSettings, json) {
+                        // self.refreshJobHistoryButton.trigger("click");
+                    },
+                    "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
+                        if(self.jobChainRuleTimingHistorySelect.val() === "") {
+                            fnCallback({
+                                "sEcho": $.grep(aoData,function(pair,i) { return pair.name === "sEcho"; })[0].value,
+                                "iTotalRecords": 0,
+                                "iTotalDisplayRecords": 0,
+                                "aaData": []
+                            });                            
+                        } else {
+                            $.ajax({
+                                url: '/RuleChains/timing/'+self.jobChainRuleTimingHistorySelect.find('option:selected').text(),
+                                type: "GET",
+                                dataType : "json",
+                                beforeSend: function (XMLHttpRequest, settings) {
+                                    XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                                    XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                                },
+                                data: aoData,
+                                success: function(jobLogs) { 
+                                    if('error' in jobLogs) {
+                                        fnCallback({
+                                            "sEcho": jobLogs.sEcho,
+                                            "iTotalRecords": 0,
+                                            "iTotalDisplayRecords": 0,
+                                            "aaData": []
+                                        });
+                                    } else {
+                                        self.jobChainRuleTimingHistorySelect.data("jobHistories",jobLogs.jobHistories);
+                                        var jobHistory = $.grep(self.jobChainRuleTimingHistorySelect.data('jobHistories'),function(jh,i) { return jh.id.toString() === self.jobChainRuleTimingHistorySelect.val().toString(); })[0];
+                                        var dataTr = self.jobChainRuleTimingsSummaryHeader.find('table').find('tr').eq(1);
+                                        dataTr.find('td:eq(5)').html(jobHistory.endTime);
+                                        dataTr.find('td:eq(6)').html(jobHistory.duration);                                        
+                                        fnCallback({
+                                            "sEcho": jobLogs.sEcho,
+                                            "iTotalRecords": jobLogs.total,
+                                            "iTotalDisplayRecords": jobLogs.total,
+                                            "aaData": jobLogs.jobLogs
+                                        });
+                                    }
+                                },
+                                error: function (jqXHR,  textStatus, errorThrown) {
+                                    if (jqXHR.status === 0) {
+                                        // Session has probably expired and needs to reload and let CAS take care of the rest
+                                        alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                                        // reload entire page - this leads to login page
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }));
+        },
+        buildJobHistoriesContent: function() {
+            var self = this,
+                o = self.options,
+                el = self.element,
+                tabs = self.tabContents,
+                monitorTabs = self.monitorTabContents,
+                jobHistorySelect = $(self.jobHistorySelect = $('select#jobHistory',monitorTabs.jobHistories)).change(function() {
+                    var select = $(this),
+                        jobHistoryId = select.val(),
+                        jobHistoryName = select.find('option:selected').text();
+                    // chainModifyButton.button("option","disabled",(chainId === ""));                    
+                    removeJobHistoryButton.button("option","disabled",(jobHistoryId === ""));
+                    // ruleSetRefreshButton.button("option","disabled",(ruleSetId === ""));
+                    if(jobHistoryId !== "") {
+                        self.jobHistorySummaryHeader.each(function() {
+                            var header = $(this),
+                            headerData = header.data(),
+                            jobHistory = $.grep(select.data('jobHistories'),function(jh,i) { return jh.id.toString() === jobHistoryId.toString(); })[0];
+                            if("dataTable" in headerData) {
+                                headerData.dataTable.fnDestroy();
+                                header.removeData("dataTable");
+                            }
+                            header
+                            .empty()
+                            .append(
+                                $('<th />',{
+                                    "colspan": "2"
+                                })
+                                .append(
+                                    $(headerData.table = $('<table />'))
+                                    .append(
+                                        $('<thead />')
+                                        .append(
+                                            $('<tr />')
+                                            .append(
+                                                $('<th />').html('chain')
+                                            )
+                                            .append(
+                                                $('<th />').html('cron')
+                                            )
+                                            .append(
+                                                $('<th />').html('fireTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('scheduledFireTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('startTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('endTime')
+                                            )
+                                            .append(
+                                                $('<th />').html('duration')
+                                            )
+                                        )
+                                    )
+                                    .append(
+                                        $('<tbody />')
+                                        .append(
+                                            $('<tr />')
+                                            .append(
+                                                $('<td />').html(jobHistory.chain)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.cron)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.fireTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.scheduledFireTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.startTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.endTime)
+                                            )
+                                            .append(
+                                                $('<td />').html(jobHistory.duration)
+                                            )
+                                        )
+                                    )
+                                )
+                            ).find('table').width('99%').end();
+                            headerData.dataTable = headerData.table.dataTable({
+                                "bJQueryUI": true,
+                                "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                                "sDom": "rt",
+                                "aoColumnDefs": [
+                                    { "sType": "date", "aTargets": [ 2,3 ] }
+                                ]
+                            });
+                        }).fadeIn();
+                        $.ruleChains.job.GETgetJobLogs({
+                                name: jobHistoryName,
+                                offset: self.jobHistoriesDataTable.fnSettings()._iDisplayLength,
+                                records: self.jobHistoriesDataTable.fnSettings()._iDisplayStart
+                            },
+                            function(jobLogs) {
+                                if("jobLogs" in jobLogs) {
+                                    self.jobHistorySelect.data(jobLogs);
+                                    self.jobHistoriesDataTable.fnClearTable();
+                                    self.jobHistoriesDataTable.fnAddData(jobLogs.jobLogs);
+                                } else {
+                                    alert(jobLogs.error);
+                                }
+                            }
+                        );
+                    } else {
+                        self.jobHistoriesDataTable.fnClearTable();
+                        self.jobHistorySummaryHeader.each(function() {
+                            var header = $(this),
+                            headerData = header.data();
+                            if("dataTable" in headerData) {
+                                headerData.dataTable.fnDestroy();
+                                header.removeData("dataTable");
+                            }                            
+                        }).empty().fadeOut();
+                    }
+                }),
+                removeJobHistoryButton = $(self.removeJobHistoryButton = $('button#removeJobHistoryButton',monitorTabs.jobHistories)).button({
+                    text: true,
+                    icons: {
+                        primary: "ui-icon-trash"
+                    }            
+                }).click(function() {
+                    $.ruleChains.job.DELETEdeleteJobHistory({
+                        name: jobHistorySelect.find('option:selected').text()
+                    },function(deleteAction) {
+                        if("success" in deleteAction) {
+                            jobHistorySelect.val("").change();
+                            refreshJobHistoryButton.trigger('click');
+                        } else {
+                            alert(deleteAction.error);
+                        }
+                    });
+                }),                
+                refreshJobHistoryButton = $(self.refreshJobHistoryButton = $('button#refreshJobHistoryButton',monitorTabs.jobHistories)).button({
+                    text: true,
+                    icons: {
+                        primary: "ui-icon-refresh"
+                    }            
+                }).click(function() {
+                    if(self.jobHistorySelect.val() === "") {
+                        removeJobHistoryButton.button("option","disabled",(self.jobHistorySelect.val() === ""));
+                        $.ruleChains.job.GETgetJobHistories({},function(jobHistories) {
+                            self.jobHistorySelect.each(function() {
+                                var firstOption = self.jobHistorySelect.find('option:first-child').detach();
+                                self.jobHistorySelect.empty();
+                                $.each(jobHistories.jobHistories.sort(function(a,b) {
+                                    return a.name === b.name ? 0 : a.name < b.name ? -1 : 1;
+                                }),function(index,jobHistory) {
+                                    $('<option />').val(jobHistory.id).html(jobHistory.name).appendTo(self.jobHistorySelect);
+                                });
+                                self.jobHistorySelect.data(jobHistories);
+                                self.jobHistorySelect.prepend(firstOption); 
+                            });                            
+                        });
+                    } else {
+                        // refresh only the current chain
+                        self.jobHistorySelect.change();
+                    }                    
+                }).trigger('click'),
+                jobHistoryButtonSet = $('div#jobHistoryButtonSet',monitorTabs.jobHistories).buttonset(),
+                jobHistoriesTable = $(self.jobHistoriesTable = $('table#jobHistoriesTable',monitorTabs.jobHistories).width('100%')),
+                jobHistorySummaryHeader = $(self.jobHistorySummaryHeader = self.jobHistoriesTable.find('thead').find('tr:first')).hide(),
+                // Fill in the rest of the summary "points"
+                jobHistoriesDataTable = $(self.jobHistoriesDataTable = jobHistoriesTable.dataTable({
+                    "aoColumns": [
+                        { "bVisible": true,"mDataProp": "logTime","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "line","sDefaultContent":"" }
+                    ],
+                    "bJQueryUI": true,
+                    "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                    "bProcessing": true,
+                    "bServerSide": true,
+                    "sAjaxSource": "xhr.php",
+                    "aaData": [],
+                    "fnInitComplete": function(oSettings, json) {
+                        // self.refreshJobHistoryButton.trigger("click");
+                    },
+                    "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
+                        if(self.jobHistorySelect.val() === "") {
+                            fnCallback({
+                                "sEcho": $.grep(aoData,function(pair,i) { return pair.name === "sEcho"; })[0].value,
+                                "iTotalRecords": 0,
+                                "iTotalDisplayRecords": 0,
+                                "aaData": []
+                            });                            
+                        } else {
+                            $.ajax({
+                                url: '/RuleChains/history/'+self.jobHistorySelect.find('option:selected').text(),
+                                type: "GET",
+                                dataType : "json",
+                                beforeSend: function (XMLHttpRequest, settings) {
+                                    XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                                    XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                                },
+                                data: aoData,
+                                success: function(jobLogs) { 
+                                    if('error' in jobLogs) {
+                                        fnCallback({
+                                            "sEcho": jobLogs.sEcho,
+                                            "iTotalRecords": 0,
+                                            "iTotalDisplayRecords": 0,
+                                            "aaData": []
+                                        });
+                                    } else {
+                                        self.jobHistorySelect.data("jobHistories",jobLogs.jobHistories);
+                                        var jobHistory = $.grep(self.jobHistorySelect.data('jobHistories'),function(jh,i) { return jh.id.toString() === self.jobHistorySelect.val().toString(); })[0];
+                                        var dataTr = self.jobHistorySummaryHeader.find('table').find('tr').eq(1);
+                                        dataTr.find('td:eq(5)').html(jobHistory.endTime);
+                                        dataTr.find('td:eq(6)').html(jobHistory.duration);
+                                        fnCallback({
+                                            "sEcho": jobLogs.sEcho,
+                                            "iTotalRecords": jobLogs.total,
+                                            "iTotalDisplayRecords": jobLogs.total,
+                                            "aaData": jobLogs.jobLogs
+                                        });
+                                    }
+                                },
+                                error: function (jqXHR,  textStatus, errorThrown) {
+                                    if (jqXHR.status === 0) {
+                                        // Session has probably expired and needs to reload and let CAS take care of the rest
+                                        alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                                        // reload entire page - this leads to login page
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }));
+        },
         buildMonitorContent: function() {
             var self = this,
                 o = self.options,
-                el = self.element;
-            
+                el = self.element,
+                tabs = self.tabContents,
+                monitorTabs = self.monitorTabContents,
+                refreshRunningJobsButton = $(self.refreshRunningJobsButton = $('button#refreshRunningJobsButton',monitorTabs.runningJobs)).button({
+                    text: true,
+                    icons: {
+                        primary: "ui-icon-refresh"
+                    }            
+                }).click(function() {
+                    $.ruleChains.job.GETlistCurrentlyExecutingJobs({},function(response) {
+                        if("executingJobs" in response) {
+                            self.executingJobs=response.executingJobs;
+                            self.runningJobsDataTable.fnClearTable();
+                            self.runningJobsDataTable.fnAddData(self.executingJobs);
+                        } else {
+                            alert(response.error);
+                        }                        
+                    });                    
+                }),
+                runningJobsButtonSet = $('div#runningJobsButtonSet',monitorTabs.runningJobs).buttonset(),
+                runningJobsTable = $(self.runningJobsTable = $('table#runningJobsTable',monitorTabs.runningJobs)),
+                runningJobsDataTable = $(self.runningJobsDataTable = runningJobsTable.dataTable({
+                    "aoColumns": [
+                        { "bSortable": false,"bVisible": true,"mDataProp": null, "fnRender":
+                            function(oObj) {
+                                return "<button type='button' id='details' />";
+                            }
+                        },                 
+                        { "bVisible": true,"mDataProp": null,"sDefaultContent":"","aDataSort": [ 1 ],"asSorting": [ "asc" ],"fnRender":
+                            function(oObj) {
+                                var div = $('<div />'),
+                                    container = $('<div />',{ id: "chain"}).appendTo(div).append(oObj.aData.chain);
+                                return div.html();
+                            }
+                        },
+                        { "bVisible": true,"mDataProp": "name","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "description","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "group","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "cron","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "fireTime","sDefaultContent":"" },
+                        { "bVisible": true,"mDataProp": "scheduledFireTime","sDefaultContent":"" }
+                    ],
+                    "bJQueryUI": true,
+                    "asStripeClasses": [ 'ui-priority-primary', 'ui-priority-secondary' ],
+                    "aaData": [],
+                    "fnInitComplete": function(oSettings, json) {
+                        self.refreshRunningJobsButton.trigger("click");
+                    },
+                    "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+                        return $(nRow)
+                        .unbind('click')
+                        .click(function(event) {
+                            if($(nRow).hasClass('ui-widget-shadow')) {
+                                $(nRow).removeClass('ui-widget-shadow');
+                                // self.deleteHandlerButton.button("option","disabled",true);
+                            } else {
+                                $(self.runningJobsDataTable.fnGetNodes( )).each(function() {
+                                    $(this).removeClass('ui-widget-shadow');
+                                });
+                                $(nRow).addClass('ui-widget-shadow');                                    
+                                // self.deleteHandlerButton.button("option","disabled",false);
+                            }
+                        })
+                        // .find('button#details',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        // .find('select#method',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        // .find('select#chain',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        // .find('div#name',nRow).click(function(event) { event.stopPropagation(); }).end()
+                        .each(function() {
+                            var nRowData = $(nRow).data(),
+                                detailsButton = $(nRowData.detailsButton = $(this).find('button#details'))
+                                .button({
+                                    text: false,
+                                    icons: {
+                                        primary: 'ui-icon-circle-triangle-e'
+                                    }
+                                })
+                                .unbind('toggle')
+                                .toggle(
+                                    function() {
+                                        nRowData.detailsButton.button( "option", "icons", {
+                                            primary: 'ui-icon-circle-triangle-s'
+                                        });
+                                        $(self.runningJobsDataTable.fnGetNodes( )).each(function (index,r) {
+                                            if ( self.runningJobsDataTable.fnIsOpen(r) ) {
+                                                $(r).find('button#details').click();
+                                            }                                                
+                                        });     
+                                        $(nRowData.detailsRow = $(self.runningJobsDataTable.fnOpen(
+                                            nRow,
+                                            "<fieldset id='runningJobDetails' />",
+                                            'ui-widget-header'))
+                                        )
+                                        .find('fieldset#runningJobDetails')
+                                        .addClass('ui-widget-content')
+                                        .append(
+                                            $('<legend />')
+                                            .html('Running Job Details')
+                                            .addClass('ui-widget-header ui-corner-all')
+                                        )
+                                        .each(function() {
+                                            $(nRowData.detailsFieldset = $(this));
+                                        });                                
+                                    },
+                                    function() {
+                                        // Close the details
+                                        nRowData.detailsButton.button( "option", "icons", {
+                                            primary: 'ui-icon-circle-triangle-e'
+                                        });
+                                        self.runningJobsDataTable.fnClose(nRow);                                                                                                
+                                    }
+                                );
+                        });                
+                    }
+                }));
         },        
         buildHandlersContent: function() {
             var self = this,
@@ -1883,7 +2454,7 @@
                                             }
                                         ),
                                         function(ri,link) {
-                                            $('<option />').html(link.sequenceNumber).val(link.sequenceNumber).appendTo(optgroup);
+                                            $('<option />').html([link.sequenceNumber,(("rule" in link)?[link.rule.ruleSet.name,link.rule.name].join(':'):"LAST LINK POSITION")].join(' - ')).val(link.sequenceNumber).appendTo(optgroup);
                                         }
                                     );
                                 });
@@ -1919,10 +2490,68 @@
                                         "for": "chainSelect"
                                     }).html("Select Destination Sequence Number")
                                 )
-                                .append($(this).data().chainDestinationSequenceNumberSelect);
+                                .append($(this).data().chainDestinationSequenceNumberSelect)
+                                .dialog("option","width",$(this).data().chainDestinationSequenceNumberSelect.width()*1.05)
+                                .dialog('option', 'position', { my: "center", at: "center", of: window });
+                            },
+                            buttons: {
+                                "Move Link": function() {
+                                    var dialog = $(this),
+                                        aData = self.chainDataTable.fnGetData($.grep(self.chainDataTable.fnGetNodes(),function(tr) {
+                                            return $(tr).hasClass('ui-widget-shadow');
+                                        })[0]),
+                                        targetSequenceNumber = dialog.data().chainDestinationSequenceNumberSelect.val(),
+                                        targetChainName = dialog.data().chainDestinationSequenceNumberSelect.find('option:selected').parent().attr("label"),
+                                        sourceChainName = self.chainSelect.find('option:selected').text(),
+                                        deleteJson = {
+                                            name: sourceChainName,
+                                            sequenceNumber: aData.sequenceNumber
+                                        },
+                                        addJson = {                                            
+                                            name : targetChainName,
+                                            link: {
+                                                sequenceNumber: targetSequenceNumber,
+                                                rule: {
+                                                    name: aData.rule.name
+                                                },
+                                                sourceName: aData.sourceName,
+                                                executeEnum: (aData.executeEnum.hasOwnProperty("name"))?aData.executeEnum.name:aData.executeEnum,
+                                                linkEnum: (aData.linkEnum.hasOwnProperty("name"))?aData.linkEnum.name:aData.linkEnum,
+                                                resultEnum: (aData.resultEnum.hasOwnProperty("name"))?aData.resultEnum.name:aData.resultEnum,
+                                                inputReorder: aData.inputReorder,
+                                                outputReorder: aData.outputReorder
+                                            }
+                                        };
+                                    // Remove then add back in the correct space then refresh
+                                    $.ruleChains.chain.DELETEdeleteChainLink(deleteJson,function(chain) {
+                                        if("chain" in chain) {
+                                            // self.chainDataTable.fnClearTable();
+                                            // self.chainDataTable.fnAddData(chain.chain.links);  
+                                            self.linkDeleteButton.button("option","disabled",true);
+                                            self.linkMoveButton.button("option","disabled",true);
+                                            $.ruleChains.chain.PUTaddChainLink(addJson,function(chain) {
+                                                if("chain" in chain) {
+                                                    // Change to the target chain
+                                                    self.chainSelect.val(chain.chain.id).change();
+                                                    dialog.dialog('close');
+                                                    dialog.dialog('destroy');
+                                                    dialog.remove();                                                                                                                    
+                                                } else {
+                                                    alert(chain.error);
+                                                }
+                                            });
+                                        } else {
+                                            alert(chain.error);
+                                        }
+                                    });
+                                },
+                                "Cancel": function() {
+                                    $(this).dialog('close');
+                                    $(this).dialog('destroy');
+                                    $(this).remove();                        
+                                }                        
                             }
                         });
-                            
                     });
                 }),
                 linkDeleteButton = $(self.linkDeleteButton = $('button#deleteLink',chainTable)).button({
@@ -1994,7 +2623,7 @@
                                 $.each(self.actions.execute.sort(function(a,b) {
                                     return (a > b) ? 1 : (a < b) ? -1 : 0;
                                 }),function(si,name) {                                
-                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.sourceName));
+                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.executeEnum.name));
                                 });                            
                                 return div.html();
                             } 
@@ -2009,7 +2638,7 @@
                                 $.each(self.actions.result.sort(function(a,b) {
                                     return (a > b) ? 1 : (a < b) ? -1 : 0;
                                 }),function(si,name) {                                
-                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.sourceName));
+                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.resultEnum.name));
                                 });                            
                                 return div.html();
                             } 
@@ -2024,7 +2653,7 @@
                                 $.each(self.actions.link.sort(function(a,b) {
                                     return (a > b) ? 1 : (a < b) ? -1 : 0;
                                 }),function(si,name) {                                
-                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.sourceName));
+                                    $('<option />').val(name).html(name).appendTo(select).prop("selected", (name === oObj.aData.linkEnum.name));
                                 });                            
                                 return div.html();
                             } 
@@ -2280,7 +2909,7 @@
                                     $.ruleChains.chain.POSTmodifyChainLink({ 
                                         name: self.chainSelect.find('option:selected').text(),
                                         link: $.extend(aData,{
-                                            executeEnum: executeAction
+                                            executeEnum: { name: executeAction }
                                         })
                                     },function(link) {
                                         if("link" in link) {
@@ -2296,7 +2925,7 @@
                                     $.ruleChains.chain.POSTmodifyChainLink({ 
                                         name: self.chainSelect.find('option:selected').text(),
                                         link: $.extend(aData,{
-                                            resultEnum: resultAction
+                                            resultEnum: { name: resultAction }
                                         })
                                     },function(link) {
                                         if("link" in link) {
@@ -2312,7 +2941,7 @@
                                     $.ruleChains.chain.POSTmodifyChainLink({ 
                                         name: self.chainSelect.find('option:selected').text(),
                                         link: $.extend(aData,{
-                                            linkEnum: linkAction
+                                            linkEnum: { name: linkAction }
                                         })
                                     },function(link) {
                                         if("link" in link) {

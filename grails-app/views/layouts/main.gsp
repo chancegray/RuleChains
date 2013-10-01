@@ -29,7 +29,10 @@
 	</head>
 	<body>
 		<div id="ruleChainsLogo" class="ui-widget-header ui-corner-all" role="banner">
-                  <a href="http://grails.org"><img src="${resource(dir: 'images', file: 'grails_logo.png')}" alt="Grails"/></a>
+                  <a href="https://github.com/USF-IT/RuleChains/wiki" target="_blank"><img src="${resource(dir: 'images', file: 'chains.png')}" alt="RuleChains" width="200" height="85" style="padding-left: 5px;padding-top:0px"/></a>
+                  <h1 style="display:inline;margin:0;font-weight:bold; font-size:5em;margin: auto;text-align: center;">RuleChains</h1>
+                  <castag:casLogoutButton />
+                  <span style="float:right"><label for="authorities">Assigned Roles:</label><castag:casRoles /></span>
                 </div>
 		<g:layoutBody/>
 		<div class="footer" class="ui-widget-header ui-corner-all" role="contentinfo"></div>

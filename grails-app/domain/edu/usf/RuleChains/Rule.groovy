@@ -4,7 +4,9 @@ import org.hibernate.FlushMode
 
 abstract class Rule {
     String name
+    JobHistory jobHistory
     static belongsTo = [ruleSet: RuleSet]
+    static transients = ['jobHistory']
     static constraints = {
         name(   
                 blank: false,

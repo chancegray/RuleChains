@@ -13,8 +13,8 @@ class Link {
     ExecuteEnum executeEnum = ExecuteEnum.NORMAL
     ResultEnum resultEnum = ResultEnum.NONE
     LinkEnum linkEnum = LinkEnum.NONE
-    def input = []
-    def output  = [[]] 
+    def input = [:]
+    def output  = [[:]] 
     static transients = ['input','output']
     static belongsTo = [chain: Chain]
     static mapping = {
