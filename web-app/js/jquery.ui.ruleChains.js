@@ -3291,20 +3291,25 @@
                         },
                         open: function() {
                             $(this).append(
-                                $('<label />',{
-                                    "for": "name"
-                                })
-                                .html('Name:')
-                                .css({ "padding-right":"15px"})
-                            ).append($(this).data().name)
+                                $('<p />')
+                                .append(
+                                    $('<label />',{
+                                        "for": "name"
+                                    })
+                                    .html('Name:')
+                                    .css({ "padding-right":"15px"})
+                                ).append($(this).data().name.css({ "float": "right" }))
+                            )
                             .append(
-                                $('<label />',{
-                                    "for": "serviceType"
-                                })
-                                .html('Service Type:')
-                                .css({ "padding-right":"15px"})
-                            ).append($(this).data().serviceType);
-                            
+                                $('<p />')
+                                .append(
+                                    $('<label />',{
+                                        "for": "serviceType"
+                                    })
+                                    .html('Service Type:')
+                                    .css({ "padding-right":"15px"})
+                                ).append($(this).data().serviceType.css({ "float": "right" }))
+                            );
                         },
                         buttons: {
                             "Add Rule": function() {
