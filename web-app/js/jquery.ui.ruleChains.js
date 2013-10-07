@@ -3265,7 +3265,16 @@
                                 { id: 'DEFINEDSERVICE', name: "Defined Service" },
                                 { id: 'SNIPPET', name: "Snippet"} 
                             ],function(index,type) {
-                                $(select).append($('<option />').val(type.id).html(type.name));
+                                if(type.id === "SNIPPET") {
+                                    if(self.chainSelect.children().length < 2) {
+                                        $(select).append($('<option />').val(type.id).html(type.name).prop('disabled', true));
+                                    } else {
+                                        $(select).append($('<option />').val(type.id).html(type.name));
+                                    }
+                                } else {
+                                    $(select).append($('<option />').val(type.id).html(type.name));
+                                }
+                                
                             });
                         })
                     })
