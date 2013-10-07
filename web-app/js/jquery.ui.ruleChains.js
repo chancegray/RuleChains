@@ -4026,20 +4026,14 @@
                                                     break;
                                                 case "edu.usf.RuleChains.Snippet":
                                                     fieldset.find('legend:first').html('Snippet Details');
-                                                    $(nRowData.chain = self.chainSelect.clone().unbind()).children().each(function(i,opt) {
-                                                        if(i < 1) {
-                                                            $(opt).remove();
-                                                        } else if ( $(opt).val() === self.ruleSetSelect.val() ) {
-                                                            $(opt).remove();
-                                                        }
-                                                    }).end().appendTo(fieldset.append(
+                                                    $(nRowData.chain = self.chainSelect.clone().unbind()).find('option:first').remove().end().appendTo(fieldset.append(
                                                         $('<label />',{
                                                             "for": "chain"
                                                         }).html("Select Chain for use in Snippet")
                                                         .css({
                                                             "padding-right":"15px"
                                                         })
-                                                    ));
+                                                    )).children().filter(function () { return $(this).html() == aData.name; }).prop("selected",true);
                                                     $(nRowData.updateButton = $('<button />')).html("Update Referenced Chain").appendTo(fieldset).button({
                                                         text: false,
                                                         icons: {
@@ -4047,8 +4041,11 @@
                                                         }
                                                     }).click(function() {
                                                         var ajax = $.extend({},aData,{
-                                                            chain: {
-                                                                id: nRowData.nRowData.chain.val()
+                                                            rule: {
+                                                                name: nRowData.chain.find('option:selected').text(),
+                                                                chain: {
+                                                                    name: nRowData.chain.find('option:selected').text()
+                                                                }
                                                             },
                                                             ruleSetName: self.ruleSetSelect.find('option:selected').text()
                                                         });
