@@ -135,6 +135,9 @@ class RuleSetService {
                         case { it instanceof Groovy }:
                             er = r as Groovy
                             break
+                        case { it instanceof PHP }:
+                            er = r as PHP
+                            break
                         case { it instanceof StoredProcedureQuery }:
                             er = r as StoredProcedureQuery
                             break
