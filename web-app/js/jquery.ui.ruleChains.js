@@ -2965,7 +2965,8 @@
                     text: false,
                     icons: {
                         primary: "ui-icon-refresh"
-                    }            
+                    },
+                    disabled: false
                 }).click(function() {
                     if(self.ruleSetSelect.val() === "") {
                         $.ruleChains.ruleSet.GETlistRuleSets({},function(ruleSets) {
@@ -3222,7 +3223,7 @@
                         ruleSetName = select.find('option:selected').text();
                     ruleSetModifyButton.button("option","disabled",(ruleSetId === ""));
                     ruleSetDeleteButton.button("option","disabled",(ruleSetId === ""));
-                    ruleSetRefreshButton.button("option","disabled",(ruleSetId === ""));
+                    // ruleSetRefreshButton.button("option","disabled",false);
                     if(ruleSetId !== "") {
                         self.ruleTableButtonHeader.fadeIn();
                         $.ruleChains.ruleSet.GETgetRuleSet({
