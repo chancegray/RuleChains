@@ -116,6 +116,143 @@ class LinkService {
             ]                
         }
     }
+    def justPHP(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
+        return Link.withTransaction{ status ->            
+            try {
+                return {rows->
+                    switch(resultEnum) {
+                        case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
+                            println "Before ${rows as JSON}"
+                            println "After ${((rows.size() > 0)?rows[0..0]:rows) as JSON}"
+                            return (rows.size() > 0)?rows[0..0]:rows
+                            break
+                        case [ ResultEnum.RECORDSET ]: 
+                            return rows
+                            break
+                        case [ ResultEnum.NONE,ResultEnum.UPDATE ]:
+                            return []
+                            break
+                    }
+                }.call(
+                    {
+                        def gStringTemplateEngine = new GStringTemplateEngine()
+                        def p = gStringTemplateEngine.createTemplate("""php << 'CODE'
+                            <?php
+                            $f = file("php://stdin");
+                            $row = json_decode(urldecode("${input}"));
+                            $rows = array();
+                            ${rule}
+                            ?>
+                            echo json_encode($rows)
+                            CODE
+                            """).make([
+                                'input' : URLEncoder.encode((input as JSON).toString(), 'UTF-8'),
+                                'rule' : { r ->
+                                    def gte = new GStringTemplateEngine()
+                                    return gte.createTemplate(r).make(input).toString() 
+                                }.call(rule)
+                            ]).toString().execute(null,new File('/my/working/dir'))                        
+                        p.waitFor()
+                        return JSON.parse(p.text)
+                    }.call()
+                )
+            } catch(Exception e) {
+                log.debug "${rule.name} error: ${e.printStackTrace()} on source named ${sourceName}"
+                System.out.println("${rule.name} error: ${e.printStackTrace()} on source named ${sourceName}")
+                return [
+                    error: e.message,
+                    rule: rule.name,
+                    type: "PHP",
+                    source: sourceName
+                ]
+            }            
+        }
+
+
+
+        def e = new groovy.text.GStringTemplateEngine()
+
+         def p = e.createTemplate("""php << 'CODE'
+
+
+       <?php
+
+
+       $f = file("php://stdin");
+
+       $row = json_decode(urldecode("${input}"));
+
+       $rows = array();
+
+
+       ${rule}
+
+       ?>
+
+       echo json_encode($rows)
+
+       CODE
+
+       """).make([
+
+        'input' : URLEncoder.encode((input as JSON).toString(), 'UTF-8'),
+
+        'rule' : { r ->
+
+         def gte = new groovy.text.GStringTemplateEngine()
+
+        return gte.createTemplate(r).make(input).toString() 
+
+        }.call(rule)
+
+        ]).toString().execute(null,new File('/my/working/dir'))
+
+
+
+
+       /**
+
+
+
+        def p = """php << 'CODE'
+
+
+       <?php
+
+
+       $f = file("php://stdin");
+
+       $row = json_decode(urldecode("${input}"));
+
+       $rows = array();
+
+
+       ${rule}
+
+       ?>
+
+       echo json_encode($rows)
+
+       CODE
+
+
+
+
+
+       """.execute(null,new File('/my/working/dir'))
+
+
+       **/
+
+        p.waitFor()
+
+
+        return JSON.parse(p.text)
+
+
+       }
+
+    
     def justGroovy(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         return Link.withTransaction{ status ->
             def sql = getSQLSource(sourceName)
