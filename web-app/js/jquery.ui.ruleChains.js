@@ -3024,12 +3024,15 @@
                         },
                         open: function() {
                             $(this).append(
-                                $('<label />',{
-                                    "for": "name"
-                                })
-                                .html('Name:')
-                                .css({ "padding-right":"15px"})
-                            ).append($(this).data().name);
+                                $('<p />')
+                                .append(
+                                    $('<label />',{
+                                        "for": "name"
+                                    })
+                                    .html('Name:')
+                                    .css({ "padding-right":"15px"})
+                                ).append($(this).data().name.css({ "float": "right" }))    
+                            );
                         },
                         buttons: {
                             "Create New Rule Set": function() {
