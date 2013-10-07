@@ -4073,37 +4073,92 @@
                                         self.ruleDataTable.fnClose(nRow);                                
                                     }
                                 ),
-                                ruleNameEditable = $(nRowData.ruleNameEditable = $("td:eq(2)",nRow)).editable(function(value, settings) { 
-                                    var result = value;
-                                    $.ruleChains.ruleSet.POSTupdateRuleName({
-                                        name: aData.name,
-                                        newName: $.trim(result),
-                                        ruleSetName: self.ruleSetSelect.find('option:selected').text()
-                                    },function(rule) {
-                                        if("rule" in rule) {  
-                                            if(self.ruleDataTable.fnIsOpen(nRow)) {
-                                                nRowData.detailsButton.click();
-                                                self.ruleDataTable.fnUpdate(rule.rule,nRow);
-                                                nRowData.detailsButton.click();
-                                            } else {
-                                                self.ruleDataTable.fnUpdate(rule.rule,nRow);
-                                            }
-                                            aData = rule.rule;
+                                ruleNameEditable = {
+                                    makeConditionallyEditable: function(ruleNameTd) {
+                                        if(aData.class === "edu.usf.RuleChains.Snippet") {
+                                            return ruleNameTd.editable(function(value,settings) {
+                                                var result = value;
+                                                
+                                                var ajax = $.extend({},aData,{
+                                                    rule: {
+                                                        name: value,
+                                                        chain: {
+                                                            name: value
+                                                        }
+                                                    },
+                                                    ruleSetName: self.ruleSetSelect.find('option:selected').text()
+                                                });
+                                                $.ruleChains.ruleSet.POSTupdateRule(ajax,function(rule) {
+                                                    if("rule" in rule) {                                                                    
+                                                        aData.chain = rule.rule.chain;
+                                                        aData.name = rule.rule.name;
+                                                        $(nRow).find('td:nth-child(3)').html(aData.name);
+                                                    } else {
+                                                        nRowData.detailsButton.click().click();
+                                                        alert(rule.error);
+                                                    }
+                                                });
+                                                console.log(this);
+                                                console.log(value);
+                                                console.log(settings);
+                                                return(value);
+                                            }, { 
+                                                data: {
+                                                    buildEditableSelectData: function(map) {
+                                                        var obj = new Object();
+                                                        $.each(map, function(i,value) {
+                                                            $.extend(obj,value);
+                                                        });
+                                                        obj.selected = aData.name;
+                                                        return JSON.stringify(obj);
+                                                    }
+                                                }.buildEditableSelectData(self.chainSelect.clone().unbind().find('option:first').remove().end().children().map(function() {
+                                                    var key = $(this).val(),
+                                                        value = $(this).text(),
+                                                        obj = new Object();
+                                                    obj[value]=value;
+                                                    return obj;
+                                                }).get()),
+                                                type    : 'select',
+                                                submit  : 'Update',
+                                                event     : "dblclick",
+                                                tooltip   : 'Doubleclick to edit...',
+                                                style   : 'ui-button ui-widget ui-state-default'
+                                            });
                                         } else {
-                                            alert(rule.error);
-                                        }                                        
-                                    });
-                                    console.log(this);
-                                    console.log(value);
-                                    console.log(settings);
-                                    return(value);
-                                 }, { 
-                                    type    : 'text-ui',
-                                    submit  : 'Update',
-                                    event     : "dblclick",
-                                    tooltip   : 'Doubleclick to edit...'
-                                });
-
+                                            return ruleNameTd.editable(function(value, settings) { 
+                                                var result = value;
+                                                $.ruleChains.ruleSet.POSTupdateRuleName({
+                                                    name: aData.name,
+                                                    newName: $.trim(result),
+                                                    ruleSetName: self.ruleSetSelect.find('option:selected').text()
+                                                },function(rule) {
+                                                    if("rule" in rule) {  
+                                                        if(self.ruleDataTable.fnIsOpen(nRow)) {
+                                                            nRowData.detailsButton.click();
+                                                            self.ruleDataTable.fnUpdate(rule.rule,nRow);
+                                                            nRowData.detailsButton.click();
+                                                        } else {
+                                                            self.ruleDataTable.fnUpdate(rule.rule,nRow);
+                                                        }
+                                                        aData = rule.rule;
+                                                    } else {
+                                                        alert(rule.error);
+                                                    }                                        
+                                                });
+                                                console.log(this);
+                                                console.log(value);
+                                                console.log(settings);
+                                                return(value);
+                                             }, { 
+                                                type    : 'text-ui',
+                                                submit  : 'Update',
+                                                event     : "dblclick",
+                                                tooltip   : 'Doubleclick to edit...'
+                                            });
+                                        }
+                                    }
+                                }.makeConditionallyEditable($("td:eq(2)",nRow));
                         });                
                     }
                 }));
