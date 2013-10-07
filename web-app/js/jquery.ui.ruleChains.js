@@ -1186,7 +1186,8 @@
                     text: false,
                     icons: {
                         primary: "ui-icon-refresh"
-                    }            
+                    },
+                    disabled: false
                 }).click(function() {
                     $.ruleChains.job.GETlistChainJobs({},function(response) {
                         if("jobGroups" in response) {
