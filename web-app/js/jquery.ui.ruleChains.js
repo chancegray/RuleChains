@@ -3273,10 +3273,11 @@
                                     }
                                 } else {
                                     $(select).append($('<option />').val(type.id).html(type.name));
-                                }
-                                
+                                }                                
                             });
-                        })
+                        }),
+                        chainSelect: self.chainSelect.clone().unbind().find('option:first').remove().end().hide(),
+                        nameLabel: $('<label />',{ "for": "name" })
                     })
                     .addClass('ui-state-default ui-widget-content')
                     .append(
@@ -3302,15 +3303,14 @@
                             opacity: 0.5
                         },
                         open: function() {
-                            $(this).append(
+                            var dialog = $(this).append(
                                 $('<p />')
                                 .append(
-                                    $('<label />',{
-                                        "for": "name"
-                                    })
+                                    $(this).data().nameLabel
                                     .html('Name:')
                                     .css({ "padding-right":"15px"})
                                 ).append($(this).data().name.css({ "float": "right" }))
+                                .append($(this).data().chainSelect.css({ "float": "right" }))
                             )
                             .append(
                                 $('<p />')
@@ -3321,13 +3321,25 @@
                                     .html('Service Type:')
                                     .css({ "padding-right":"15px"})
                                 ).append($(this).data().serviceType.css({ "float": "right" }))
-                            );
+                            );                            
+                            dialog.data().serviceType.change(function () {
+                                var select = $(this);
+                                if(select.val() === "SNIPPET") {
+                                    dialog.data().chainSelect.show();
+                                    dialog.data().name.hide();
+                                    dialog.data().nameLabel.html('Chain:');
+                                } else {
+                                    dialog.data().chainSelect.hide();
+                                    dialog.data().name.show();
+                                    dialog.data().nameLabel.html('Name:');
+                                }
+                            });
                         },
                         buttons: {
                             "Add Rule": function() {
                                 var dialog = $(this),
                                     json = {
-                                        name : dialog.data().name.val().trim(),
+                                        name : (dialog.data().serviceType.val().trim() === "SNIPPET")?dialog.data().chainSelect.find('option:selected').text():dialog.data().name.val().trim(),
                                         serviceType : dialog.data().serviceType.val().trim(),
                                         ruleSetName: self.ruleSetSelect.find('option:selected').text()
                                     };
