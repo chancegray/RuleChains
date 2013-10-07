@@ -3222,7 +3222,7 @@
                         ruleSetName = select.find('option:selected').text();
                     ruleSetModifyButton.button("option","disabled",(ruleSetId === ""));
                     ruleSetDeleteButton.button("option","disabled",(ruleSetId === ""));
-                    // ruleSetRefreshButton.button("option","disabled",(ruleSetId === ""));
+                    ruleSetRefreshButton.button("option","disabled",(ruleSetId === ""));
                     if(ruleSetId !== "") {
                         self.ruleTableButtonHeader.fadeIn();
                         $.ruleChains.ruleSet.GETgetRuleSet({
