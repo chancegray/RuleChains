@@ -2488,14 +2488,25 @@
                                 opacity: 0.5
                             },
                             open: function() {
-                                $(this)
-                                .append(
-                                    $('<label />',{
-                                        "for": "chainSelect"
-                                    }).html("Select Destination Sequence Number")
+                                $(this).append(
+                                    $('<p />')
+                                    .append(
+                                        $('<label />',{
+                                            "for": "chainSelect"
+                                        })
+                                        .html('Select Destination Sequence Number:')
+                                        .css({ "padding-right":"15px"})
+                                    ).append($(this).data().chainDestinationSequenceNumberSelect.css({ "float": "right" }))    
                                 )
-                                .append($(this).data().chainDestinationSequenceNumberSelect)
-                                .dialog("option","width",$(this).data().chainDestinationSequenceNumberSelect.width()*1.05)
+                                .dialog("option","width",{
+                                    getCombinedWidth: function(children) {
+                                        var totalWidth = 0;
+                                        children.each(function(index) {
+                                            totalWidth += parseInt($(this).width(), 10);
+                                        });      
+                                        return totalWidth+45;
+                                    }
+                                }.getCombinedWidth($(this).data().chainDestinationSequenceNumberSelect.parent().children())*1.05)
                                 .dialog('option', 'position', { my: "center", at: "center", of: window });
                             },
                             buttons: {
@@ -2536,7 +2547,14 @@
                                             $.ruleChains.chain.PUTaddChainLink(addJson,function(chain) {
                                                 if("chain" in chain) {
                                                     // Change to the target chain
-                                                    self.chainSelect.val(chain.chain.id).change();
+                                                    self.chainSelect.children().each(function() {
+                                                        var option = $(this)
+                                                        if(option.text() == chain.chain.name) {
+                                                            option.prop('selected',true);
+                                                        } else {
+                                                            option.prop('selected',false);
+                                                        }
+                                                    }).end().trigger('change');
                                                     dialog.dialog('close');
                                                     dialog.dialog('destroy');
                                                     dialog.remove();                                                                                                                    
