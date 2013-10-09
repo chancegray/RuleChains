@@ -3489,7 +3489,7 @@
                                 return "<button type='button' id='details' />";
                             }
                         },                        
-                        { "bVisible": true,"mDataProp": "id","sDefaultContent":"","aDataSort": [ 0 ],"asSorting": [ "asc" ] },
+                        { "bVisible": false,"mDataProp": "id","sDefaultContent":"","aDataSort": [ 0 ],"asSorting": [ "asc" ] },
                         { "bVisible": true,"mDataProp": "name","sDefaultContent":"" },
                         { "bVisible": true,"mDataProp": null,"sDefaultContent":"","fnRender": 
                             function(oObj) {
@@ -3517,7 +3517,7 @@
                             }
                         }) 
                         .find('button#details').click(function(event) { event.stopPropagation(); }).end()
-                        .find('td:eq(2)').click(function(event) { event.stopPropagation(); }).end()
+                        .find('td:eq(1)').click(function(event) { event.stopPropagation(); }).end()
                         .each(function() {
                             var nRowData = $(nRow).data(),
                                 detailsButton = $(nRowData.detailsButton = $(this).find('button#details'))
@@ -4096,7 +4096,7 @@
                                                     if("rule" in rule) {                                                                    
                                                         aData.chain = rule.rule.chain;
                                                         aData.name = rule.rule.name;
-                                                        $(nRow).find('td:nth-child(3)').html(aData.name);
+                                                        $(nRow).find('td:nth-child(2)').html(aData.name);
                                                     } else {
                                                         nRowData.detailsButton.click().click();
                                                         alert(rule.error);
@@ -4149,7 +4149,7 @@
                                                         aData = rule.rule;
                                                     } else {
                                                         nRowData.detailsButton.click().click();
-                                                        $(nRow).find('td:nth-child(3)').html(origValue);                                                        
+                                                        $(nRow).find('td:nth-child(2)').html(origValue);                                                        
                                                         alert(rule.error);
                                                     }                                        
                                                 });
@@ -4165,7 +4165,7 @@
                                             });
                                         }
                                     }
-                                }.makeConditionallyEditable($("td:eq(2)",nRow));
+                                }.makeConditionallyEditable($("td:eq(1)",nRow));
                         });                
                     }
                 }));
