@@ -6,7 +6,9 @@ import edu.usf.RuleChains.ServiceTypeEnum
 import edu.usf.RuleChains.MethodEnum
 import edu.usf.RuleChains.ParseEnum
 import edu.usf.RuleChains.AuthTypeEnum
+import edu.usf.RuleChains.Rule
 import grails.converters.*
+import org.hibernate.criterion.CriteriaSpecification
 
 class RuleSetService {
     static transactional = true
@@ -35,7 +37,21 @@ class RuleSetService {
         if(!!name) {
             def ruleSet = RuleSet.findByName(name.trim())
             if(!!ruleSet) {
-                return [ ruleSet: ruleSet ]
+                def resultSet = [:]
+                resultSet << ruleSet.properties
+                if(!!!!resultSet.rules) {
+                    resultSet.rules = Rule.createCriteria().list(sort: 'name',order: 'asc') {
+                        eq('ruleSet',ruleSet)
+                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                        projections {
+                            property('name', 'name')
+                            property('rule', 'rule')
+                            property('id','id')
+                            property('class', 'class')
+                        }                        
+                    }
+                }
+                return [ ruleSet: resultSet ]                    
             }
             return [ error : "RuleSet named ${name} not found!"]
         }
