@@ -4083,7 +4083,6 @@
                                         if(aData.class === "edu.usf.RuleChains.Snippet") {
                                             return ruleNameTd.editable(function(value,settings) {
                                                 var result = value;
-                                                
                                                 var ajax = $.extend({},aData,{
                                                     rule: {
                                                         name: value,
@@ -4132,7 +4131,8 @@
                                             });
                                         } else {
                                             return ruleNameTd.editable(function(value, settings) { 
-                                                var result = value;
+                                                var result = value,
+                                                origValue = this.revert;
                                                 $.ruleChains.ruleSet.POSTupdateRuleName({
                                                     name: aData.name,
                                                     newName: $.trim(result),
@@ -4148,6 +4148,8 @@
                                                         }
                                                         aData = rule.rule;
                                                     } else {
+                                                        nRowData.detailsButton.click().click();
+                                                        $(nRow).find('td:nth-child(3)').html(origValue);                                                        
                                                         alert(rule.error);
                                                     }                                        
                                                 });
