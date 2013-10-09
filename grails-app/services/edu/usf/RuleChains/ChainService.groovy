@@ -3,6 +3,7 @@ package edu.usf.RuleChains
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import grails.converters.*
+import org.hibernate.criterion.CriteriaSpecification
 
 class ChainService {
     static transactional = true
@@ -22,9 +23,9 @@ class ChainService {
         if(!!name) {
             def chain = [ name: name.trim() ] as Chain
             if(!chain.save(failOnError:false, flush: true, insert: true, validate: true)) {
-                return [ error : "Name value '${chain.errors.fieldError.rejectedValue}' rejected" ]
+                return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]
             } else {
-                return [ chain: chain ]
+                return getChain(name.trim())
             }
         }
         return [ error: "You must supply a name" ]
@@ -32,13 +33,13 @@ class ChainService {
     def modifyChain(String name,String newName) {
         if(!!name && !!newName) {
             def chain = Chain.findByName(name.trim())
-            if(!!chain) {
+            if(!!chain) {                
                 System.out.println(newName)
                 chain.name = newName.trim()
                 if(!chain.save(failOnError:false, flush: true, validate: true)) {
-                    return [ error : "Name value '${chain.errors.fieldError.rejectedValue}' rejected" ]
+                    return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]
                 } else {
-                    return [ chain: chain ]
+                    return getChain(newName.trim())
                 }
             }
             return [ error : "Chain named ${name} not found!"]
@@ -60,7 +61,25 @@ class ChainService {
         if(!!name) {
             def chain = Chain.findByName(name.trim())
             if(!!chain) {
-                return [ chain: chain ]
+                def resultSet = [:]
+                resultSet << chain.properties.subMap(['name','links'])
+                if(!!!!resultSet.links) {
+                    resultSet.links = Link.createCriteria().list(sort: 'sequenceNumber',order: 'asc') {
+                        eq('chain',chain)
+                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                        projections {
+                            property('sequenceNumber', 'sequenceNumber')
+                            property('rule', 'rule')
+                            property('sourceName','sourceName')
+                            property('executeEnum', 'executeEnum')
+                            property('resultEnum', 'resultEnum')
+                            property('linkEnum', 'linkEnum')
+                            property('inputReorder', 'inputReorder')
+                            property('outputReorder', 'outputReorder')
+                        }                        
+                    }
+                }
+                return [ chain: resultSet ]                    
             }
             return [ error : "Chain named ${name} not found!"]
         }
@@ -69,69 +88,102 @@ class ChainService {
     def addChainLink(String name,def newLink) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            def rule = Rule.findByName(newLink.rule.name)
-            if(!!rule) {
-                newLink.rule = rule
-                Link link = new Link(newLink.collectEntries {
-                    switch(it.key) {
-                        case "executeEnum":
-                            return [ "${it.key}": ExecuteEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
-                            break
-                        case "resultEnum":
-                            return [ "${it.key}": ResultEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
-                            break
-                        case "linkEnum":
-                            return [ "${it.key}": LinkEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
-                            break
-                        default:
-                            return [ "${it.key}": it.value ]
-                            break
-                    }
-                })
-                System.out.println(link.sequenceNumber)
-                def sequenceNumber = link.sequenceNumber+1
-                chain.links.findAll { l ->
-                    (l.sequenceNumber >= link.sequenceNumber)
-                }.sort { a, b -> b.sequenceNumber <=> a.sequenceNumber }.each { l ->
-                    System.out.println(l.sequenceNumber)
-                    l.sequenceNumber = sequenceNumber
-                    sequenceNumber++
-                    if(!l.save(failOnError:false, flush: true, validate: true)) {
-                        l.errors.allErrors.each {
-                            println it
-                        }    
-                        return [ error : "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" ]                
-                    }
-                }
-                try {
-                    if(!chain.addToLinks(link).save(failOnError:false, flush: false, validate: true)) {
-                        chain.errors.allErrors.each {
-                            println "Error:"+it
-                        }           
-                        return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]
-                    } else {
-                        sequenceNumber = 1
-                        System.out.println("New Sequence"+link.sequenceNumber)
-                        chain.links.sort { a, b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
-                            l.sequenceNumber = sequenceNumber
-                            sequenceNumber++
-                            if(!l.save(failOnError:false, flush: false, validate: true)) {
-                                l.errors.allErrors.each {
-                                    println it
-                                }    
-                                return [ error : "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" ]                
-                            }
+            def tempChain = addChain("${(new Date()).time}")
+            if('chain' in tempChain) {
+                tempChain.chain = Chain.findByName(tempChain.chain.name)
+                def rule = Rule.findByName(newLink.rule.name)
+                if(!!rule) {
+                    newLink.rule = rule
+                    Link link = new Link(newLink.collectEntries {
+                        switch(it.key) {
+                            case "executeEnum":
+                                return [ "${it.key}": ExecuteEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
+                                break
+                            case "resultEnum":
+                                return [ "${it.key}": ResultEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
+                                break
+                            case "linkEnum":
+                                return [ "${it.key}": LinkEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
+                                break
+                            default:
+                                return [ "${it.key}": it.value ]
+                                break
                         }
-                        return [ chain: chain ]
-                    }                                    
-                } catch(Exception ex) {
-                    link.errors.allErrors.each {
-                        println it                        
-                    }          
-                    return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
+                    })
+                    def sequenceNumber = 1
+                    def inserted = false
+                    Link.createCriteria().list(sort: 'sequenceNumber',order: 'asc') {
+                        eq('chain',chain)
+                    }.each{ l -> 
+                        if(l.sequenceNumber >= link.sequenceNumber && !inserted) {
+                            // insert the new link
+                            link.sequenceNumber = sequenceNumber
+                            try {
+                                if(!tempChain.chain.addToLinks(link).save(failOnError:false, flush: false, validate: true)) {
+                                    tempChain.chain.errors.allErrors.each {
+                                        println "Error:"+it
+                                    }           
+                                    return [ error : "'${tempChain.chain.errors.fieldError.field}' value '${tempChain.chain.errors.fieldError.rejectedValue}' rejected" ]                                
+                                }
+                                sequenceNumber++                                
+                                inserted = true
+                            } catch(Exception ex) {
+                                link.errors.allErrors.each {
+                                    println it                        
+                                }          
+                                return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
+                            }
+                            println "Added new link"
+                        }
+                        l.sequenceNumber = sequenceNumber
+                        def cl = new Link(l.properties.subMap(['executeEnum','resultEnum','linkEnum','rule','sequenceNumber','sourceName','inputReorder','outputReorder']))
+                        try {
+                            if(!tempChain.chain.addToLinks(cl).save(failOnError:false, flush: false, validate: true)) {
+                                tempChain.chain.errors.allErrors.each {
+                                    println "Error:"+it
+                                }           
+                                return [ error : "'${tempChain.chain.errors.fieldError.field}' value '${tempChain.chain.errors.fieldError.rejectedValue}' rejected" ]                                
+                            }
+                            sequenceNumber++
+                        } catch(Exception ex) {
+                            cl.errors.allErrors.each {
+                                println it                        
+                            }   
+                            log.info ex.printStackTrace()
+                            return [ error: "'${cl.errors.fieldError.field}' value '${cl.errors.fieldError.rejectedValue}' rejected" ]                
+                        }
+                        println "Adding existing link back"
+                    }
+                    if(!inserted) {
+                        // must be the last entry
+                        // insert the new link
+                        link.sequenceNumber = sequenceNumber
+                        try {
+                            if(!tempChain.chain.addToLinks(link).save(failOnError:false, flush: false, validate: true)) {
+                                tempChain.chain.errors.allErrors.each {
+                                    println "Error:"+it
+                                }           
+                                return [ error : "'${tempChain.chain.errors.fieldError.field}' value '${tempChain.chain.errors.fieldError.rejectedValue}' rejected" ]                                
+                            }
+                            inserted = true
+                        } catch(Exception ex) {
+                            link.errors.allErrors.each {
+                                println it                        
+                            }    
+                            log.info ex.printStackTrace()
+                            return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
+                        }    
+                        println "Added new link (last chance)"
+                    }
+                    // Flipping the names and removing the old chain
+                    // Removing original chain
+                    deleteChain(name.trim())
+                    // Returning the renamed temporary chain with the original name
+                    return modifyChain(tempChain.chain.name,name.trim())
                 }
+                return [ error: "The rule specified in the new link named ${newLink.rule.name} doesn't exist"]
             }
-            return [ error : "Rule in link named ${newLink.rule.name} not found!"]
+            return [ error : "Could not create the temporary chain" ]
         }
         return [ error : "Chain named ${name} not found!"]
     }
@@ -149,7 +201,10 @@ class ChainService {
     def deleteChainLink(String name,def sequenceNumber) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber }            
+            def link = Link.createCriteria().get {
+                eq("chain",chain)
+                eq("sequenceNumber",sequenceNumber.toLong())
+            }
             if(!!link) {
                 if(!chain.removeFromLinks(link).save(failOnError:false, flush: false, validate: true)) {
                     chain.errors.allErrors.each {
@@ -158,11 +213,13 @@ class ChainService {
                     return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                    
                 } else {
                     link.delete()
-                    sequenceNumber = 1
-                    System.out.println("New Sequence "+link.sequenceNumber)
-                    chain.links.sort { a, b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
-                        l.sequenceNumber = sequenceNumber
-                        sequenceNumber++
+                    def sequenceNumberIndex = 1
+                    Link.createCriteria().list(sort: 'sequenceNumber',order: 'asc') {
+                        eq('chain',chain)
+                        ne('sequenceNumber',sequenceNumber.toLong())
+                    }.each{ l -> 
+                        l.sequenceNumber = sequenceNumberIndex
+                        sequenceNumberIndex++
                         if(!l.save(failOnError:false, flush: true, validate: true)) {
                             l.errors.allErrors.each {
                                 println it
@@ -170,28 +227,12 @@ class ChainService {
                             return [ error : "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" ]                
                         }
                     }
-                    return [ chain: chain ]                    
+                    return getChain(name.trim())
                 }
             }
             return [ error : "Link sequence Number ${sequenceNumber} not found!"]
         }
         return [ error : "Chain named ${name} not found!"]
-    }
-    def getSources() {
-        String sfRoot = "sessionFactory_"
-        return [ 
-            sources: grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( sfRoot ) }.collect { sf ->
-                sf[sfRoot.size()..-1]
-            },
-            actions: [
-                execute: ExecuteEnum.values().collect { it.name() },
-                result: ResultEnum.values().collect { it.name() },
-                link: LinkEnum.values().collect { it.name() }
-            ],
-            jobGroups: jobService.listChainJobs().jobGroups,
-            executingJobs: jobService.listCurrentlyExecutingJobs()?.executingJobs            
-        ]
-        
     }
     def modifyChainLink(String name,def sequenceNumber,def updatedLink) {
         def chain = Chain.findByName(name.trim())
@@ -231,5 +272,20 @@ class ChainService {
         }
         return [ error : "Chain named ${name} not found!"]
     }
-    
+    def getSources() {
+        String sfRoot = "sessionFactory_"
+        return [ 
+            sources: grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( sfRoot ) }.collect { sf ->
+                sf[sfRoot.size()..-1]
+            },
+            actions: [
+                execute: ExecuteEnum.values().collect { it.name() },
+                result: ResultEnum.values().collect { it.name() },
+                link: LinkEnum.values().collect { it.name() }
+            ],
+            jobGroups: jobService.listChainJobs().jobGroups,
+            executingJobs: jobService.listCurrentlyExecutingJobs()?.executingJobs            
+        ]
+        
+    }    
 }
