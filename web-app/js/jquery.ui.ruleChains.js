@@ -2307,104 +2307,111 @@
                                 });
                             })
                         })
-                        .addClass('ui-state-default ui-widget-content')
-                        .append(
-                            $('<p />')
-                            .css({
-                                "text-align": "center",
-                                "margin-top": "0px",
-                                "margin-bottom": "0px",
-                                "padding": "0px"
-                            })
-                        )
-                        .dialog({                    
-                            autoOpen: true,
-                            bgiframe: true,
-                            resizable: false,
-                            title: 'Add New Link',
-                            height:280,
-                            width:400,
-                            modal: true,
-                            zIndex: 3999,
-                            overlay: {
-                                backgroundColor: '#000',
-                                opacity: 0.5
-                            },
-                            open: function() {
-                                $(this).append(
-                                    $('<p />')
-                                    .append(
-                                        $('<label />',{
-                                            "for": "targetSequenceNumber"
-                                        })
-                                        .html('Target Sequence Number:')
-                                        .css({ "padding-right":"15px"})
-                                    ).append($(this).data().targetSequenceNumber.css({ "float": "right" }).find('option:last').attr("selected","selected").end())
-                                )
+                        .each(function() {
+                            var dialog = $(this);
+                            if(dialog.data().ruleSelect.find('option').length < 1) {
+                                dialog.remove(); 
+                                alert("Error: You must have some rules already existing before adding links");
+                            } else {
+                                dialog.addClass('ui-state-default ui-widget-content')
                                 .append(
                                     $('<p />')
-                                    .append(
-                                        $('<label />',{
-                                            "for": "ruleSelect"
-                                        })
-                                        .html('Rule:')
-                                        .css({ "padding-right":"15px"})
-                                    ).append($(this).data().ruleSelect.css({ "float": "right" }))
+                                    .css({
+                                        "text-align": "center",
+                                        "margin-top": "0px",
+                                        "margin-bottom": "0px",
+                                        "padding": "0px"
+                                    })
                                 )
-                                .append(
-                                    $('<p />')
-                                    .append(
-                                        $('<label />',{
-                                            "for": "sourceSelect"
-                                        })
-                                        .html('Source:')
-                                        .css({ "padding-right":"15px"})
-                                    ).append($(this).data().sourceSelect.css({ "float": "right" }))                            
-                                );                                
-                                $(this).dialog("option","width",($(this).dialog( "option", "width" ) > $(this).data().ruleSelect.width()*1.2)?$(this).dialog( "option", "width" ):$(this).data().ruleSelect.width()*1.2);
-                            },
-                            buttons: {
-                                "Add Link": function() {
-                                    var dialog = $(this),
-                                        json = {                                            
-                                            name : self.chainSelect.find('option:selected').text(),
-                                            link: {
-                                                sequenceNumber: dialog.data().targetSequenceNumber.val().trim(),
-                                                rule: {
-                                                    name: dialog.data().ruleSelect.find('option:selected').text()
-                                                },
-                                                sourceName: dialog.data().sourceSelect.val().trim(),
-                                                executeEnum: 'NORMAL',
-                                                linkEnum: "NONE",
-                                                resultEnum: "NONE"
-                                            }
-                                        };
-                                    $.ruleChains.chain.PUTaddChainLink(json,function(chain) {
-                                        if("chain" in chain) {
-//                                            $(self.chainDataTable.fnGetNodes( )).each(function (index,r) {
-//                                                if ( self.chainDataTable.fnIsOpen(r) ) {
-//                                                    $(r).find('button#details').click();
-//                                                }                                                
-//                                            });
-                                            // alert(JSON.stringify(chain.chain.links));
-                                            self.chainDataTable.fnClearTable();
-                                            self.chainDataTable.fnAddData(chain.chain.links);
-                                            dialog.dialog('close');
-                                            dialog.dialog('destroy');
-                                            dialog.remove();                                                                                                                    
-                                        } else {
-                                            alert(chain.error);
+                                .dialog({                    
+                                    autoOpen: true,
+                                    bgiframe: true,
+                                    resizable: false,
+                                    title: 'Add New Link',
+                                    height:280,
+                                    width:400,
+                                    modal: true,
+                                    zIndex: 3999,
+                                    overlay: {
+                                        backgroundColor: '#000',
+                                        opacity: 0.5
+                                    },
+                                    open: function() {
+                                        $(this).append(
+                                            $('<p />')
+                                            .append(
+                                                $('<label />',{
+                                                    "for": "targetSequenceNumber"
+                                                })
+                                                .html('Target Sequence Number:')
+                                                .css({ "padding-right":"15px"})
+                                            ).append($(this).data().targetSequenceNumber.css({ "float": "right" }).find('option:last').attr("selected","selected").end())
+                                        )
+                                        .append(
+                                            $('<p />')
+                                            .append(
+                                                $('<label />',{
+                                                    "for": "ruleSelect"
+                                                })
+                                                .html('Rule:')
+                                                .css({ "padding-right":"15px"})
+                                            ).append($(this).data().ruleSelect.css({ "float": "right" }))
+                                        )
+                                        .append(
+                                            $('<p />')
+                                            .append(
+                                                $('<label />',{
+                                                    "for": "sourceSelect"
+                                                })
+                                                .html('Source:')
+                                                .css({ "padding-right":"15px"})
+                                            ).append($(this).data().sourceSelect.css({ "float": "right" }))                            
+                                        );                                
+                                        $(this).dialog("option","width",($(this).dialog( "option", "width" ) > $(this).data().ruleSelect.width()*1.2)?$(this).dialog( "option", "width" ):$(this).data().ruleSelect.width()*1.2);
+                                    },
+                                    buttons: {
+                                        "Add Link": function() {
+                                            var dialog = $(this),
+                                                json = {                                            
+                                                    name : self.chainSelect.find('option:selected').text(),
+                                                    link: {
+                                                        sequenceNumber: dialog.data().targetSequenceNumber.val().trim(),
+                                                        rule: {
+                                                            name: dialog.data().ruleSelect.find('option:selected').text()
+                                                        },
+                                                        sourceName: dialog.data().sourceSelect.val().trim(),
+                                                        executeEnum: 'NORMAL',
+                                                        linkEnum: "NONE",
+                                                        resultEnum: "NONE"
+                                                    }
+                                                };
+                                            $.ruleChains.chain.PUTaddChainLink(json,function(chain) {
+                                                if("chain" in chain) {
+        //                                            $(self.chainDataTable.fnGetNodes( )).each(function (index,r) {
+        //                                                if ( self.chainDataTable.fnIsOpen(r) ) {
+        //                                                    $(r).find('button#details').click();
+        //                                                }                                                
+        //                                            });
+                                                    // alert(JSON.stringify(chain.chain.links));
+                                                    self.chainDataTable.fnClearTable();
+                                                    self.chainDataTable.fnAddData(chain.chain.links);
+                                                    dialog.dialog('close');
+                                                    dialog.dialog('destroy');
+                                                    dialog.remove();                                                                                                                    
+                                                } else {
+                                                    alert(chain.error);
+                                                }
+                                            });
+                                        },
+                                        "Cancel": function() {
+                                            $(this).dialog('close');
+                                            $(this).dialog('destroy');
+                                            $(this).remove();                                                                        
                                         }
-                                    });
-                                },
-                                "Cancel": function() {
-                                    $(this).dialog('close');
-                                    $(this).dialog('destroy');
-                                    $(this).remove();                                                                        
-                                }
-                            }
-                        });                    
-
+                                    }
+                                });
+                            }                            
+                        });
                     });
                 }),
                 linkMoveButton = $(self.linkMoveButton = $('button#moveLink',chainTable)).button({
