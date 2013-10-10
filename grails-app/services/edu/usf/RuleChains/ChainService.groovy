@@ -62,7 +62,7 @@ class ChainService {
             def chain = Chain.findByName(name.trim())
             if(!!chain) {
                 def resultSet = [:]
-                resultSet << chain.properties.subMap(['name','links'])
+                resultSet << chain.properties.subMap(['name','links','id'])
                 if(!!!!resultSet.links) {
                     resultSet.links = Link.createCriteria().list(sort: 'sequenceNumber',order: 'asc') {
                         eq('chain',chain)
