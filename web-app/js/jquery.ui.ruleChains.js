@@ -3487,7 +3487,7 @@
                     disabled: true
                 }).click(function() {
                     $.ruleChains.ruleSet.DELETEdeleteRule({
-                        name: $('td:eq(2)',$.grep(self.ruleDataTable.fnGetNodes(),function(tr) {
+                        name: $('td:eq(1)',$.grep(self.ruleDataTable.fnGetNodes(),function(tr) {
                             return $(tr).hasClass('ui-widget-shadow');
                         })[0]).html(),
                         ruleSetName: self.ruleSetSelect.find('option:selected').text()                        
