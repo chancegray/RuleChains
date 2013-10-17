@@ -55,7 +55,7 @@ grails.project.dependency.resolution = {
         compile ':spring-security-core:1.2.7.3'
         compile ":spring-security-acl:1.1.1"
         compile ':spring-security-cas-usf:1.2.1'
-        compile ':cas-rest-client:0.3'
+        compile ':grails-cas-rest-client:0.3'
         compile ":quartz2:2.1.6.2"
         compile ":rest:0.7"
     }
