@@ -94,6 +94,7 @@ log4j = {
            'org.hibernate',
            'net.sf.ehcache.hibernate'
 }
+jcifs.smb.client.dfs.disabled = true
 
 // Added by the Spring Security CAS (USF) plugin:
 grails.plugins.springsecurity.userLookup.userDomainClassName = 'edu.usf.cims.UsfCasUser'
