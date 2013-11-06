@@ -35,6 +35,7 @@ grails.project.dependency.resolution = {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
 
         runtime 'mysql:mysql-connector-java:5.1.24'
+        runtime 'postgresql:postgresql:9.1-901.jdbc4'
     }
 
     plugins {
@@ -58,5 +59,6 @@ grails.project.dependency.resolution = {
         compile ':grails-cas-rest-client:0.3'
         compile ":quartz2:2.1.6.2"
         compile ":rest:0.7"
+        compile ":csv:0.3.1"
     }
 }
