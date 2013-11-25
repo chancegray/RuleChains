@@ -13,8 +13,8 @@
 		<link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
 		<link rel="apple-touch-icon" href="${resource(dir: 'images', file: 'apple-touch-icon.png')}">
 		<link rel="apple-touch-icon" sizes="114x114" href="${resource(dir: 'images', file: 'apple-touch-icon-retina.png')}">
-		<!--
                 <link rel="stylesheet" href="${resource(dir: 'css', file: 'main.css')}" type="text/css">
+		<!--
 		<link rel="stylesheet" href="${resource(dir: 'css', file: 'mobile.css')}" type="text/css">
                 <link rel="stylesheet" href="${resource(dir: 'js/codemirror-ui/lib/CodeMirror-2.3/lib', file: 'codemirror.css')}" />
                 <link rel="stylesheet" href="${resource(dir: 'js/codemirror-ui/css', file: 'codemirror-ui.css')}" type="text/css" media="screen" />                        
