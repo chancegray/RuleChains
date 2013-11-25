@@ -7,6 +7,7 @@ import edu.usf.RuleChains.*
 import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
+import org.grails.plugins.csv.*
 
 class LinkService {
     static transactional = true
@@ -194,17 +195,11 @@ class LinkService {
        CODE
 
        """).make([
-
-        'input' : URLEncoder.encode((input as JSON).toString(), 'UTF-8'),
-
-        'rule' : { r ->
-
-         def gte = new groovy.text.GStringTemplateEngine()
-
-        return gte.createTemplate(r).make(input).toString() 
-
-        }.call(rule)
-
+            'input' : URLEncoder.encode((input as JSON).toString(), 'UTF-8'),
+            'rule' : { r ->
+                def gte = new groovy.text.GStringTemplateEngine()
+                return gte.createTemplate(r).make(input).toString() 
+            }.call(rule)
         ]).toString().execute(null,new File('/my/working/dir'))
 
 
@@ -278,6 +273,7 @@ class LinkService {
                         longROWplaceHolderVariable: input
                     ])).evaluate("""
                         import grails.converters.*
+                        import org.grails.plugins.csv.*
 
                         def sql = longSQLplaceHolderUniqueVariable
                         def sqls = longSQLSplaceHolderUniqueVariable
