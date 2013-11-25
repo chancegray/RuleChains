@@ -261,24 +261,30 @@ class RuleSetService {
                     it.name == name
                 }
                 if(!!rule) {
-                    try {
-                        if(!ruleSet.removeFromRules(rule).save(failOnError:false, flush: false, validate: true)) {
-                            ruleSet.errors.allErrors.each {
+                    // See if this rule is in any chains
+                    def chainNames = Link.findAllByRule(rule).collect { l ->
+                        l.chain.name
+                    }.unique().join(',')
+                    if(!chainNames) {
+                        try {
+                            if(!ruleSet.removeFromRules(rule).save(failOnError:false, flush: false, validate: true)) {
+                                ruleSet.errors.allErrors.each {
+                                    println it
+                                }           
+                                ruleSet.refresh()
+                                return [ error : "'${ruleSet.errors.fieldError.field}' value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
+                            } else {
+                                rule.delete()
+                                return [ status: "Rule Removed From Set" ] 
+                            }                    
+                        } catch(Exception ex) {
+                            rule.errors.allErrors.each {
                                 println it
                             }           
-                            ruleSet.refresh()
-                            return [ error : "'${ruleSet.errors.fieldError.field}' value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
-                        } else {
-                            rule.delete()
-                            return [ status: "Rule Removed From Set" ] 
-                        }                    
-                    } catch(Exception ex) {
-                        rule.errors.allErrors.each {
-                            println it
-                        }           
-                        return [ error: "'${rule.errors.fieldError.field}' value '${rule.errors.fieldError.rejectedValue}' rejected" ]
+                            return [ error: "'${rule.errors.fieldError.field}' value '${rule.errors.fieldError.rejectedValue}' rejected" ]
+                        }
                     }
-                                       
+                    return [ error: "Rule cannot be removed until it's been unlinked in the following chains: ${chainNames}"]
                 }
                 return [ error: "Rule specified does not exist!" ]
             }
