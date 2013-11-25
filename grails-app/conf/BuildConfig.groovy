@@ -36,6 +36,7 @@ grails.project.dependency.resolution = {
 
         runtime 'mysql:mysql-connector-java:5.1.24'
         runtime 'postgresql:postgresql:9.1-901.jdbc4'
+        compile "org.eclipse.jgit:org.eclipse.jgit:3.1.0.201310021548-r"
     }
 
     plugins {
