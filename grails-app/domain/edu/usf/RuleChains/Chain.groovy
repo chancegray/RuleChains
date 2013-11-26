@@ -290,6 +290,7 @@ class Chain {
                                 orderedLinks[i].output = linkService.casSpringSecurityRest(
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method.name(),
+                                    orderedLinks[i].rule.parse,
                                     orderedLinks[i].rule.user,
                                     orderedLinks[i].rule.password,
                                     orderedLinks[i].rule.headers,
@@ -321,6 +322,7 @@ class Chain {
                                 orderedLinks[i].output = linkService.casRest(
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method.name(),
+                                    orderedLinks[i].rule.parse,
                                     orderedLinks[i].rule.user,
                                     orderedLinks[i].rule.password,
                                     orderedLinks[i].rule.headers,
