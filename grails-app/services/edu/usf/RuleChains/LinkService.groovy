@@ -13,27 +13,73 @@ class LinkService {
     static transactional = true
     def grailsApplication
     
-    def casSpringSecurityRest(String serviceUrl,String method = "GET",String username,String password,def headers=[:],def query=[:],String springSecurityBaseUrl) {
-        return withCasSpringSecurityRest(
-            serviceUrl,
-            method,
-            username,
-            password,
-            headers,
-            query,
-            springSecurityBaseUrl
-        )                             
+    def casSpringSecurityRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:],String springSecurityBaseUrl) {
+        try {
+            return { o ->
+                switch(parseEnum) {
+                    case ParseEnum.TEXT:
+                        return [ o ]
+                        break
+                    case ParseEnum.JSON:
+                        return JSON.parse(o)
+                        break
+                    case ParseEnum.XML:
+                        return XML.parse(o)
+                        break                                        
+                }
+            }.call(withCasSpringSecurityRest(
+                serviceUrl,
+                method,
+                username,
+                password,
+                headers,
+                query,
+                springSecurityBaseUrl
+            ))    
+        } catch(Exception e) {
+            log.debug "${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}"
+            System.out.println("${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}")
+            return [
+                error: e.message,
+                rule: rule.name,
+                type: "CASREST",
+                url: serviceUrl
+            ]                
+        }        
     }
     
-    def casRest(String serviceUrl,String method = "GET",String username,String password,def headers=[:],def query=[:]) {
-        return withCasRest(
-            serviceUrl,
-            method,
-            username,
-            password,
-            headers,
-            query
-        )
+    def casRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:]) {
+        try {
+            return { o ->
+                switch(parseEnum) {
+                    case ParseEnum.TEXT:
+                        return [ o ]
+                        break
+                    case ParseEnum.JSON:
+                        return JSON.parse(o)
+                        break
+                    case ParseEnum.XML:
+                        return XML.parse(o)
+                        break                                        
+                }
+            }.call(withCasRest(
+                serviceUrl,
+                method,
+                username,
+                password,
+                headers,
+                query
+            ))
+        } catch(Exception e) {
+            log.debug "${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}"
+            System.out.println("${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}")
+            return [
+                error: e.message,
+                rule: rule.name,
+                type: "CASREST",
+                url: serviceUrl
+            ]                
+        }
     }
     def justRest(String serviceUrl, MethodEnum methodEnum, AuthTypeEnum authTypeEnum,ParseEnum parseEnum, String username,String password,def headers=[:],def query=[:]) {
         try {
