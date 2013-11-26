@@ -17,9 +17,11 @@ class RuleSetService {
         if(!!pattern) {
             return [ruleSets: RuleSet.list().findAll() {
                 Pattern.compile(pattern.trim()).matcher(it.name).matches()
+            }.collect { rs ->
+                return getRuleSet(rs.name)
             }]
         } else {
-            return [ ruleSets: RuleSet.list() ]
+            return [ ruleSets: RuleSet.list().collect { rs -> return getRuleSet(rs.name) } ]
         }
     }
     def addRuleSet(String name) {
@@ -28,7 +30,7 @@ class RuleSetService {
             if(!ruleSet.save(failOnError:false, flush: true, insert: true, validate: true)) {
                 return [ error : "Name value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
             } else {
-                return [ ruleSet: ruleSet ]
+                return [ ruleSet: getRuleSet(ruleSet.name) ]
             }
         }
         return [ error: "You must supply a name" ]
@@ -37,21 +39,29 @@ class RuleSetService {
         if(!!name) {
             def ruleSet = RuleSet.findByName(name.trim())
             if(!!ruleSet) {
-                def resultSet = [:]
-                resultSet << ruleSet.properties
-                if(!!!!resultSet.rules) {
-                    resultSet.rules = Rule.createCriteria().list(sort: 'name',order: 'asc') {
-                        eq('ruleSet',ruleSet)
-                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
-                        projections {
-                            property('name', 'name')
-                            property('rule', 'rule')
-                            property('id','id')
-                            property('class', 'class')
-                        }                        
+               return [ ruleSet: ruleSet.properties.inject([:]) { rs,k,v -> 
+                    switch(k) {
+                        case ['id','name']:
+                            rs[k] = v
+                            return rs
+                            break
+                        case 'rules':
+                            rs[k] = Rule.createCriteria().list(sort: 'name',order: 'asc') {
+                                eq('ruleSet',ruleSet)
+                                resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                                projections {
+                                    property('name', 'name')
+                                    property('rule', 'rule')
+                                    property('id','id')
+                                    property('class', 'class')
+                                }                        
+                            }.collect { r ->
+                                return getRule(name.trim(),r.name).rule
+                            }   
+                            return rs
+                            break
                     }
-                }
-                return [ ruleSet: resultSet ]                    
+                } ]
             }
             return [ error : "RuleSet named ${name} not found!"]
         }
@@ -77,7 +87,7 @@ class RuleSetService {
                 if(!ruleSet.save(failOnError:false, flush: true, validate: true)) {
                     return [ error : "Name value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
                 } else {
-                    return [ ruleSet: ruleSet ]
+                    return [ ruleSet: getRuleSet(ruleSet.name) ]
                 }
             }
             return [ error : "RuleSet named ${name} not found!"]
@@ -124,7 +134,7 @@ class RuleSetService {
                         }           
                         return [ error : "'${ruleSet.errors.fieldError.field}' value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
                     } else {
-                        return [ rule: rule ]
+                        return [ rule: getRule(ruleSetName,rule.name).rule ]
                     }                    
                 } catch(Exception ex) {
                     rule.errors.allErrors.each {
@@ -185,7 +195,7 @@ class RuleSetService {
                         }           
                         return [ error: "'${rule.errors.fieldError.field}' value '${rule.errors.fieldError.rejectedValue}' rejected" ]                        
                     }
-                    return [ rule: rule ]
+                    return [ rule: getRule(ruleSetName,rule.name).rule ]
                 }
                 return [ error: "Rule specified does not exist!" ]
             }
@@ -229,7 +239,7 @@ class RuleSetService {
                         }           
                         return [ error: "'${rule.errors.fieldError.field}' value '${rule.errors.fieldError.rejectedValue}' rejected" ]                        
                     }
-                    return [ rule: rule ]                    
+                    return [ rule: getRule(ruleSetName,rule.name).rule ]                    
                 }
                 return [ error: "Rule specified does not exist!" ]
             }
@@ -245,7 +255,92 @@ class RuleSetService {
                     it.name == name
                 }
                 if(!!rule) {
-                    return [ rule: rule ]
+                    return [ rule: { r ->
+                        switch(r) {
+                            case { it instanceof SQLQuery }:
+                                return (SQLQuery.createCriteria().get {
+                                    eq('name',r.name)
+                                    resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                                    projections {
+                                        property('name', 'name')
+                                        property('rule', 'rule')
+                                        property('id','id')
+                                        property('class', 'class')
+                                    }                        
+                                } as Map).inject([ruleSet:ruleSetName]) { ds,k,v ->
+                                    ds[k] = v
+                                    return ds                                    
+                                }
+                                break
+                            case { it instanceof Groovy }:
+                                return (Groovy.createCriteria().get {
+                                    eq('name',r.name)
+                                    resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                                    projections {
+                                        property('name', 'name')
+                                        property('rule', 'rule')
+                                        property('id','id')
+                                        property('class', 'class')
+                                    }                        
+                                } as Map).inject([ruleSet:ruleSetName]) { ds,k,v ->
+                                    ds[k] = v
+                                    return ds                                    
+                                }
+                                break
+                            case { it instanceof StoredProcedureQuery }:
+                                return (StoredProcedureQuery.createCriteria().get {
+                                    eq('name',r.name)
+                                    resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                                    projections {
+                                        property('name', 'name')
+                                        property('rule', 'rule')
+                                        property('id','id')
+                                        property('class', 'class')
+                                        property('closure', 'closure')
+                                    }                        
+                                } as Map).inject([ruleSet:ruleSetName]) { ds,k,v ->
+                                    ds[k] = v
+                                    return ds                                    
+                                }
+                                break
+                            case { it instanceof DefinedService }:                            
+                                return (DefinedService.createCriteria().get {
+                                    eq('name',r.name)
+                                    resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                                    projections {
+                                        property('name', 'name')
+                                        property('id','id')
+                                        property('class', 'class')
+                                        property('method','method')
+                                        property('authType', 'authType')
+                                        property('parse', 'parse')
+                                        property('url', 'url')
+                                        property('springSecurityBaseURL', 'springSecurityBaseURL')
+                                        property('user', 'user')
+                                        property('password', 'password')
+                                    }                        
+                                } as Map).inject([ruleSet:ruleSetName,headers: (r as DefinedService).headers]) { ds,k,v ->
+                                    ds[k] = v
+                                    return ds
+                                }
+                                break
+                            case { it instanceof Snippet }:
+                                return (Snippet.createCriteria().get {
+                                    eq('name',r.name)
+                                    resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                                    projections {
+                                        property('name', 'name')
+                                        property('id','id')
+                                        property('class', 'class')
+                                        property('chain', 'chain.name')
+                                    }                        
+                                } as Map).inject([ruleSet: ruleSetName]) { ds,k,v ->
+                                    ds[k] = v
+                                    return ds                                    
+                                }
+                               break
+                        }
+                    }.call(rule) ]
                 }
                 return [ error: "Rule specified does not exist!" ]
             }
@@ -337,7 +432,7 @@ class RuleSetService {
                                         }           
                                         return [ error : "'${targetRuleSet.errors.fieldError.field}' value '${targetRuleSet.errors.fieldError.rejectedValue}' rejected" ]
                                     } else {
-                                        return [ rule: rule ]
+                                        return [ rule: getRule(nameUpdate,rule.name).rule ]
                                     }                    
                                 } catch(Exception ex) {
                                     rule.errors.allErrors.each {
