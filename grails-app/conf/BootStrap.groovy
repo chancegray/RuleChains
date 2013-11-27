@@ -29,9 +29,7 @@ class BootStrap {
             linkMeta.buildMeta(grailsApplication)
             jobMeta.buildMeta(quartzScheduler)
             print jobService.listChainJobs()
-            def webinf = grailsApplication.mainContext.getResource('/').file.absolutePath
-            println webinf[0..webinf.lastIndexOf('/web-app')]
-            gitMeta.buildMeta(webinf[0..webinf.lastIndexOf('/web-app')])
+            gitMeta.buildMeta(grailsApplication.mainContext.getResource('/').file.absolutePath)
             
         }
         
