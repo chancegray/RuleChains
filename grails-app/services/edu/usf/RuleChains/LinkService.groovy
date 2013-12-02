@@ -7,7 +7,7 @@ import edu.usf.RuleChains.*
 import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
-import org.grails.plugins.csv.*
+import au.com.bytecode.opencsv.*
 
 class LinkService {
     static transactional = true
@@ -319,7 +319,7 @@ class LinkService {
                         longROWplaceHolderVariable: input
                     ])).evaluate("""
                         import grails.converters.*
-                        import org.grails.plugins.csv.*
+                        import au.com.bytecode.opencsv.*
 
                         def sql = longSQLplaceHolderUniqueVariable
                         def sqls = longSQLSplaceHolderUniqueVariable
