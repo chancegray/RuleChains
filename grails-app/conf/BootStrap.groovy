@@ -20,7 +20,6 @@ class BootStrap {
     def linkMeta = new LinkMeta()
     def jobMeta = new JobMeta()
     def gitMeta = new GitMeta()
-    def gitRepository = null
     def init = { servletContext ->
         if(!!!quartzScheduler) {
             print "Didn't get set!"
@@ -28,9 +27,8 @@ class BootStrap {
             // Building the Meta Programing
             linkMeta.buildMeta(grailsApplication)
             jobMeta.buildMeta(quartzScheduler)
+            gitMeta.buildMeta(grailsApplication)
             print jobService.listChainJobs()
-            gitMeta.buildMeta(grailsApplication.mainContext.getResource('/').file.absolutePath)
-            
         }
         
         
