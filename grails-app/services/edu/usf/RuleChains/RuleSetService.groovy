@@ -18,10 +18,10 @@ class RuleSetService {
             return [ruleSets: RuleSet.list().findAll() {
                 Pattern.compile(pattern.trim()).matcher(it.name).matches()
             }.collect { rs ->
-                return getRuleSet(rs.name)
+                return getRuleSet(rs.name).ruleSet
             }]
         } else {
-            return [ ruleSets: RuleSet.list().collect { rs -> return getRuleSet(rs.name) } ]
+            return [ ruleSets: RuleSet.list().collect { rs -> return getRuleSet(rs.name).ruleSet } ]
         }
     }
     def addRuleSet(String name) {
@@ -30,7 +30,7 @@ class RuleSetService {
             if(!ruleSet.save(failOnError:false, flush: true, insert: true, validate: true)) {
                 return [ error : "Name value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
             } else {
-                return [ ruleSet: getRuleSet(ruleSet.name) ]
+                return [ ruleSet: getRuleSet(ruleSet.name).ruleSet ]
             }
         }
         return [ error: "You must supply a name" ]
@@ -39,7 +39,7 @@ class RuleSetService {
         if(!!name) {
             def ruleSet = RuleSet.findByName(name.trim())
             if(!!ruleSet) {
-               return [ ruleSet: ruleSet.properties.inject([:]) { rs,k,v -> 
+               return [ ruleSet: ruleSet.properties.inject([id:ruleSet.id]) { rs,k,v -> 
                     switch(k) {
                         case ['id','name']:
                             rs[k] = v
@@ -87,7 +87,7 @@ class RuleSetService {
                 if(!ruleSet.save(failOnError:false, flush: true, validate: true)) {
                     return [ error : "Name value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
                 } else {
-                    return [ ruleSet: getRuleSet(ruleSet.name) ]
+                    return [ ruleSet: getRuleSet(ruleSet.name).ruleSet ]
                 }
             }
             return [ error : "RuleSet named ${name} not found!"]
