@@ -47,7 +47,7 @@ class Chain {
         Snippet.findAllByChain(this).each { s ->
             if(s.name != name) {
                 s.name=name
-                s.save(flush: true)
+                s.save()
             }
         }
     }
