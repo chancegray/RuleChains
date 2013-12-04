@@ -52,6 +52,18 @@ class Link {
         )
         
     }
+    def afterInsert() {
+        saveGitWithComment("Creating ${sequenceNumber} Link")
+    }
+    def beforeUpdate() {
+        updateGitWithComment("Renaming ${sequenceNumber} Link")
+    }
+    def afterUpdate() {
+        saveGitWithComment("Updating ${sequenceNumber} Link")
+    }
+    def beforeDelete() {
+        deleteGitWithComment("Deleted ${sequenceNumber} Link")
+    }    
     static sourceNameVerified(String sourceName) {
         def grailsApplication = new Link().domainClass.grailsApplication
         def ctx = grailsApplication.mainContext
