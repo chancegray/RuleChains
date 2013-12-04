@@ -40,6 +40,17 @@ class Chain {
                 }
             )               
     }
+    
+    def afterInsert() {
+        saveGitWithComment("Creating ${name} Chain")
+    }
+    def beforeUpdate() {
+        updateGitWithComment("Updating ${name} Chain")
+    }
+    def afterDelete() {
+        deleteGitWithComment("Deleted ${name} Chain")
+    }    
+    
     /**
      * Anytime a chain is renamed, snippet reference name needs to be renamed (if exists)
      **/
