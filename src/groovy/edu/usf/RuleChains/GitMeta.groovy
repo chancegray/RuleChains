@@ -207,6 +207,27 @@ class GitMeta {
             }            
             git.commit().setMessage(comment).call()
         }
+        Chain.metaClass.deleteGitWithComment  = {comment->  
+            new File("${command.directory.absolutePath}/chains/${delegate.name}/").deleteDir()
+            git.commit().setMessage(comment).call()
+        }
+        Chain.metaClass.updateGitWithComment = {comment ->
+            def of = new File("${command.directory.absolutePath}/chains/${delegate.getPersistentValue("name")}/")
+            def f = new File("${command.directory.absolutePath}/chains/${delegate.name}/")
+            if(of.exists()) {
+                of.renameTo(f)
+            } else if(!f.exists()) {
+                f.mkdirs()
+            }
+            git.commit().setMessage(comment).call()
+        }
+        Chain.metaClass.saveGitWithComment = {comment ->
+            def f = new File("${command.directory.absolutePath}/chains/${delegate.name}/")
+            if(!f.exists()) {
+                f.mkdirs()
+            }            
+            git.commit().setMessage(comment).call()
+        }
         
     }
 }
