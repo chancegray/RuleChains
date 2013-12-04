@@ -26,5 +26,17 @@ class RuleSet {
                 }.call()            
             }
         )
-    }        
+    }   
+    def afterInsert() {
+        saveGitWithComment("Creating ${name} RuleSet")
+    }
+    def beforeUpdate() {
+        updateGitWithComment("Updating ${name} RuleSet")
+    }
+    def afterUpdate() {
+        // saveGitWithComment("Updating ${name} RuleSet")
+    }
+    def afterDelete() {
+        deleteGitWithComment("Deleted ${name} RuleSet")
+    }    
 }
