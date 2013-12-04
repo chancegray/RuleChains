@@ -128,7 +128,7 @@ class RuleSetService {
                 }
                 System.out.println(rule.name)
                 try {
-                    if(!ruleSet.addToRules(rule).save(failOnError:false, flush: true, validate: true)) {
+                    if(!ruleSet.addToRules(rule).save(failOnError:false, flush: false, validate: true)) {
                         ruleSet.errors.allErrors.each {
                             println it
                         }           
@@ -140,7 +140,7 @@ class RuleSetService {
                     rule.errors.allErrors.each {
                         println it
                     }           
-                    return [ error: "'${rule.errors.fieldError.field}' value '${rule.errors.fieldError.rejectedValue}' rejected" ]
+                    return [ error: "'${rule.errors.fieldError?.field}' value '${rule.errors.fieldError?.rejectedValue}' rejected" ]
                 }
             } else {
                 return [ error: "Rule Set specified does not exist!" ]
