@@ -34,4 +34,16 @@ class DefinedService extends Rule {
         )
     }
     
+    def afterInsert() {
+        saveGitWithComment("Creating ${name} DefinedService")
+    }
+    def beforeUpdate() {
+        updateGitWithComment("Renaming ${name} DefinedService")
+    }
+    def afterUpdate() {
+        saveGitWithComment("Updating ${name} DefinedService")
+    }
+    def beforeDelete() {
+        deleteGitWithComment("Deleted ${name} DefinedService")
+    }
 }
