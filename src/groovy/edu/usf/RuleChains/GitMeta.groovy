@@ -228,7 +228,82 @@ class GitMeta {
             }            
             git.commit().setMessage(comment).call()
         }
-        
+        Link.metaClass.deleteGitWithComment {comment ->
+            new File("${command.directory.absolutePath}/chains/${delegate.getPersistentValue('chain').name}/${delegate.sequenceNumber}.json").delete()
+            git.commit().setMessage(comment).call()
+        }
+        Link.metaClass.updateGitWithComment {comment ->
+            if (delegate.isDirty('name')) {
+                def f = new File("${command.directory.absolutePath}/chains/${delegate.chain.name}/${delegate.getPersistentValue("sequenceNumber")}.json")
+                if(f.exists()) {
+                    f.renameTo(new File("${command.directory.absolutePath}/chains/${delegate.chain.name}/${delegate.sequenceNumber}.json"))
+                    git.commit().setMessage(comment).call()
+                }
+            }
+        }
+        Link.metaClass.saveGitWithComment {comment ->
+            def f = new File("${command.directory.absolutePath}/chains/${delegate.chain.name}/${delegate.sequenceNumber}.json")
+            f.text = {j->
+                j.setPrettyPrint(true)
+                return j
+            }.call([
+                sequenceNumber: delegate.sequenceNumber,
+                sourceName: delegate.sourceName,
+                inputReorder: delegate.inputReorder,
+                outputReorder: delegate.outputReorder,
+                executeEnum:{ e->
+                    switch(e) {
+                        case ExecuteEnum.EXECUTE_USING_ROW:
+                            return "EXECUTE_USING_ROW"
+                            break
+                        case ExecuteEnum.NORMAL:
+                            return "NORMAL"
+                            break
+                    }                                
+                }.call(delegate.executeEnum),
+                resultEnum:{ r->
+                    switch(r) {
+                        case ResultEnum.NONE:
+                            return "NONE"
+                            break
+                        case ResultEnum.UPDATE:
+                            return "UPDATE"
+                            break
+                        case ResultEnum.RECORDSET:
+                            return "RECORDSET"
+                            break
+                        case ResultEnum.ROW:
+                            return "ROW"
+                            break
+                        case ResultEnum.APPENDTOROW:
+                            return "APPENDTOROW"
+                            break
+                        case ResultEnum.PREPENDTOROW:
+                            return "PREPENDTOROW"
+                            break
+                    }                                
+                }.call(delegate.resultEnum),
+                linkEnum:{ l->
+                    switch(l) {
+                        case LinkEnum.NONE:
+                            return "NONE"
+                            break
+                        case LinkEnum.LOOP:
+                            return "LOOP"
+                            break
+                        case LinkEnum.ENDLOOP:
+                            return "ENDLOOP"
+                            break
+                        case LinkEnum.NEXT:
+                            return "NEXT"
+                            break
+                    }                                
+                }.call(delegate.linkEnum),
+                rule: delegate.rule.name,
+                "class": delegate['class']
+            ] as JSON) 
+            git.commit().setMessage(comment).call()
+        }
     }
 }
 
