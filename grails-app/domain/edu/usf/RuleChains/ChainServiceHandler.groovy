@@ -22,4 +22,16 @@ class ChainServiceHandler {
             }        
         )
     }
+    def afterInsert() {
+        saveGitWithComment("Creating ${name} ChainServiceHandler")
+    }
+    def beforeUpdate() {
+        updateGitWithComment("Renaming ${name} ChainServiceHandler")
+    }
+    def afterUpdate() {
+        saveGitWithComment("Updating ${name} ChainServiceHandler")
+    }
+    def beforeDelete() {
+        deleteGitWithComment("Deleted ${name} ChainServiceHandler")
+    }        
 }
