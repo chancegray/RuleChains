@@ -228,6 +228,48 @@ class GitMeta {
             }            
             git.commit().setMessage(comment).call()
         }
+        ChainServiceHandler.metaClass.deleteGitWithComment {comment ->
+            new File("${command.directory.absolutePath}/chainServiceHandlers/${delegate.name}.json").delete()
+            git.commit().setMessage(comment).call()            
+        }
+        ChainServiceHandler.metaClass.updateGitWithComment = {comment ->
+            if (delegate.isDirty('name')) {
+                def f = new File("${command.directory.absolutePath}/chainServiceHandlers/${delegate.getPersistentValue("name")}.json")
+                if(f.exists()) {
+                    f.renameTo(new File("${command.directory.absolutePath}/chainServiceHandlers/${delegate.name}.json"))
+                    git.commit().setMessage(comment).call()
+                }
+            }
+        }
+        ChainServiceHandler.metaClass.saveGitWithComment {comment ->
+            new File("${command.directory.absolutePath}/chainServiceHandlers/").mkdirs()
+            def f = new File("${command.directory.absolutePath}/chainServiceHandlers/${delegate.name}.json")
+            f.text = {j->
+                j.setPrettyPrint(true)
+                return j
+            }.call([
+                name: delegate.name,
+                chain: delegate.chain.name,
+                inputReorder: delegate.inputReorder,
+                outputReorder: delegate.outputReorder,
+                method:{ m->
+                    switch(m) {
+                        case MethodEnum.GET:
+                            return "GET"
+                            break
+                        case MethodEnum.POST:
+                            return "POST"
+                            break
+                        case MethodEnum.PUT:
+                            return "PUT"
+                            break
+                        case MethodEnum.DELETE:
+                            return "DELETE"
+                            break
+                    }                                
+                }.call(delegate.method)
+            ] as JSON)
+        }
         Link.metaClass.deleteGitWithComment {comment ->
             new File("${command.directory.absolutePath}/chains/${delegate.getPersistentValue('chain').name}/${delegate.sequenceNumber}.json").delete()
             git.commit().setMessage(comment).call()
