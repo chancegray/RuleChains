@@ -15,6 +15,12 @@ class Groovy extends Rule {
     }
     def afterUpdate() {
         saveGitWithComment("Updating ${name} Groovy")
+        /**
+         * Anytime a rule is renamed, any link referenced rule name in git repo needs to be updated (if exists)
+         **/
+        Link.findAllByRule(this).each { l ->
+            l.saveGitWithComment("Updating Link referencing ${name} SQLQuery")
+        }
     }
     def beforeDelete() {
         deleteGitWithComment("Deleted ${name} Groovy")
