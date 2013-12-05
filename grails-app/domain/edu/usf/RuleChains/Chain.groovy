@@ -53,6 +53,7 @@ class Chain {
     
     /**
      * Anytime a chain is renamed, snippet reference name needs to be renamed (if exists)
+     * and any ChainServiceHandlers their reference name updated as well
      **/
     def afterUpdate() {        
         Snippet.findAllByChain(this).each { s ->
@@ -60,6 +61,9 @@ class Chain {
                 s.name=name
                 s.save()
             }
+        }
+        ChainServiceHandler.findAllByChain(this).each { h ->
+            h.saveGitWithComment("Updating ChainServicesHandler referencing ${name} Chain")
         }
     }
     /**
