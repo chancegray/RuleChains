@@ -23,11 +23,14 @@ class JobMeta {
                     return [
                         name: g,
                         jobs: quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
+                            def jobDataMap = quartzScheduler.getJobDetail(jk).getJobDataMap()
                             return [
                                 name: jk.name,
                                 triggers: quartzScheduler.getTriggersOfJob(jk).collect { t ->
                                     return t.getCronExpression() 
-                                }                                
+                                },
+                                chain: jobDataMap.get("chain"),
+                                input: jobDataMap.get("input")
                             ]
                         }.findAll {
                             it.triggers.size() > 0
