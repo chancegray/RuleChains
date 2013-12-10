@@ -17,6 +17,7 @@ class BootStrap {
     def quartzScheduler
     def jobService
     def springSecurityService
+    def usfCasService
     def linkMeta = new LinkMeta()
     def jobMeta = new JobMeta()
     def gitMeta = new GitMeta()
@@ -27,7 +28,7 @@ class BootStrap {
             // Building the Meta Programing
             linkMeta.buildMeta(grailsApplication)
             jobMeta.buildMeta(quartzScheduler)
-            gitMeta.buildMeta(grailsApplication)
+            gitMeta.buildMeta(grailsApplication,usfCasService)
             print jobService.listChainJobs()
         }
         
