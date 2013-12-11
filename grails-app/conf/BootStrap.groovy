@@ -18,6 +18,7 @@ class BootStrap {
     def jobService
     def springSecurityService
     def usfCasService
+    def configService
     def linkMeta = new LinkMeta()
     def jobMeta = new JobMeta()
     def gitMeta = new GitMeta()
@@ -30,6 +31,7 @@ class BootStrap {
             jobMeta.buildMeta(quartzScheduler)
             gitMeta.buildMeta(grailsApplication,usfCasService)
             print jobService.listChainJobs()
+            configService.syncronizeDatabaseFromGit()
         }
         
         
