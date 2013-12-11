@@ -24,9 +24,10 @@ class RuleSetService {
             return [ ruleSets: RuleSet.list().collect { rs -> return getRuleSet(rs.name).ruleSet } ]
         }
     }
-    def addRuleSet(String name) {
+    def addRuleSet(String name,boolean isSynced = true) {
         if(!!name) {
             def ruleSet = [ name: name.trim() ] as RuleSet
+            ruleSet.isSynced = isSynced
             if(!ruleSet.save(failOnError:false, flush: true, insert: true, validate: true)) {
                 return [ error : "Name value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
             } else {
@@ -97,10 +98,11 @@ class RuleSetService {
         }
         return [ error : "You must supply a name and new name for the target ruleSet"]
     }
-    def addRule(String ruleSetName,String name,String serviceType) {        
+    def addRule(String ruleSetName,String name,String serviceType,boolean isSynced = true) {        
         if(!!name && !!ruleSetName && !!serviceType) {
             def ruleSet = RuleSet.findByName(ruleSetName)
             if(!!ruleSet) {
+                ruleSet.isSynced = isSynced
                 System.out.println(serviceType)
                 System.out.println(name)
                 def serviceTypeEnum = ServiceTypeEnum.byName(serviceType.trim())
@@ -108,15 +110,19 @@ class RuleSetService {
                 switch(serviceTypeEnum) {
                 case ServiceTypeEnum.SQLQUERY:
                     rule = [ name: name, rule: "" ] as SQLQuery
+                    rule.isSynced = isSynced
                     break
                 case ServiceTypeEnum.GROOVY:
                     rule = [ name: name, rule: "" ] as Groovy
+                    rule.isSynced = isSynced
                     break
                 case ServiceTypeEnum.STOREDPROCEDUREQUERY:
                     rule = [ name: name ] as StoredProcedureQuery
+                    rule.isSynced = isSynced
                     break
                 case ServiceTypeEnum.DEFINEDSERVICE:
                     rule = [ name: name ] as DefinedService
+                    rule.isSynced = isSynced                    
                     break
                 case ServiceTypeEnum.SNIPPET:
                     def chain = Chain.findByName(name)
@@ -127,6 +133,7 @@ class RuleSetService {
                         return [ error: "Chain '${name}' does not exist! You must specify a name for an existing chain to reference it as a snippet."]
                     }
                     rule = [ name: name, chain: chain ] as Snippet
+                    rule.isSynced = isSynced                    
                     break
                 }
                 System.out.println(rule.name)
