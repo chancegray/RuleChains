@@ -13,9 +13,10 @@ class Chain {
     String name
     List<Link> links
     List<List> input = [[:]]
+    boolean isSynced = true
     JobHistory jobHistory
     static hasMany = [links:Link]
-    static transients = ['orderedLinks','input','output','jobHistory']
+    static transients = ['orderedLinks','input','output','jobHistory','isSynced']
     static constraints = {
         name(   
                 blank: false,
@@ -42,13 +43,19 @@ class Chain {
     }
     
     def afterInsert() {
-        saveGitWithComment("Creating ${name} Chain")
+        if(isSynced) {
+            saveGitWithComment("Creating ${name} Chain")
+        }
     }
     def beforeUpdate() {
-        updateGitWithComment("Updating ${name} Chain")
+        if(isSynced) {
+            updateGitWithComment("Updating ${name} Chain")
+        }
     }
     def afterDelete() {
-        deleteGitWithComment("Deleted ${name} Chain")
+        if(isSynced) {
+            deleteGitWithComment("Deleted ${name} Chain")
+        }
     }    
     
     /**
@@ -62,8 +69,10 @@ class Chain {
                 s.save()
             }
         }
-        ChainServiceHandler.findAllByChain(this).each { h ->
-            h.saveGitWithComment("Updating ChainServicesHandler referencing ${name} Chain")
+        if(isSynced) {
+            ChainServiceHandler.findAllByChain(this).each { h ->
+                h.saveGitWithComment("Updating ChainServicesHandler referencing ${name} Chain")
+            }
         }
     }
     /**

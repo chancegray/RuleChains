@@ -6,6 +6,9 @@ class ChainServiceHandler {
     String inputReorder = ''
     String outputReorder = ''
     MethodEnum method = MethodEnum.GET
+    boolean isSynced = true
+    static transients = ['isSynced']
+    
     static mapping = {
         inputReorder type: 'text'
         outputReorder type: 'text'
@@ -23,15 +26,23 @@ class ChainServiceHandler {
         )
     }
     def afterInsert() {
-        saveGitWithComment("Creating ${name} ChainServiceHandler")
+        if(isSynced) {
+            saveGitWithComment("Creating ${name} ChainServiceHandler")
+        }
     }
     def beforeUpdate() {
-        updateGitWithComment("Renaming ${name} ChainServiceHandler")
+        if(isSynced) {
+            updateGitWithComment("Renaming ${name} ChainServiceHandler")
+        }
     }
     def afterUpdate() {
-        saveGitWithComment("Updating ${name} ChainServiceHandler")
+        if(isSynced) {
+            saveGitWithComment("Updating ${name} ChainServiceHandler")
+        }
     }
     def beforeDelete() {
-        deleteGitWithComment("Deleted ${name} ChainServiceHandler")
+        if(isSynced) {
+            deleteGitWithComment("Deleted ${name} ChainServiceHandler")
+        }
     }        
 }
