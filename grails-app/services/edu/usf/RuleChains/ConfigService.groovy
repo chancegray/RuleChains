@@ -13,6 +13,39 @@ class ConfigService {
     def chainService
     def ruleSetService
     
+    def syncronizeDatabaseFromGit(boolean isSynced = false) {
+        def gitFolder = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
+        def ruleSetsFolder = new File(gitFolder, 'ruleSets')
+        def restore = [:]
+        if(ruleSetsFolder.exists()) {
+            restore.ruleSets = []
+            ruleSetsFolder.eachDir{ ruleSetFolder ->
+//                println ruleSetFolder.name 
+//                println isSynced
+                ruleSetService.addRuleSet(ruleSetFolder.name,isSynced)
+                def rs = []
+                ruleSetFolder.eachFile { ruleFile ->
+//                    println ruleFile.name
+//                    println JSON.parse(ruleFile.text)
+//                    println rs as JSON
+//                    println ruleSetFolder.name
+                    // println rs[ruleSetFolder.name]
+                    def rule = JSON.parse(ruleFile.text)
+                    rs << rule                    
+                    ruleSetService.addRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule["class"].tokenize('.').last(),isSynced)
+                }
+                restore.ruleSets << [ "${ruleSetFolder.name}": rs.collect { rule -> 
+                        rule.ruleSet = ruleSetFolder.name
+                        rule.isSynced = isSynced
+                        return rule
+                    },
+                    "isSynced": isSynced
+                ]
+            }
+        }
+        println restore as JSON
+        // println "Does ruleSets exist? ${ruleSetsFolder.exists()}"
+    }
     def uploadChainData(restore) {
         // def o = JSON.parse(new File('Samples/import.json').text); // Parse a JSON String
         switch(restore) {
