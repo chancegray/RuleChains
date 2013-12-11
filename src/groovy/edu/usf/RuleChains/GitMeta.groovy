@@ -49,9 +49,17 @@ class GitMeta {
                 return Holders.config.gitConfig.cas.fallbackMap[username]
             } else if(usfCasService.attributes[Holders.config.gitConfig.cas.emailAttribute]) {
                 return usfCasService.attributes[Holders.config.gitConfig.cas.emailAttribute]
+            } else {
+                // use the default
+                return Holders.config.gitConfig.fallbackEmailDefault
             }
-            println "Git NO EMAIL ADDRESS"
-            return ""
+        }
+        def resolveUsername = {->
+            def username = usfCasService.getUsername()
+            if(!!!!username) {
+                return username
+            }
+            return Holders.config.gitConfig.fallbackUsername
         }
 //        try {
 //            repository = command.call().repository
@@ -99,7 +107,8 @@ class GitMeta {
                     git.rm().addFilepattern("${relativePath}").call()
                     f.delete()
                 }
-                git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
                 push.call()
                 pull.call()
             }
@@ -113,7 +122,7 @@ class GitMeta {
                         f.renameTo(new File("${localRepoFolder.absolutePath}/ruleSets/${delegate.ruleSet.name}/${delegate.name}.json"))
                         git.add().addFilepattern("${relativePath}").call()
                         git.rm().addFilepattern("${oldRelativePath}").call()
-                        git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+                        git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
                         push.call();
                         pull.call()
                     }
@@ -247,7 +256,7 @@ class GitMeta {
                         break
                 }
                 git.add().addFilepattern("${relativePath}").call()
-                git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
                 push.call()
                 pull.call()
             }       
@@ -257,7 +266,7 @@ class GitMeta {
             pull.call()
             new File("${localRepoFolder.absolutePath}/ruleSets/${delegate.name}/").deleteDir()
             git.rm().addFilepattern("${relativePath}").call()
-            git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
             push.call()
             pull.call()            
         }
@@ -278,7 +287,7 @@ class GitMeta {
                     }
                     git.add().addFilepattern("${relativePath}").call()
                 }
-                git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
                 push.call()
                 pull.call()            
             }
@@ -291,7 +300,7 @@ class GitMeta {
                 f.mkdirs()
             }            
             git.add().addFilepattern("${relativePath}").call()
-            git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
             push.call()
             pull.call()
         }
@@ -300,7 +309,7 @@ class GitMeta {
             new File("${localRepoFolder.absolutePath}/chains/${delegate.name}/").deleteDir()
             pull.call()
             git.rm().addFilepattern("${relativePath}").call()
-            git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
             push.call();
         }
         Chain.metaClass.updateGitWithComment = {comment ->
@@ -320,7 +329,7 @@ class GitMeta {
                     }
                     git.add().addFilepattern("${relativePath}").call()
                 }
-                git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
                 push.call()
                 pull.call()
             }
@@ -334,7 +343,7 @@ class GitMeta {
             }         
             git.add().addFilepattern("${relativePath}").call()
             git.add().addFilepattern(".").call()
-            git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
             push.call()
             pull.call()
         }
@@ -345,7 +354,7 @@ class GitMeta {
             if(f.exists()) {
                 f.delete()
                 git.rm().addFilepattern("${relativePath}").call()
-                git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
                 push.call()
             }
             pull.call()
@@ -360,7 +369,7 @@ class GitMeta {
                     f.renameTo(new File("${localRepoFolder.absolutePath}/chainServiceHandlers/${delegate.name}.json"))
                     git.add().addFilepattern("${relativePath}").call()
                     git.rm().addFilepattern("${oldRelativePath}").call()                
-                    git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
                     push.call()
                     pull.call()
                 }
@@ -398,7 +407,7 @@ class GitMeta {
             ] as JSON)
             git.add().addFilepattern("${relativePath}").call()
             git.add().addFilepattern(".").call()
-            git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
             push.call()
             pull.call()
         }
@@ -461,7 +470,7 @@ class GitMeta {
             pull.call()
             new File("${localRepoFolder.absolutePath}/chains/${delegate.getPersistentValue('chain').name}/${delegate.sequenceNumber}.json").delete()
             git.add().addFilepattern(".").call()
-            git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
             push.call()
             pull.call()
         }
@@ -474,7 +483,7 @@ class GitMeta {
                     f.renameTo(new File("${localRepoFolder.absolutePath}/chains/${delegate.chain.name}/${delegate.sequenceNumber}.json"))
                     git.add().addFilepattern("${relativePath}").call()
                     git.add().addFilepattern(".").call()
-                    git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
                     push.call()
                     pull.call()
                 }                
@@ -545,7 +554,7 @@ class GitMeta {
             ] as JSON) 
             git.add().addFilepattern("${relativePath}").call()
             git.add().addFilepattern(".").call()
-            git.commit().setAuthor(usfCasService.getUsername(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
+            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(usfCasService.getUsername())).setMessage(comment).call()
             push.call();
             pull.call()
         }
