@@ -19,9 +19,10 @@ class ChainService {
             return [ chains: Chain.list() ]
         }
     }
-    def addChain(String name) {
+    def addChain(String name,boolean isSynced = true) {
         if(!!name) {
             def chain = [ name: name.trim() ] as Chain
+            chain.isSynced = isSynced
             if(!chain.save(failOnError:false, flush: true, insert: true, validate: true)) {
                 return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]
             } else {
@@ -30,10 +31,11 @@ class ChainService {
         }
         return [ error: "You must supply a name" ]
     }
-    def modifyChain(String name,String newName) {
+    def modifyChain(String name,String newName,boolean isSynced = true) {
         if(!!name && !!newName) {
             def chain = Chain.findByName(name.trim())
-            if(!!chain) {                
+            if(!!chain) {         
+                chain.isSynced = isSynced
                 System.out.println(newName)
                 chain.name = newName.trim()
                 if(!chain.save(failOnError:false, flush: true, validate: true)) {
@@ -46,10 +48,11 @@ class ChainService {
         }
         return [ error : "You must supply a name and new name for the target chain"]
     }
-    def deleteChain(String name) {
+    def deleteChain(String name,boolean isSynced = true) {
         if(!!name) {
             def chain = Chain.findByName(name.trim())
             if(!!chain) {
+                chain.isSynced = isSynced
                 chain.delete()
                 return [ success : "Chain deleted" ]
             }
@@ -85,14 +88,17 @@ class ChainService {
         }
         return [ error : "You must supply a name for the target Chain"]
     }
-    def addChainLink(String name,def newLink) {
+    def addChainLink(String name,def newLink,boolean isSynced = true) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            def tempChain = addChain("${(new Date()).time}")
+            chain.isSynced = isSynced
+            def tempChain = addChain("${(new Date()).time}",isSynced)
             if('chain' in tempChain) {
                 tempChain.chain = Chain.findByName(tempChain.chain.name)
-                def rule = Rule.findByName(newLink.rule.name)
+                tempChain.chain.isSynced = isSynced
+                def rule = Rule.findByName((newLink.rule instanceof String)?newLink.rule:newLink.rule.name)
                 if(!!rule) {
+                    rule.isSynced = isSynced
                     newLink.rule = rule
                     Link link = new Link(newLink.collectEntries {
                         switch(it.key) {
@@ -110,6 +116,7 @@ class ChainService {
                                 break
                         }
                     })
+                    link.isSynced = isSynced
                     def sequenceNumber = 1
                     def inserted = false
                     Link.createCriteria().list(sort: 'sequenceNumber',order: 'asc') {
@@ -137,6 +144,7 @@ class ChainService {
                         }
                         l.sequenceNumber = sequenceNumber
                         def cl = new Link(l.properties.subMap(['executeEnum','resultEnum','linkEnum','rule','sequenceNumber','sourceName','inputReorder','outputReorder']))
+                        cl.isSynced = isSynced
                         try {
                             if(!tempChain.chain.addToLinks(cl).save(failOnError:false, flush: false, validate: true)) {
                                 tempChain.chain.errors.allErrors.each {
@@ -177,9 +185,9 @@ class ChainService {
                     }
                     // Flipping the names and removing the old chain
                     // Removing original chain
-                    deleteChain(name.trim())
+                    deleteChain(name.trim(),isSynced)
                     // Returning the renamed temporary chain with the original name
-                    return modifyChain(tempChain.chain.name,name.trim())
+                    return modifyChain(tempChain.chain.name,name.trim(),isSynced)
                 }
                 return [ error: "The rule specified in the new link named ${newLink.rule.name} doesn't exist"]
             }
