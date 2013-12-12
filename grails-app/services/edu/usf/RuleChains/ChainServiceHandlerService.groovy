@@ -38,10 +38,12 @@ class ChainServiceHandlerService {
             return [ chainServiceHandlers: ChainServiceHandler.list() ]
         }
     }
-    def addChainServiceHandler(String name,def ch) {
-        def chain = Chain.findByName(ch.name)
+    def addChainServiceHandler(String name,def ch,boolean isSynced = true) {
+        def chain = Chain.findByName(('name' in ch)?ch.name:ch)
         if(!!name && !!!!chain) {
+            chain.isSynced = isSynced
             def chainServiceHandler = [ name: name.trim(), chain: chain ] as ChainServiceHandler
+            chainServiceHandler.isSynced = isSynced
             if(!chainServiceHandler.save(failOnError:false, flush: true, insert: true, validate: true)) {
                 return [ error : "Name value '${chainServiceHandler.errors.fieldError.rejectedValue}' rejected" ]
             } else {
@@ -52,7 +54,7 @@ class ChainServiceHandlerService {
         }
         return [ error: "You must supply a name" ]
     }
-    def modifyChainServiceHandler(String name,def updatedChainServiceHandler) {
+    def modifyChainServiceHandler(String name,def updatedChainServiceHandler,boolean isSynced = true) {
         def chainServiceHandler = ChainServiceHandler.findByName(name.trim())
         if(!!chainServiceHandler) {
             chainServiceHandler.properties = updatedChainServiceHandler.collectEntries {
@@ -61,13 +63,14 @@ class ChainServiceHandlerService {
                         return [ "${it.key}": MethodEnum.byName((("name" in it.value)?it.value.name:it.value)) ]
                         break
                     case "chain":
-                        return [ "${it.key}": Chain.findByName(it.value.name) ]
+                        return [ "${it.key}": Chain.findByName(("name" in it.value)?it.value.name:it.value) ]
                         break
                     default:
                         return [ "${it.key}": it.value ]
                         break
                 }
             }
+            chainServiceHandler.isSynced
             if(!chainServiceHandler.save(failOnError:false, flush: true, validate: true)) {
                 chainServiceHandler.errors.allErrors.each {
                     println it
