@@ -158,7 +158,7 @@ class RuleSetService {
         }
         return [ error: "You must supply a rule set name, rule name and a service type"]
     }
-    def updateRule(String ruleSetName,String name,def ruleUpdate) {
+    def updateRule(String ruleSetName,String name,def ruleUpdate,boolean isSynced = true) {
         if(!!name && !!ruleSetName && !!ruleUpdate) {
             def ruleSet = RuleSet.findByName(ruleSetName)
             if(!!ruleSet) {
@@ -190,6 +190,7 @@ class RuleSetService {
                     it.name == name
                 }
                 if(!!rule) {
+                    rule.isSynced = isSynced
                     if("chain" in ruleUpdate) {
                         ruleUpdate.chain = ("name" in ruleUpdate.chain)?Chain.findByName(ruleUpdate.chain.name):Chain.get(ruleUpdate.chain.id)
                         ruleUpdate.name = ruleUpdate.chain.name
