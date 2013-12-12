@@ -15,6 +15,8 @@ import org.eclipse.jgit.api.PullCommand
 import org.eclipse.jgit.api.PushCommand
 import org.eclipse.jgit.api.SubmoduleSyncCommand
 import org.eclipse.jgit.api.RmCommand
+import org.eclipse.jgit.api.CheckoutCommand
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
@@ -70,7 +72,8 @@ class GitMeta {
 //            exit 1
 //        }
         CloneCommand clone = Git.cloneRepository()
-        clone.setBare(false).setCloneAllBranches(true);
+//        clone.setBare(false).setCloneAllBranches(true) // This works,  now I'm working on selecting a specific branch
+        clone.setBare(false).setBranch(Holders.config.gitConfig.branch)
         // clone.setDirectory(f).setURI("git@192.168.2.43:test.git")
         clone.setDirectory(localRepoFolder).setURI(Holders.config.gitConfig.gitRemoteURL);
         UsernamePasswordCredentialsProvider user = new UsernamePasswordCredentialsProvider(Holders.config.gitConfig.gitRemotelogin, Holders.config.gitConfig.gitRemotePassword);                
