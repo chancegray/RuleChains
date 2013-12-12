@@ -13,11 +13,13 @@ class ConfigService {
     def grailsApplication
     def chainService
     def ruleSetService
+    def chainServiceHandlerService
     
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
         def gitFolder = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
         def ruleSetsFolder = new File(gitFolder, 'ruleSets')
         def chainsFolder = new File(gitFolder, 'chains')
+        def chainServiceHandlersFolder = new File(gitFolder, 'chainServiceHandlers')
         def restore = [:]
         if(ruleSetsFolder.exists()) {
             restore.ruleSets = []
@@ -57,6 +59,18 @@ class ConfigService {
                     "isSynced": isSynced
                 ]
             }            
+        }
+        if(chainServiceHandlersFolder.exists()) {
+            restore.chainServiceHandlers = []
+            chainServiceHandlersFolder.eachFile(FileType.FILES) { chainServiceHandlerFile ->
+                def chainServiceHandler = JSON.parse(chainServiceHandlerFile.text)
+                restore.chainServiceHandlers << (chainServiceHandler as Map).inject([isSynced: isSynced]) {c,k,v -> 
+                    c[k] = v
+                    return c
+                }
+                chainServiceHandlerService.addChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler.chain,isSynced) 
+                chainServiceHandlerService.modifyChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler,isSynced)
+            }
         }
         
         
