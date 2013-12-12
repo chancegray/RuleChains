@@ -359,14 +359,16 @@ class RuleSetService {
         }
         return [ error: "You must supply a rule set name and rule name"]
     }
-    def deleteRule(String ruleSetName,String name) {
+    def deleteRule(String ruleSetName,String name,boolean isSynced = true) {
         if(!!name && !!ruleSetName) {
             def ruleSet = RuleSet.findByName(ruleSetName)
             if(!!ruleSet) {
+                ruleSet.isSynced = isSynced
                 def rule = ruleSet.rules.find {
                     it.name == name
                 }
                 if(!!rule) {
+                    rule.isSynced = isSynced
                     // See if this rule is in any chains
                     def chainNames = Link.findAllByRule(rule).collect { l ->
                         l.chain.name
