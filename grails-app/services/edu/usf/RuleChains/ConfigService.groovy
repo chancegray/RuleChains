@@ -6,6 +6,7 @@ import grails.converters.*
 import grails.util.DomainBuilder
 import groovy.swing.factory.ListFactory
 import groovy.json.JsonSlurper
+import groovy.io.FileType
 
 class ConfigService {
     static transactional = true
@@ -16,20 +17,14 @@ class ConfigService {
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
         def gitFolder = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
         def ruleSetsFolder = new File(gitFolder, 'ruleSets')
+        def chainsFolder = new File(gitFolder, 'chains')
         def restore = [:]
         if(ruleSetsFolder.exists()) {
             restore.ruleSets = []
             ruleSetsFolder.eachDir{ ruleSetFolder ->
-//                println ruleSetFolder.name 
-//                println isSynced
                 ruleSetService.addRuleSet(ruleSetFolder.name,isSynced)
                 def rs = []
-                ruleSetFolder.eachFile { ruleFile ->
-//                    println ruleFile.name
-//                    println JSON.parse(ruleFile.text)
-//                    println rs as JSON
-//                    println ruleSetFolder.name
-                    // println rs[ruleSetFolder.name]
+                ruleSetFolder.eachFile(FileType.FILES) { ruleFile ->
                     def rule = JSON.parse(ruleFile.text)
                     rs << rule                    
                     ruleSetService.addRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule["class"].tokenize('.').last(),isSynced)
@@ -44,6 +39,27 @@ class ConfigService {
                 ]
             }
         }
+        if(chainsFolder.exists()) {
+            restore.chains = []
+            chainsFolder.eachDir{ chainFolder ->
+                chainService.addChain(chainFolder.name,isSynced)
+                def cs = []
+                chainFolder.eachFile(FileType.FILES) { linkFile ->
+                    def link = JSON.parse(linkFile.text)
+                    cs << link
+                    chainService.addChainLink(chainFolder.name,link,isSynced)
+                }
+                restore.chains << [ "${chainFolder.name}": cs.collect { link -> 
+                        link.chain = chainFolder.name
+                        link.isSynced = isSynced
+                        return link
+                    },
+                    "isSynced": isSynced
+                ]
+            }            
+        }
+        
+        
         println restore as JSON
         // println "Does ruleSets exist? ${ruleSetsFolder.exists()}"
     }
