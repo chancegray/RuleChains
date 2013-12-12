@@ -33,6 +33,7 @@ class ConfigService {
                     def rule = JSON.parse(ruleFile.text)
                     rs << rule                    
                     ruleSetService.addRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule["class"].tokenize('.').last(),isSynced)
+                    ruleSetService.updateRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule,isSynced)
                 }
                 restore.ruleSets << [ "${ruleSetFolder.name}": rs.collect { rule -> 
                         rule.ruleSet = ruleSetFolder.name
