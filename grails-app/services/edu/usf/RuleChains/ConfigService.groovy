@@ -16,6 +16,31 @@ class ConfigService {
     def chainServiceHandlerService
     
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
+        // Clear the Chain/Rule/ChainHandlers data
+        chainServiceHandlerService.listChainServiceHandlers()?.chainServiceHandlers.each { csh ->
+            deleteChainServiceHandler(csh.name,isSynced)
+        }
+        chainService.listChains()?.chains.each { c ->
+            def chainName = c.name
+            def links = chainService.getChain(chainName).chain?.links
+            if(!!links) {
+                links.each { l -> 
+                    chainService.deleteChainLink(chainName,l.sequenceNumber,isSynced)
+                }
+            }
+            chainService.deleteChain(chainName,isSynced)
+        }
+        ruleSetService.listRuleSets()?.ruleSets.each { rs ->
+            def ruleSetName = rs.name
+            def rules = ruleSetService.getRuleSet(ruleSetName).ruleSet?.rules
+            if(!!rules) {
+                rules.each { r ->
+                    ruleSetService.deleteRule(ruleSetName,r.name,isSynced)
+                }
+            }
+            ruleSetService.deleteRuleSet(ruleSetName,isSynced)
+        }
+        // Retrieve the Git data and build it into the database
         def gitFolder = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
         def ruleSetsFolder = new File(gitFolder, 'ruleSets')
         def chainsFolder = new File(gitFolder, 'chains')
