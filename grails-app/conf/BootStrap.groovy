@@ -1,6 +1,8 @@
+
 import grails.util.GrailsNameUtils
 import grails.util.GrailsUtil
 import edu.usf.RuleChains.Chain
+import edu.usf.RuleChains.ChainJobListener
 import edu.usf.RuleChains.JobService
 import edu.usf.RuleChains.JobController
 import edu.usf.RuleChains.LinkService
@@ -30,6 +32,8 @@ class BootStrap {
             linkMeta.buildMeta(grailsApplication)
             jobMeta.buildMeta(quartzScheduler)
             gitMeta.buildMeta(grailsApplication,usfCasService)
+            // Added Job Listener for Git Sync'ing
+            quartzScheduler.getListenerManager().addJobListener(new ChainJobListener())
             print jobService.listChainJobs()
             configService.syncronizeDatabaseFromGit()
         }
