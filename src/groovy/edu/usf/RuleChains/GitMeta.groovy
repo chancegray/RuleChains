@@ -441,7 +441,7 @@ class GitMeta {
 //            List<File> files = new File("${localRepoFolder.absolutePath}/jobs/").listFiles().findAll { it.name =~ /.*\.json/ }.findAll { f -> !(f.name in jsonFiles) }.each { f -> f.delete() }
 //            files.findAll { f -> !(f.name in jsonFiles) }.each { f -> f.delete() }
             
-            { jobFiles ->
+            { jsonFiles ->
                 new File("${localRepoFolder.absolutePath}/jobs/").listFiles().findAll { it.name =~ /.*\.json/ }.findAll { f -> !(f.name in jsonFiles) }.each { f -> f.delete() }
                 git.add().addFilepattern(".").call()
                 git.commit().setMessage("Syncronizing Jobs in Git Repo").call()
