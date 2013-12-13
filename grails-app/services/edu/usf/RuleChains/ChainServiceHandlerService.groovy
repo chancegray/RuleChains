@@ -70,7 +70,7 @@ class ChainServiceHandlerService {
                         break
                 }
             }
-            chainServiceHandler.isSynced
+            chainServiceHandler.isSynced = isSynced
             if(!chainServiceHandler.save(failOnError:false, flush: true, validate: true)) {
                 chainServiceHandler.errors.allErrors.each {
                     println it
@@ -81,10 +81,11 @@ class ChainServiceHandlerService {
         }
         return [ error : "Chain Service Handler named ${name} not found!"]
     }
-    def deleteChainServiceHandler(String name) {
+    def deleteChainServiceHandler(String name,boolean isSynced = true) {
         if(!!name) {
             def chainServiceHandler = ChainServiceHandler.findByName(name.trim())
             if(!!chainServiceHandler) {
+                chainServiceHandler.isSynced = isSynced
                 chainServiceHandler.delete()
                 return [ success : "Chain Service Handler deleted" ]
             }
