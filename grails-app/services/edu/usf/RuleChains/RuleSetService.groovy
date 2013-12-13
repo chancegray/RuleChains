@@ -71,10 +71,11 @@ class RuleSetService {
         }
         return [ error : "You must supply a name for the target ruleSet"]
     }
-    def deleteRuleSet(String name) {
+    def deleteRuleSet(String name,boolean isSynced = true) {
         if(!!name) {
             def ruleSet = RuleSet.findByName(name.trim())
             if(!!ruleSet) {
+                ruleSet.isSynced = isSynced
                 ruleSet.delete()
                 return [ success : "RuleSet deleted" ]
             }
