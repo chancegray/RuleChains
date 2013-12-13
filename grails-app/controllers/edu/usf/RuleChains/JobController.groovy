@@ -4,7 +4,7 @@ import grails.converters.*
 class JobController {
     def jobService
     def afterInterceptor = [action: this.&syncGitJobs, only: ['createChainJob','removeChainJob','unscheduleChainJob','rescheduleChainJob','updateChainJob','addscheduleChainJob','mergescheduleChainJob']]
-    private syncGitJobs() {
+    private syncGitJobs(model) {
         jobService.syncronizeGitWithComment()
     }
     def listChainJobs() {
