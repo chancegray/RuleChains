@@ -206,14 +206,16 @@ class ChainService {
         }        
         return [ error : "Chain named ${name} not found!"]
     }
-    def deleteChainLink(String name,def sequenceNumber) {
+    def deleteChainLink(String name,def sequenceNumber,boolean isSynced = true) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
+            chain.isSynced = isSynced
             def link = Link.createCriteria().get {
                 eq("chain",chain)
                 eq("sequenceNumber",sequenceNumber.toLong())
             }
             if(!!link) {
+                link.isSynced = isSynced
                 if(!chain.removeFromLinks(link).save(failOnError:false, flush: false, validate: true)) {
                     chain.errors.allErrors.each {
                         println "Error:"+it
