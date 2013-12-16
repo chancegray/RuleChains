@@ -16,6 +16,7 @@ import org.eclipse.jgit.api.PushCommand
 import org.eclipse.jgit.api.SubmoduleSyncCommand
 import org.eclipse.jgit.api.RmCommand
 import org.eclipse.jgit.api.CheckoutCommand
+import org.eclipse.jgit.api.StatusCommand
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.lib.Repository
@@ -74,14 +75,6 @@ class GitMeta {
                 return Holders.config.gitConfig.fallbackUsername
             }
         }
-//        try {
-//            repository = command.call().repository
-//            println "Initialised empty git repository for the project."
-//        }
-//        catch (Exception ex) {
-//            println "Unable to initialise git repository - ${ex.message}"
-//            exit 1
-//        }
         CloneCommand clone = Git.cloneRepository()
 //        clone.setBare(false).setCloneAllBranches(true) // This works,  now I'm working on selecting a specific branch
         clone.setBare(false).setBranch(Holders.config.gitConfig.branch)
@@ -95,11 +88,6 @@ class GitMeta {
         } catch (GitAPIException e) {
             e.printStackTrace();
         }
-        // Now commit the files that aren't ignored to the repository.
-        // def git = new Git(repository)
-//        git.add().addFilepattern(".").call()
-//        git.commit().setMessage("Initial commit of RuleChains code sources.").call()
-//        println "Committed initial code to the git repository."
 
         PushCommand push = git.push()
         push.setCredentialsProvider(user)
@@ -107,7 +95,7 @@ class GitMeta {
         PullCommand pull = git.pull()
         pull.setCredentialsProvider(user)
         // pull.setRemote(Holders.config.gitConfig.gitRemoteURL)
-        RmCommand rm = git.rm()
+        RmCommand rm = git.rm()        
         SubmoduleSyncCommand sync = git.submoduleSync()
         
         gitRepository = repository  
@@ -121,8 +109,9 @@ class GitMeta {
                     git.rm().addFilepattern("${relativePath}").call()
                     f.delete()
                 }
-
-                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                if(!git.status().call().isClean()) {
+                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                }
                 push.call()
                 pull.call()
             }
@@ -136,7 +125,9 @@ class GitMeta {
                         f.renameTo(new File("${localRepoFolder.absolutePath}/ruleSets/${delegate.ruleSet.name}/${delegate.name}.json"))
                         git.add().addFilepattern("${relativePath}").call()
                         git.rm().addFilepattern("${oldRelativePath}").call()
-                        git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                        if(!git.status().call().isClean()) {
+                            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()                            
+                        }
                         push.call();
                         pull.call()
                     }
@@ -270,7 +261,9 @@ class GitMeta {
                         break
                 }
                 git.add().addFilepattern("${relativePath}").call()
-                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                if(!git.status().call().isClean()) {
+                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                }
                 push.call()
                 pull.call()
             }       
@@ -280,7 +273,9 @@ class GitMeta {
             pull.call()
             new File("${localRepoFolder.absolutePath}/ruleSets/${delegate.name}/").deleteDir()
             git.rm().addFilepattern("${relativePath}").call()
-            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            }
             push.call()
             pull.call()            
         }
@@ -301,7 +296,9 @@ class GitMeta {
                     }
                     git.add().addFilepattern("${relativePath}").call()
                 }
-                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                if(!git.status().call().isClean()) {
+                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                }
                 push.call()
                 pull.call()            
             }
@@ -314,7 +311,9 @@ class GitMeta {
                 f.mkdirs()
             }            
             git.add().addFilepattern("${relativePath}").call()
-            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            }
             push.call()
             pull.call()
         }
@@ -323,7 +322,9 @@ class GitMeta {
             new File("${localRepoFolder.absolutePath}/chains/${delegate.name}/").deleteDir()
             pull.call()
             git.rm().addFilepattern("${relativePath}").call()
-            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            }
             push.call();
         }
         Chain.metaClass.updateGitWithComment = {comment ->
@@ -343,7 +344,9 @@ class GitMeta {
                     }
                     git.add().addFilepattern("${relativePath}").call()
                 }
-                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                if(!git.status().call().isClean()) {
+                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                }
                 push.call()
                 pull.call()
             }
@@ -357,7 +360,9 @@ class GitMeta {
             }         
             git.add().addFilepattern("${relativePath}").call()
             git.add().addFilepattern(".").call()
-            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            }
             push.call()
             pull.call()
         }
@@ -368,7 +373,9 @@ class GitMeta {
             if(f.exists()) {
                 f.delete()
                 git.rm().addFilepattern("${relativePath}").call()
-                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                if(!git.status().call().isClean()) {
+                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                }
                 push.call()
             }
             pull.call()
@@ -383,7 +390,9 @@ class GitMeta {
                     f.renameTo(new File("${localRepoFolder.absolutePath}/chainServiceHandlers/${delegate.name}.json"))
                     git.add().addFilepattern("${relativePath}").call()
                     git.rm().addFilepattern("${oldRelativePath}").call()                
-                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                    if(!git.status().call().isClean()) {
+                        git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                    }
                     push.call()
                     pull.call()
                 }
@@ -421,68 +430,71 @@ class GitMeta {
             ] as JSON)
             git.add().addFilepattern("${relativePath}").call()
             git.add().addFilepattern(".").call()
-            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            }
             push.call()
             pull.call()
         }
-        for (targetClass in [ JobService.class,ChainJobListener.class ]) {
-            targetClass.metaClass.syncronizeGitWithComment { ->
-                println "${localRepoFolder.absolutePath}/jobs/"
-                def jobFolder = new File("${localRepoFolder.absolutePath}/jobs/")
-                if(!jobFolder.exists()) {
-                    jobFolder.mkdirs()
+        JobService.metaClass.getGitAuthorInfo { ->
+            def gitAuthorInfo = [ user: resolveUsername.call() ]
+            gitAuthorInfo.email = resolveEmail.call(gitAuthorInfo.user)
+            return gitAuthorInfo
+        }
+        RuleChainsJobListener.metaClass.deleteGitWithComment {context,comment ->
+            def jobKey = context.getJobDetail().getKey()
+            pull.call()
+            def relativePath = "jobs/${jobKey.name}.json"
+            def dataMap = context.getMergedJobDataMap()
+            def gitAuthorInfo = dataMap.get("gitAuthorInfo")            
+            def f = new File("${localRepoFolder.absolutePath}/jobs/${jobKey.name}.json")
+            if(f.exists()) {
+                f.delete()
+                git.rm().addFilepattern("${relativePath}").call()
+                if(!git.status().call().isClean()) {
+                    git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
                 }
-                { jsonFiles ->
-                    new File("${localRepoFolder.absolutePath}/jobs/").listFiles().findAll { it.name =~ /.*\.json/ }.findAll { f -> !(f.name in jsonFiles) }.each { f -> 
-                        def relativePath = "jobs/${f.name}.json"
-                        def scheduleName = f.name
-                        f.delete() 
-                        git.rm().addFilepattern("${relativePath}").call()
-                        git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage("Removing old schedule ${scheduleName}").call()
-                        push.call()
-                        pull.call()
-                    }
-                }.call({jgs ->
-                    pull.call()
-                    def jsonFiles = []
-                    jgs.each{ g ->
-                        jsonFiles << g.jobs.collect { j->
-                            def relativePath = "jobs/${j.name}.json"
-                            def f = new File("${localRepoFolder.absolutePath}/jobs/${j.name}.json")
-                            def comment
-                            if(f.exists()) {
-                                // Update
-                                comment = "Updating Schedule ${j.name}"
-                            } else {
-                                // Create
-                                comment = "Creating Schedule ${j.name}"
-                            }
-                            f.text = {js->
-                                js.setPrettyPrint(true)
-                                return js                            
-                            }.call([
-                                group: g.name,
-                                name: j.name,
-                                triggers: j.triggers,
-                                chain: j.chain,
-                                input: j.input
-                            ] as JSON)
-                            git.add().addFilepattern("${relativePath}").call()
-                            git.commit().setMessage(comment).call()
-                            push.call()
-                            pull.call()                    
-                            return "${j.name}.json" 
-                        }
-                    }
-                    return jsonFiles
-                }.call(delegate.listChainJobs().jobGroups))
+                push.call()
             }
+            pull.call()
+        }    
+        RuleChainsJobListener.metaClass.saveGitWithComment {context,comment ->
+            def jobFolder = new File("${localRepoFolder.absolutePath}/jobs/")
+            if(!jobFolder.exists()) {
+                jobFolder.mkdirs()
+            }
+            pull.call()
+            def jobKey = context.getJobDetail().getKey()
+            println jobKey.name
+            println jobKey
+            def dataMap = context.getMergedJobDataMap()
+            def gitAuthorInfo = dataMap.get("gitAuthorInfo")
+            def relativePath = "jobs/${jobKey.name}.json"
+            def f = new File("${localRepoFolder.absolutePath}/jobs/${jobKey.name}.json")
+            f.text = {js->
+                js.setPrettyPrint(true)
+                return js                            
+            }.call([
+                group: jobKey.group,
+                name: jobKey.name,
+                triggers: context.getScheduler().getTriggersOfJob(jobKey).collect { it.getCronExpression() },
+                chain: dataMap.getString("chain"),
+                input: dataMap.get("input")
+            ] as JSON)
+            git.add().addFilepattern("${relativePath}").call()
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+            }
+            push.call()
+            pull.call() 
         }
         Link.metaClass.deleteGitWithComment {comment ->
             pull.call()
             new File("${localRepoFolder.absolutePath}/chains/${delegate.getPersistentValue('chain').name}/${delegate.sequenceNumber}.json").delete()
             git.add().addFilepattern(".").call()
-            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            }
             push.call()
             pull.call()
         }
@@ -495,7 +507,9 @@ class GitMeta {
                     f.renameTo(new File("${localRepoFolder.absolutePath}/chains/${delegate.chain.name}/${delegate.sequenceNumber}.json"))
                     git.add().addFilepattern("${relativePath}").call()
                     git.add().addFilepattern(".").call()
-                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                    if(!git.status().call().isClean()) {
+                        git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                    }
                     push.call()
                     pull.call()
                 }                
@@ -566,8 +580,10 @@ class GitMeta {
             ] as JSON) 
             git.add().addFilepattern("${relativePath}").call()
             git.add().addFilepattern(".").call()
-            git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
-            push.call();
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            }
+            push.call()
             pull.call()
         }
     }
