@@ -41,14 +41,14 @@ class JobMeta {
         }
         JobService.metaClass.createChainJob = { String cronExpression,String name,def input = [] ->
             def suffix = System.currentTimeMillis()
-            if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) }.size() > 0)) {
+            if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name[0..<name.lastIndexOf(":")]) }.size() > 0)) {
                 def jobKey = quartzScheduler.getJobKeys(
-                    groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
+                    groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name[0..<name.lastIndexOf(":")]) })
                 ).find { jk -> return (it.name == name) }                    
                 try {
                     try {
                         def trigger = newTrigger()
-                        .withIdentity("${name}:${suffix}")
+                        .withIdentity((name.contains(':'))?name:"${name}:${suffix}")
                         .withSchedule(cronSchedule(cronExpression))
                         .forJob(jobKey)
                         .usingJobData("gitAuthorInfo",delegate.getGitAuthorInfo())
@@ -69,7 +69,7 @@ class JobMeta {
                 }
             } else {
                 try {
-                    def jobDetail = ClosureJob.createJob(name:"${name}:${suffix}",durability:true,concurrent:false,jobData: [input: input,chain: name,gitAuthorInfo: delegate.getGitAuthorInfo()]){ jobCtx , appCtx->
+                    def jobDetail = ClosureJob.createJob(name:(name.contains(':'))?name:"${name}:${suffix}",durability:true,concurrent:false,jobData: [input: input,chain: name[0..<name.lastIndexOf(":")],gitAuthorInfo: delegate.getGitAuthorInfo()]){ jobCtx , appCtx->
                         log.info "************* it ran ***********"
                         def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))                        
                         if(!!chain) {
@@ -77,11 +77,11 @@ class JobMeta {
                             chain.jobHistory = { jh,d -> 
                                 if('error' in jh) {
                                     log.info "Creating a new job history"
-                                    jh = d.addJobHistory("${name}:${suffix}")
+                                    jh = d.addJobHistory((name.contains(':'))?name:"${name}:${suffix}")
                                     return ('error' in jh)?null:jh.jobHistory
                                 }
                                 return jh.jobHistory
-                            }.call(delegate.findJobHistory("${name}:${suffix}"),delegate)
+                            }.call(delegate.findJobHistory((name.contains(':'))?name:"${name}:${suffix}"),delegate)
                             if(!!chain.jobHistory) {
                                 chain.jobHistory.updateJobProperties(jobCtx)
                             } else {
@@ -89,13 +89,13 @@ class JobMeta {
                             }
                             def result = chain.execute(jobCtx.mergedJobDataMap.get('input'))
                             println "Result is ${result}"
-                            chain.jobHistory.appendToLog("[Finished] ${name}:${suffix}")                            
+                            chain.jobHistory.appendToLog("[Finished] ${(name.contains(':'))?name:name+":"+suffix}")                            
                         } else {
                             log.error "Chain not found ${jobCtx.mergedJobDataMap.get('chain')}"
                         }
                     }
                     try {
-                        def trigger = newTrigger().withIdentity("${name}:${suffix}")
+                        def trigger = newTrigger().withIdentity((name.contains(':'))?name:"${name}:${suffix}")
                         .withSchedule(cronSchedule(cronExpression))
                         .build()
                         return [
