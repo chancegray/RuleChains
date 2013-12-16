@@ -14,6 +14,7 @@ class ConfigService {
     def chainService
     def ruleSetService
     def chainServiceHandlerService
+    def jobService
     
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
         // Clear the Chain/Rule/ChainHandlers data
@@ -45,6 +46,7 @@ class ConfigService {
         def ruleSetsFolder = new File(gitFolder, 'ruleSets')
         def chainsFolder = new File(gitFolder, 'chains')
         def chainServiceHandlersFolder = new File(gitFolder, 'chainServiceHandlers')
+        def jobsFolder = new File(gitFolder, 'jobs')
         def restore = [:]
         if(ruleSetsFolder.exists()) {
             restore.ruleSets = []
@@ -97,7 +99,20 @@ class ConfigService {
                 chainServiceHandlerService.modifyChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler,isSynced)
             }
         }
-        
+        if(jobsFolder.exists()) {
+            restore.jobs = []
+            jobsFolder.eachFile(FileType.FILES) { jobFile ->
+                def job = JSON.parse(jobFile.text)
+                restore.jobs << job
+                job.triggers.eachWithIndex { t,i->
+                    if(i < 1) {
+                        jobService.createChainJob(t,job.name,(job.input)?job.input:[])
+                    } else {
+                        jobService.addscheduleChainJob(t,job.name)
+                    }
+                }
+            }
+        }
         
         println restore as JSON
         // println "Does ruleSets exist? ${ruleSetsFolder.exists()}"
