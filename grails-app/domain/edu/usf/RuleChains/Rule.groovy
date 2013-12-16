@@ -5,8 +5,10 @@ import org.hibernate.FlushMode
 abstract class Rule {
     String name
     JobHistory jobHistory
+    boolean isSynced = true
+    
     static belongsTo = [ruleSet: RuleSet]
-    static transients = ['jobHistory']
+    static transients = ['jobHistory','isSynced']
     static constraints = {
         name(   
                 blank: false,

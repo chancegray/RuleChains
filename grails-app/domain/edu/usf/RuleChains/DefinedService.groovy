@@ -35,15 +35,29 @@ class DefinedService extends Rule {
     }
     
     def afterInsert() {
-        saveGitWithComment("Creating ${name} DefinedService")
+        if(isSynced) {
+            saveGitWithComment("Creating ${name} DefinedService")
+        }
     }
     def beforeUpdate() {
-        updateGitWithComment("Renaming ${name} DefinedService")
+        if(isSynced) {
+            updateGitWithComment("Renaming ${name} DefinedService")
+        }
     }
     def afterUpdate() {
-        saveGitWithComment("Updating ${name} DefinedService")
+        if(isSynced) {
+            saveGitWithComment("Updating ${name} DefinedService")
+            /**
+             * Anytime a rule is renamed, any link referenced rule name in git repo needs to be updated (if exists)
+             **/
+            Link.findAllByRule(this).each { l ->
+                l.saveGitWithComment("Updating Link referencing ${name} SQLQuery")
+            }
+        }
     }
     def beforeDelete() {
-        deleteGitWithComment("Deleted ${name} DefinedService")
+        if(isSynced) {
+            deleteGitWithComment("Deleted ${name} DefinedService")
+        }
     }
 }

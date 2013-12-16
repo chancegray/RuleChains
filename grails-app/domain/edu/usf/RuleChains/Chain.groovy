@@ -13,9 +13,10 @@ class Chain {
     String name
     List<Link> links
     List<List> input = [[:]]
+    boolean isSynced = true
     JobHistory jobHistory
     static hasMany = [links:Link]
-    static transients = ['orderedLinks','input','output','jobHistory']
+    static transients = ['orderedLinks','input','output','jobHistory','isSynced']
     static constraints = {
         name(   
                 blank: false,
@@ -40,14 +41,37 @@ class Chain {
                 }
             )               
     }
+    
+    def afterInsert() {
+        if(isSynced) {
+            saveGitWithComment("Creating ${name} Chain")
+        }
+    }
+    def beforeUpdate() {
+        if(isSynced) {
+            updateGitWithComment("Updating ${name} Chain")
+        }
+    }
+    def afterDelete() {
+        if(isSynced) {
+            deleteGitWithComment("Deleted ${name} Chain")
+        }
+    }    
+    
     /**
      * Anytime a chain is renamed, snippet reference name needs to be renamed (if exists)
+     * and any ChainServiceHandlers their reference name updated as well
      **/
     def afterUpdate() {        
         Snippet.findAllByChain(this).each { s ->
             if(s.name != name) {
                 s.name=name
                 s.save()
+            }
+        }
+        if(isSynced) {
+            ChainServiceHandler.findAllByChain(this).each { h ->
+                h.saveGitWithComment("Updating ChainServicesHandler referencing ${name} Chain")
             }
         }
     }

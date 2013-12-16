@@ -4,6 +4,8 @@ import org.hibernate.FlushMode
 class RuleSet {
     String name
     static hasMany = [rules:Rule]
+    boolean isSynced = true    
+    static transients = ['isSynced']    
     static constraints = {
         name(
             blank: false,
@@ -28,15 +30,23 @@ class RuleSet {
         )
     }   
     def afterInsert() {
-        saveGitWithComment("Creating ${name} RuleSet")
+        if(isSynced) {
+            saveGitWithComment("Creating ${name} RuleSet")
+        }
     }
     def beforeUpdate() {
-        updateGitWithComment("Updating ${name} RuleSet")
+        if(isSynced) {
+            updateGitWithComment("Updating ${name} RuleSet")
+        }
     }
     def afterUpdate() {
-        // saveGitWithComment("Updating ${name} RuleSet")
+        if(isSynced) {
+            // saveGitWithComment("Updating ${name} RuleSet")
+        }
     }
     def afterDelete() {
-        deleteGitWithComment("Deleted ${name} RuleSet")
+        if(isSynced) {
+            deleteGitWithComment("Deleted ${name} RuleSet")
+        }
     }    
 }

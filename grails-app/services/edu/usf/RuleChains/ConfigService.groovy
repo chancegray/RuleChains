@@ -6,13 +6,117 @@ import grails.converters.*
 import grails.util.DomainBuilder
 import groovy.swing.factory.ListFactory
 import groovy.json.JsonSlurper
+import groovy.io.FileType
 
 class ConfigService {
     static transactional = true
     def grailsApplication
     def chainService
     def ruleSetService
+    def chainServiceHandlerService
+    def jobService
     
+    def syncronizeDatabaseFromGit(boolean isSynced = false) {
+        // Clear the Chain/Rule/ChainHandlers data
+        chainServiceHandlerService.listChainServiceHandlers()?.chainServiceHandlers.each { csh ->
+            deleteChainServiceHandler(csh.name,isSynced)
+        }
+        chainService.listChains()?.chains.each { c ->
+            def chainName = c.name
+            def links = chainService.getChain(chainName).chain?.links
+            if(!!links) {
+                links.each { l -> 
+                    chainService.deleteChainLink(chainName,l.sequenceNumber,isSynced)
+                }
+            }
+            chainService.deleteChain(chainName,isSynced)
+        }
+        ruleSetService.listRuleSets()?.ruleSets.each { rs ->
+            def ruleSetName = rs.name
+            def rules = ruleSetService.getRuleSet(ruleSetName).ruleSet?.rules
+            if(!!rules) {
+                rules.each { r ->
+                    ruleSetService.deleteRule(ruleSetName,r.name,isSynced)
+                }
+            }
+            ruleSetService.deleteRuleSet(ruleSetName,isSynced)
+        }
+        // Retrieve the Git data and build it into the database
+        def gitFolder = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
+        def ruleSetsFolder = new File(gitFolder, 'ruleSets')
+        def chainsFolder = new File(gitFolder, 'chains')
+        def chainServiceHandlersFolder = new File(gitFolder, 'chainServiceHandlers')
+        def jobsFolder = new File(gitFolder, 'jobs')
+        def restore = [:]
+        if(ruleSetsFolder.exists()) {
+            restore.ruleSets = []
+            ruleSetsFolder.eachDir{ ruleSetFolder ->
+                ruleSetService.addRuleSet(ruleSetFolder.name,isSynced)
+                def rs = []
+                ruleSetFolder.eachFile(FileType.FILES) { ruleFile ->
+                    def rule = JSON.parse(ruleFile.text)
+                    rs << rule                    
+                    ruleSetService.addRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule["class"].tokenize('.').last(),isSynced)
+                    ruleSetService.updateRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule,isSynced)
+                }
+                restore.ruleSets << [ "${ruleSetFolder.name}": rs.collect { rule -> 
+                        rule.ruleSet = ruleSetFolder.name
+                        rule.isSynced = isSynced
+                        return rule
+                    },
+                    "isSynced": isSynced
+                ]
+            }
+        }
+        if(chainsFolder.exists()) {
+            restore.chains = []
+            chainsFolder.eachDir{ chainFolder ->
+                chainService.addChain(chainFolder.name,isSynced)
+                def cs = []
+                chainFolder.eachFile(FileType.FILES) { linkFile ->
+                    def link = JSON.parse(linkFile.text)
+                    cs << link
+                    chainService.addChainLink(chainFolder.name,link,isSynced)
+                }
+                restore.chains << [ "${chainFolder.name}": cs.collect { link -> 
+                        link.chain = chainFolder.name
+                        link.isSynced = isSynced
+                        return link
+                    },
+                    "isSynced": isSynced
+                ]
+            }            
+        }
+        if(chainServiceHandlersFolder.exists()) {
+            restore.chainServiceHandlers = []
+            chainServiceHandlersFolder.eachFile(FileType.FILES) { chainServiceHandlerFile ->
+                def chainServiceHandler = JSON.parse(chainServiceHandlerFile.text)
+                restore.chainServiceHandlers << (chainServiceHandler as Map).inject([isSynced: isSynced]) {c,k,v -> 
+                    c[k] = v
+                    return c
+                }
+                chainServiceHandlerService.addChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler.chain,isSynced) 
+                chainServiceHandlerService.modifyChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler,isSynced)
+            }
+        }
+        if(jobsFolder.exists()) {
+            restore.jobs = []
+            jobsFolder.eachFile(FileType.FILES) { jobFile ->
+                def job = JSON.parse(jobFile.text)
+                restore.jobs << job
+                job.triggers.eachWithIndex { t,i->
+                    if(i < 1) {
+                        jobService.createChainJob(t,job.name,(job.input)?job.input:[])
+                    } else {
+                        jobService.addscheduleChainJob(t,job.name)
+                    }
+                }
+            }
+        }
+        
+        println restore as JSON
+        // println "Does ruleSets exist? ${ruleSetsFolder.exists()}"
+    }
     def uploadChainData(restore) {
         // def o = JSON.parse(new File('Samples/import.json').text); // Parse a JSON String
         switch(restore) {
