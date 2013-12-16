@@ -51,6 +51,7 @@ class JobMeta {
                         .withIdentity("${name}:${suffix}")
                         .withSchedule(cronSchedule(cronExpression))
                         .forJob(jobKey)
+                        .usingJobData("gitAuthorInfo",delegate.getGitAuthorInfo())
                         .build();  
 
                         return [
@@ -68,7 +69,7 @@ class JobMeta {
                 }
             } else {
                 try {
-                    def jobDetail = ClosureJob.createJob(name:"${name}:${suffix}",durability:true,concurrent:false,jobData: [input: input,chain: name]){ jobCtx , appCtx->
+                    def jobDetail = ClosureJob.createJob(name:"${name}:${suffix}",durability:true,concurrent:false,jobData: [input: input,chain: name,gitAuthorInfo: delegate.getGitAuthorInfo()]){ jobCtx , appCtx->
                         log.info "************* it ran ***********"
                         def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))                        
                         if(!!chain) {
@@ -121,7 +122,7 @@ class JobMeta {
                     groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
                 ).find { jk -> return (jk.name == name) }
                 def jobDataMap = quartzScheduler.getJobDetail(jobKey).getJobDataMap()
-                def jobDetail = ClosureJob.createJob(name:"${newName}:${suffix}",durability:true,concurrent:false,jobData: [input: jobDataMap.get("input"),chain: newName]){ jobCtx , appCtx->
+                def jobDetail = ClosureJob.createJob(name:"${newName}:${suffix}",durability:true,concurrent:false,jobData: [input: jobDataMap.get("input"),chain: newName,gitAuthorInfo: delegate.getGitAuthorInfo()]){ jobCtx , appCtx->
                     log.info "************* it ran ***********"
                     def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))
                     if(!!chain) {
@@ -265,6 +266,7 @@ class JobMeta {
                     .withIdentity("${name.split(":")[0]}:${suffix}")
                     .withSchedule(cronSchedule(cronExpression))
                     .forJob(jobKey)
+                    .usingJobData("gitAuthorInfo",delegate.getGitAuthorInfo())
                     .build()
                     return [
                         date: quartzScheduler.scheduleJob(trigger)                                
