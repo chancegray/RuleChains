@@ -4,6 +4,7 @@ import grails.converters.*
 
 class ChainController {
     def chainService
+    def jobService
     def listChains() { 
         withFormat {
             html {
@@ -122,6 +123,15 @@ class ChainController {
         }                            
     }
     def getSources() {
+        handleGitWithComment("Syncronizing removal of bad jobs") {git,push,comment ->
+            push.call()
+            if(!git.status().call().isClean()) {
+                def gitAuthorInfo = jobService.getGitAuthorInfo()
+                git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                push.call()            
+            }
+            git.pull().call()
+        }
         withFormat {
             html {
                 return chainService.getSources()
