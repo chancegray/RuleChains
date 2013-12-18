@@ -18,7 +18,7 @@ class RuleChainsJobListener {
         return "RuleChainsJobListener"
     }
     public void jobToBeExecuted(JobExecutionContext context) {
-        saveGitWithComment(context,"Saving Scheduled Job ${context.getJobDetail().getKey().name}")
+        // saveGitWithComment(context,"Saving Scheduled Job ${context.getJobDetail().getKey().name}")
         System.out.println("jobToBeExecuted has executed. "+new Date());
     }
  
