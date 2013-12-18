@@ -26,7 +26,6 @@ import grails.converters.*
 import edu.usf.RuleChains.*
 import org.hibernate.FlushMode
 import grails.util.Holders
-import edu.usf.RuleChains.ChainJobListener
 
 /**
  *
@@ -441,6 +440,66 @@ class GitMeta {
             gitAuthorInfo.email = resolveEmail.call(gitAuthorInfo.user)
             return gitAuthorInfo
         }
+        JobService.metaClass.handleGitWithComment {String comment,Closure closure->
+            pull.call()
+            closure.delegate = delegate
+            closure.call(git,push,comment)
+            push.call()
+            pull.call()
+        }        
+        ConfigService.metaClass.handleGit {Closure closure->
+            closure.call(git)
+        }
+        ChainController.metaClass.handleGitWithComment {String comment,Closure closure->
+            
+        }
+        RuleChainsSchedulerListener.metaClass.saveGitWithComment {jobDetail,triggers,comment ->
+            def jobFolder = new File("${localRepoFolder.absolutePath}/jobs/")
+            if(!jobFolder.exists()) {
+                jobFolder.mkdirs()
+            }
+            pull.call()
+            def jobKey = jobDetail.getKey()
+            println jobKey.name
+            println jobKey
+            def dataMap = jobDetail.getJobDataMap()
+            def gitAuthorInfo = dataMap.get("gitAuthorInfo")
+            def relativePath = "jobs/${jobKey.name}.json"
+            def f = new File("${localRepoFolder.absolutePath}/jobs/${jobKey.name}.json")
+            f.text = {js->
+                js.setPrettyPrint(true)
+                return js                            
+            }.call([
+                group: jobKey.group,
+                name: jobKey.name,
+                triggers: triggers,
+                chain: dataMap.getString("chain"),
+                input: dataMap.get("input")
+            ] as JSON)
+            git.add().addFilepattern("${relativePath}").call()
+            if(!git.status().call().isClean()) {
+                git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+            }
+            push.call()
+            pull.call() 
+        }
+        RuleChainsSchedulerListener.metaClass.deleteGitWithComment {context,comment ->
+            def jobKey = context.getJobDetail().getKey()
+            pull.call()
+            def relativePath = "jobs/${jobKey.name}.json"
+            def dataMap = context.getMergedJobDataMap()
+            def gitAuthorInfo = dataMap.get("gitAuthorInfo")            
+            def f = new File("${localRepoFolder.absolutePath}/jobs/${jobKey.name}.json")
+            if(f.exists()) {
+                f.delete()
+                git.rm().addFilepattern("${relativePath}").call()
+                if(!git.status().call().isClean()) {
+                    git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                }
+                push.call()
+            }
+            pull.call()
+        }    
         RuleChainsJobListener.metaClass.deleteGitWithComment {context,comment ->
             def jobKey = context.getJobDetail().getKey()
             pull.call()
@@ -586,6 +645,7 @@ class GitMeta {
             push.call()
             pull.call()
         }
+        
     }
 }
 
