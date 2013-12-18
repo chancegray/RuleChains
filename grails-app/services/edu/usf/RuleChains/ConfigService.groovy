@@ -104,11 +104,22 @@ class ConfigService {
             jobsFolder.eachFile(FileType.FILES) { jobFile ->
                 def job = JSON.parse(jobFile.text)
                 restore.jobs << job
+                def badJob = false
                 job.triggers.eachWithIndex { t,i->
                     if(i < 1) {
-                        jobService.createChainJob(t,job.name,(job.input)?job.input:[])
+                        if("error" in jobService.createChainJob(t,job.name,(job.input)?job.input:[])) {
+                            // delete the bad schedule
+                            badJob = true
+                        }
                     } else {
                         jobService.addscheduleChainJob(t,job.name)
+                    }
+                }
+                if(badJob) {
+                    handleGit { git ->
+                        def relativePath = "jobs/${job.name}.json"
+                        jobFile.delete()
+                        git.rm().addFilepattern("${relativePath}").call()
                     }
                 }
             }
