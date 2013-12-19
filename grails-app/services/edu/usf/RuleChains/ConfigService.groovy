@@ -19,7 +19,7 @@ class ConfigService {
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
         // Clear the Chain/Rule/ChainHandlers data
         chainServiceHandlerService.listChainServiceHandlers()?.chainServiceHandlers.each { csh ->
-            deleteChainServiceHandler(csh.name,isSynced)
+            chainServiceHandlerService.deleteChainServiceHandler(csh.name,isSynced)
         }
         chainService.listChains()?.chains.each { c ->
             def chainName = c.name
