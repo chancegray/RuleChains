@@ -42,11 +42,11 @@ class LinkService {
                 springSecurityBaseUrl
             ))    
         } catch(Exception e) {
-            log.debug "${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}"
-            System.out.println("${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}")
+            log.debug "${method} error: ${e.printStackTrace()} on service ${serviceUrl}"
+            System.out.println("${method} error: ${e.printStackTrace()} on service ${serviceUrl}")
             return [
                 error: e.message,
-                rule: rule.name,
+                method: method,
                 type: "CASREST",
                 url: serviceUrl
             ]                
@@ -76,11 +76,11 @@ class LinkService {
                 query
             ))
         } catch(Exception e) {
-            log.debug "${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}"
-            System.out.println("${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}")
+            log.debug "${method} error: ${e.printStackTrace()} on service ${serviceUrl}"
+            System.out.println("${method} error: ${e.printStackTrace()} on service ${serviceUrl}")
             return [
                 error: e.message,
-                rule: rule.name,
+                method: method,
                 type: "CASREST",
                 url: serviceUrl
             ]                
