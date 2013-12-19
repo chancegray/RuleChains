@@ -8,10 +8,15 @@ import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
 import au.com.bytecode.opencsv.*
+import grails.util.Holders
 
 class LinkService {
     static transactional = true
     def grailsApplication
+    
+    def getMergedGlobals(def map = [:]) {
+        return [ rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:] ] + map
+    }
     
     def casSpringSecurityRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:],String springSecurityBaseUrl) {
         try {
@@ -316,7 +321,8 @@ class LinkService {
                     new GroovyShell(new Binding([
                         longSQLplaceHolderUniqueVariable:sql,
                         longSQLSplaceHolderUniqueVariable:getSQLSources(),
-                        longROWplaceHolderVariable: input
+                        longROWplaceHolderVariable: input,
+                        rcGlobals: getMergedGlobals().rcGlobals
                     ])).evaluate("""
                         import grails.converters.*
                         import au.com.bytecode.opencsv.*
@@ -324,6 +330,7 @@ class LinkService {
                         def sql = longSQLplaceHolderUniqueVariable
                         def sqls = longSQLSplaceHolderUniqueVariable
                         def row = longROWplaceHolderVariable
+                        rcGlobals
 
                         ${rule.rule}
                     """)    
