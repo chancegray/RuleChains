@@ -8,6 +8,7 @@ import org.hibernate.FlushMode
 import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
+import grails.util.Holders
 
 class Chain {
     String name
@@ -16,7 +17,7 @@ class Chain {
     boolean isSynced = true
     JobHistory jobHistory
     static hasMany = [links:Link]
-    static transients = ['orderedLinks','input','output','jobHistory','isSynced']
+    static transients = ['orderedLinks','input','output','jobHistory','isSynced','mergedGlobals']
     static constraints = {
         name(   
                 blank: false,
@@ -41,7 +42,7 @@ class Chain {
                 }
             )               
     }
-    
+
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${name} Chain")
@@ -86,6 +87,11 @@ class Chain {
             (new RuleSetService()).deleteRule(s.ruleSet.name,s.name)
         }
     }
+
+    def getMergedGlobals(def map = [:]) {
+        return [ rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:] ] + map
+    }
+    
     def getOrderedLinks() {
         links.sort{it.sequenceNumber}
     }
@@ -126,7 +132,7 @@ class Chain {
                                 def rule = [:]
                                 rule << p
                                 rule << [
-                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString(),
+                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(getMergedGlobals(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder))).toString(),
                                     jobHistory: jobHistory
                                 ]
                                 log.info rule.rule
@@ -170,7 +176,7 @@ class Chain {
                                 def rule = [:]
                                 rule << p
                                 rule << [
-                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString(),
+                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(getMergedGlobals(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder))).toString(),
                                     jobHistory: jobHistory
                                 ]
                                 log.info rule.rule
@@ -308,6 +314,11 @@ class Chain {
                         jobHistory.appendToLog("[DefinedService] Detected a Defined service for ${orderedLinks[i].rule.name}")                        
                         log.info "Detected a Defined Service ${orderedLinks[i].rule.name}" 
                         orderedLinks[i].rule.jobHistory = jobHistory
+                        def gStringTemplateEngine = new GStringTemplateEngine()
+                        def credentials = [
+                            user: gStringTemplateEngine.createTemplate(orderedLinks[i].rule.user).make(getMergedGlobals().rcGlobals).toString(),
+                            password: gStringTemplateEngine.createTemplate(orderedLinks[i].rule.password).make(getMergedGlobals().rcGlobals).toString()
+                        ]
                         switch(orderedLinks[i].rule.authType) {
                             case AuthTypeEnum.CASSPRING:
                                 jobHistory.appendToLog("[DefinedService] Detected a CASSPRING service") 
@@ -315,8 +326,8 @@ class Chain {
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method.name(),
                                     orderedLinks[i].rule.parse,
-                                    orderedLinks[i].rule.user,
-                                    orderedLinks[i].rule.password,
+                                    credentials.user,
+                                    credentials.password,
                                     orderedLinks[i].rule.headers,
                                     { e ->
                                         switch(e) {
@@ -347,8 +358,8 @@ class Chain {
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method.name(),
                                     orderedLinks[i].rule.parse,
-                                    orderedLinks[i].rule.user,
-                                    orderedLinks[i].rule.password,
+                                    credentials.user,
+                                    credentials.password,
                                     orderedLinks[i].rule.headers,
                                     { e ->
                                         switch(e) {
@@ -379,8 +390,8 @@ class Chain {
                                     orderedLinks[i].rule.method,
                                     orderedLinks[i].rule.authType, 
                                     orderedLinks[i].rule.parse,
-                                    orderedLinks[i].rule.user,
-                                    orderedLinks[i].rule.password,
+                                    credentials.user,
+                                    credentials.password,
                                     orderedLinks[i].rule.headers,
                                     { e ->
                                         switch(e) {
@@ -471,12 +482,13 @@ class Chain {
             String toBeEvaluated = """
                 import groovy.sql.Sql
                 import oracle.jdbc.driver.OracleTypes
-
+                
+                rcGlobals
                 row
                 ${rearrange}
             """        
             try {
-                return new GroovyShell(new Binding("row":row)).evaluate(toBeEvaluated)
+                return new GroovyShell(new Binding("row":row,rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:])).evaluate(toBeEvaluated)
             } catch(Exception e) {
                 System.out.println("${row.toString()} error: ${e.message} on closure: ${toBeEvaluated}")
             }
