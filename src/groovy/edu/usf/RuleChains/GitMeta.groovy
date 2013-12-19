@@ -447,11 +447,11 @@ class GitMeta {
             push.call()
             pull.call()
         }        
-        ConfigService.metaClass.handleGit {Closure closure->
-            closure.call(git)
-        }
-        ChainController.metaClass.handleGitWithComment {String comment,Closure closure->
-            
+        ConfigService.metaClass.handleGit {def comment,Closure closure->
+            def gitAuthorInfo = [ user: resolveUsername.call() ]
+            gitAuthorInfo.email = resolveEmail.call(gitAuthorInfo.user)
+            closure.delegate = delegate
+            closure.call(comment,git,push,gitAuthorInfo)
         }
         RuleChainsSchedulerListener.metaClass.saveGitWithComment {jobDetail,triggers,comment ->
             def jobFolder = new File("${localRepoFolder.absolutePath}/jobs/")
