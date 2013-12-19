@@ -18,28 +18,37 @@ class ConfigService {
     
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
         // Clear the Chain/Rule/ChainHandlers data
-        chainServiceHandlerService.listChainServiceHandlers()?.chainServiceHandlers.each { csh ->
-            chainServiceHandlerService.deleteChainServiceHandler(csh.name,isSynced)
-        }
-        chainService.listChains()?.chains.each { c ->
-            def chainName = c.name
-            def links = chainService.getChain(chainName).chain?.links
-            if(!!links) {
-                links.each { l -> 
-                    chainService.deleteChainLink(chainName,l.sequenceNumber,isSynced)
-                }
+        def chainServiceHandlers = chainServiceHandlerService.listChainServiceHandlers()
+        if(!('error' in chainServiceHandlers)) {
+            chainServiceHandlers.chainServiceHandlers.each { csh ->
+                chainServiceHandlerService.deleteChainServiceHandler(csh.name,isSynced)
             }
-            chainService.deleteChain(chainName,isSynced)
         }
-        ruleSetService.listRuleSets()?.ruleSets.each { rs ->
-            def ruleSetName = rs.name
-            def rules = ruleSetService.getRuleSet(ruleSetName).ruleSet?.rules
-            if(!!rules) {
-                rules.each { r ->
-                    ruleSetService.deleteRule(ruleSetName,r.name,isSynced)
+        def chains = chainService.listChains()
+        if(!('error' in chains)) {
+            chains.chains.each { c ->
+                def chainName = c.name
+                def links = chainService.getChain(chainName).chain?.links
+                if(!!links) {
+                    links.each { l -> 
+                        chainService.deleteChainLink(chainName,l.sequenceNumber,isSynced)
+                    }
                 }
+                chainService.deleteChain(chainName,isSynced)
             }
-            ruleSetService.deleteRuleSet(ruleSetName,isSynced)
+        }
+        def ruleSets = ruleSetService.listRuleSets()
+        if(!('error' in ruleSets)) {
+            ruleSets.ruleSets.each { rs ->
+                def ruleSetName = rs.name
+                def rules = ruleSetService.getRuleSet(ruleSetName).ruleSet?.rules
+                if(!!rules) {
+                    rules.each { r ->
+                        ruleSetService.deleteRule(ruleSetName,r.name,isSynced)
+                    }
+                }
+                ruleSetService.deleteRuleSet(ruleSetName,isSynced)
+            }
         }
         // Retrieve the Git data and build it into the database
         def gitFolder = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
