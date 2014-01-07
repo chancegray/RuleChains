@@ -29,7 +29,7 @@ class RuleSetService {
             def ruleSet = [ name: name.trim() ] as RuleSet
             ruleSet.isSynced = isSynced
             if(!ruleSet.save(failOnError:false, flush: true, insert: true, validate: true)) {
-                return [ error : "Name value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
+                return [ error : "'${ruleSet.errors.fieldError.field}' value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
             } else {
                 return [ ruleSet: getRuleSet(ruleSet.name).ruleSet ]
             }
