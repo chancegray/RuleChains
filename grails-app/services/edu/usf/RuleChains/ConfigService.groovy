@@ -18,37 +18,28 @@ class ConfigService {
     
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
         // Clear the Chain/Rule/ChainHandlers data
-        def chainServiceHandlers = chainServiceHandlerService.listChainServiceHandlers()
-        if(!('error' in chainServiceHandlers)) {
-            chainServiceHandlers.chainServiceHandlers.each { csh ->
-                chainServiceHandlerService.deleteChainServiceHandler(csh.name,isSynced)
+        ChainServiceHandler.withTransaction { status ->
+            ChainServiceHandler.list().each { csh ->
+                csh.isSynced = isSynced
+                csh.delete()
             }
+            status.flush()
         }
-        def chains = chainService.listChains()
-        if(!('error' in chains)) {
-            chains.chains.each { c ->
-                def chainName = c.name
-                def links = chainService.getChain(chainName).chain?.links
-                if(!!links) {
-                    links.each { l -> 
-                        chainService.deleteChainLink(chainName,l.sequenceNumber,isSynced)
-                    }
-                }
-                chainService.deleteChain(chainName,isSynced)
+        Chain.withTransaction { status ->
+            Chain.list().each { c ->
+                c.isSynced = isSynced
+                c.links*.isSynced = isSynced
+                c.delete() 
             }
+            status.flush()
         }
-        def ruleSets = ruleSetService.listRuleSets()
-        if(!('error' in ruleSets)) {
-            ruleSets.ruleSets.each { rs ->
-                def ruleSetName = rs.name
-                def rules = ruleSetService.getRuleSet(ruleSetName).ruleSet?.rules
-                if(!!rules) {
-                    rules.each { r ->
-                        ruleSetService.deleteRule(ruleSetName,r.name,isSynced)
-                    }
-                }
-                ruleSetService.deleteRuleSet(ruleSetName,isSynced)
+        RuleSet.withTransaction { status ->
+            RuleSet.list().each { rs ->
+                rs.isSynced = isSynced
+                rs.rules*.isSynced = isSynced                
+                rs.delete() 
             }
+            status.flush()
         }
         // Retrieve the Git data and build it into the database
         def gitFolder = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
@@ -59,53 +50,64 @@ class ConfigService {
         def restore = [:]
         if(ruleSetsFolder.exists()) {
             restore.ruleSets = []
-            ruleSetsFolder.eachDir{ ruleSetFolder ->
-                ruleSetService.addRuleSet(ruleSetFolder.name,isSynced)
-                def rs = []
-                ruleSetFolder.eachFile(FileType.FILES) { ruleFile ->
-                    def rule = JSON.parse(ruleFile.text)
-                    rs << rule                    
-                    ruleSetService.addRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule["class"].tokenize('.').last(),isSynced)
-                    ruleSetService.updateRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule,isSynced)
+            RuleSet.withTransaction { status ->
+                ruleSetsFolder.eachDir{ ruleSetFolder ->
+                    println "Ruleset to create ${ruleSetFolder.name}"
+                    ruleSetService.addRuleSet(ruleSetFolder.name,isSynced)
+                    def rs = []
+                    ruleSetFolder.eachFile(FileType.FILES) { ruleFile ->
+                        def rule = JSON.parse(ruleFile.text)
+                        rs << rule                    
+                        ruleSetService.addRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule["class"].tokenize('.').last(),isSynced)
+                        ruleSetService.updateRule(ruleSetFolder.name,ruleFile.name[0..<ruleFile.name.lastIndexOf(".json")],rule,isSynced)
+                    }
+                    restore.ruleSets << [ "${ruleSetFolder.name}": rs.collect { rule -> 
+                            rule.ruleSet = ruleSetFolder.name
+                            rule.isSynced = isSynced
+                            return rule
+                        },
+                        "isSynced": isSynced
+                    ]
                 }
-                restore.ruleSets << [ "${ruleSetFolder.name}": rs.collect { rule -> 
-                        rule.ruleSet = ruleSetFolder.name
-                        rule.isSynced = isSynced
-                        return rule
-                    },
-                    "isSynced": isSynced
-                ]
+                status.flush()
             }
         }
         if(chainsFolder.exists()) {
             restore.chains = []
-            chainsFolder.eachDir{ chainFolder ->
-                chainService.addChain(chainFolder.name,isSynced)
-                def cs = []
-                chainFolder.eachFile(FileType.FILES) { linkFile ->
-                    def link = JSON.parse(linkFile.text)
-                    cs << link
-                    chainService.addChainLink(chainFolder.name,link,isSynced)
-                }
-                restore.chains << [ "${chainFolder.name}": cs.collect { link -> 
-                        link.chain = chainFolder.name
-                        link.isSynced = isSynced
-                        return link
-                    },
-                    "isSynced": isSynced
-                ]
-            }            
+            Chain.withTransaction { status ->
+                chainsFolder.eachDir{ chainFolder ->
+                    println "Chain to create ${chainFolder.name}"
+                    chainService.addChain(chainFolder.name,isSynced)
+                    def cs = []
+                    chainFolder.eachFile(FileType.FILES) { linkFile ->
+                        def link = JSON.parse(linkFile.text)
+                        cs << link
+                        chainService.addChainLink(chainFolder.name,link,isSynced)
+                    }
+                    restore.chains << [ "${chainFolder.name}": cs.collect { link -> 
+                            link.chain = chainFolder.name
+                            link.isSynced = isSynced
+                            return link
+                        },
+                        "isSynced": isSynced
+                    ]
+                }  
+                status.flush()
+            }
         }
         if(chainServiceHandlersFolder.exists()) {
             restore.chainServiceHandlers = []
-            chainServiceHandlersFolder.eachFile(FileType.FILES) { chainServiceHandlerFile ->
-                def chainServiceHandler = JSON.parse(chainServiceHandlerFile.text)
-                restore.chainServiceHandlers << (chainServiceHandler as Map).inject([isSynced: isSynced]) {c,k,v -> 
-                    c[k] = v
-                    return c
+            ChainServiceHandler.withTransaction { status ->
+                chainServiceHandlersFolder.eachFile(FileType.FILES) { chainServiceHandlerFile ->
+                    def chainServiceHandler = JSON.parse(chainServiceHandlerFile.text)
+                    restore.chainServiceHandlers << (chainServiceHandler as Map).inject([isSynced: isSynced]) {c,k,v -> 
+                        c[k] = v
+                        return c
+                    }
+                    chainServiceHandlerService.addChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler.chain,isSynced) 
+                    chainServiceHandlerService.modifyChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler,isSynced)
                 }
-                chainServiceHandlerService.addChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler.chain,isSynced) 
-                chainServiceHandlerService.modifyChainServiceHandler(chainServiceHandlerFile.name[0..<chainServiceHandlerFile.name.lastIndexOf(".json")],chainServiceHandler,isSynced)
+                status.flush()
             }
         }
         if(jobsFolder.exists()) {
