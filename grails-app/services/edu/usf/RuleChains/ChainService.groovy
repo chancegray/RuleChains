@@ -96,7 +96,7 @@ class ChainService {
             if('chain' in tempChain) {
                 tempChain.chain = Chain.findByName(tempChain.chain.name)
                 tempChain.chain.isSynced = isSynced
-                def rule = Rule.findByName((newLink.rule instanceof String)?newLink.rule:newLink.rule.name)
+                def rule = Rule.findByName(("name" in newLink.rule)?newLink.rule.name:newLink.rule)
                 if(!!rule) {
                     rule.isSynced = isSynced
                     newLink.rule = rule
@@ -189,7 +189,7 @@ class ChainService {
                     // Returning the renamed temporary chain with the original name
                     return modifyChain(tempChain.chain.name,name.trim(),isSynced)
                 }
-                return [ error: "The rule specified in the new link named ${newLink.rule.name} doesn't exist"]
+                return [ error: "The rule specified in the new link named ${("name" in newLink.rule)?newLink.rule.name:newLink.rule} doesn't exist"]
             }
             return [ error : "Could not create the temporary chain" ]
         }
