@@ -1108,6 +1108,7 @@
                                             // self.refreshHandlersButton.trigger('click');
                                         } else {
                                             alert(response.error);
+                                            self.refreshHandlersButton.trigger("click");
                                         }                                                                
                                     });                                    
                                     console.log(this);
