@@ -1,4 +1,6 @@
 package edu.usf.RuleChains
+import edu.usf.RuleChains.*
+import org.hibernate.FlushMode
 
 class ChainServiceHandler {
     String name
@@ -15,6 +17,27 @@ class ChainServiceHandler {
     }    
     
     static constraints = {
+        name(   
+            blank: false,
+            nullable: false,
+            size: 3..255,
+            unique: true,
+            //Custom constraint - only allow upper, lower, digits, dash and underscore
+            validator: { val, obj -> 
+                val ==~ /[A-Za-z0-9_.-]+/ && {  
+                    boolean valid = true;
+                    ChainServiceHandler.withNewSession { session ->
+                        session.flushMode = FlushMode.MANUAL
+                        try {
+                            valid = !!!Rule.findByName(val) && !!!RuleSet.findByName(val) && !!!Chain.findByName(val)
+                        } finally {
+                            session.setFlushMode(FlushMode.AUTO)
+                        }
+                    }
+                    return valid
+                }.call() 
+            }
+        )               
         inputReorder(blank:true)
         outputReorder(blank:true) 
         chain(nullable:false)
