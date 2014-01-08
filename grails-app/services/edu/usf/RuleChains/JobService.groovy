@@ -89,6 +89,15 @@ class JobService {
                                 min('logTime')
                             }
                         }
+                        if(!!!endTime) {
+                            endTime = JobLog.createCriteria().get {
+                                eq('jobHistory',jobHistory)
+                                gt('id',jls.last().id)
+                                projections {
+                                    min('logTime')
+                                }
+                            }                                                        
+                        }
                         return jls.reverse().collect { jl ->
                             jl.duration = TimeCategory.minus(endTime, jl.logTime).toString()
                             endTime = jl.logTime
