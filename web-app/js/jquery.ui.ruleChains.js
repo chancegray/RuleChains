@@ -1941,6 +1941,7 @@
                                                         dialog.remove();                                                 
                                                     } else {
                                                         alert(status.error);
+                                                        self.scheduledJobsRefreshButton.trigger('click');
                                                     }
                                                 });                                                
                                             },
