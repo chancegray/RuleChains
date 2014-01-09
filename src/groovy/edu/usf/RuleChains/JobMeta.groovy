@@ -323,11 +323,16 @@ class JobMeta {
                     return ((jk.name == name) && (quartzScheduler.getTriggersOfJob(jk).collect { it.getCronExpression() }.contains(cronExpression)))                            
                 }.each { jk ->
                     quartzScheduler.getTriggersOfJob(jk).findAll { it.getCronExpression() == cronExpression }.each { t ->
-                        results << [
+                        def scheduleResult = [
                             jobName: jk.name,
-                            jobGroup: g,
-                            scheduled: quartzScheduler.rescheduleJob(t.getKey(), t.getTriggerBuilder().withSchedule(cronSchedule(newCronExpression)).build())
-                        ]                            
+                            jobGroup: g                            
+                        ]
+                        try {
+                            scheduleResult.scheduled = quartzScheduler.rescheduleJob(t.getKey(), t.getTriggerBuilder().withSchedule(cronSchedule(newCronExpression)).build())
+                        } catch(ex) {
+                            scheduleResult.error = ex.getLocalizedMessage()
+                        }
+                        results << scheduleResult
                     }
                     delegate.handleGitWithComment("Updating Scheduled Job ${jk.name}") { git,gitFolder,comment ->
                         def jobDetail = quartzScheduler.getJobDetail(jk) 
@@ -352,7 +357,7 @@ class JobMeta {
                     }                                                
                 }
             }
-            return [ status: results ]
+            return (results.find { sch -> "error" in sch })?[ error: results.find { sch -> "error" in sch }.error ]:[ status: results ]
         }
         JobService.metaClass.addscheduleChainJob { String cronExpression, String name ->
             def suffix = System.currentTimeMillis()
