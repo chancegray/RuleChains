@@ -443,7 +443,7 @@ class GitMeta {
         JobService.metaClass.handleGitWithComment {String comment,Closure closure->
             pull.call()
             closure.delegate = delegate
-            closure.call(git,push,comment)
+            closure.call(git,localRepoFolder,comment)
             push.call()
             pull.call()
         }        
