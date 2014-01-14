@@ -13,8 +13,8 @@
 		<link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
 		<link rel="apple-touch-icon" href="${resource(dir: 'images', file: 'apple-touch-icon.png')}">
 		<link rel="apple-touch-icon" sizes="114x114" href="${resource(dir: 'images', file: 'apple-touch-icon-retina.png')}">
-		<!--
                 <link rel="stylesheet" href="${resource(dir: 'css', file: 'main.css')}" type="text/css">
+		<!--
 		<link rel="stylesheet" href="${resource(dir: 'css', file: 'mobile.css')}" type="text/css">
                 <link rel="stylesheet" href="${resource(dir: 'js/codemirror-ui/lib/CodeMirror-2.3/lib', file: 'codemirror.css')}" />
                 <link rel="stylesheet" href="${resource(dir: 'js/codemirror-ui/css', file: 'codemirror-ui.css')}" type="text/css" media="screen" />                        
@@ -31,8 +31,8 @@
 		<div id="ruleChainsLogo" class="ui-widget-header ui-corner-all" role="banner">
                   <a href="https://github.com/USF-IT/RuleChains/wiki" target="_blank"><img src="${resource(dir: 'images', file: 'chains.png')}" alt="RuleChains" width="200" height="85" style="padding-left: 5px;padding-top:0px"/></a>
                   <h1 style="display:inline;margin:0;font-weight:bold; font-size:5em;margin: auto;text-align: center;">RuleChains</h1>
-                  <castag:casLogoutButton />
-                  <span style="float:right"><label for="authorities">Assigned Roles:</label><castag:casRoles /></span>
+                  <span style="display:none"><castag:casLogoutButton /></span>
+                  <span style="float:right;display:none"><label for="authorities">Assigned Roles:</label><castag:casRoles /></span>
                 </div>
 		<g:layoutBody/>
 		<div class="footer" class="ui-widget-header ui-corner-all" role="contentinfo"></div>

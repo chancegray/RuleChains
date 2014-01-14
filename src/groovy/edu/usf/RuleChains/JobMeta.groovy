@@ -23,11 +23,14 @@ class JobMeta {
                     return [
                         name: g,
                         jobs: quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
+                            def jobDataMap = quartzScheduler.getJobDetail(jk).getJobDataMap()
                             return [
                                 name: jk.name,
                                 triggers: quartzScheduler.getTriggersOfJob(jk).collect { t ->
                                     return t.getCronExpression() 
-                                }                                
+                                },
+                                chain: jobDataMap.get("chain"),
+                                input: jobDataMap.get("input")
                             ]
                         }.findAll {
                             it.triggers.size() > 0
@@ -38,6 +41,13 @@ class JobMeta {
         }
         JobService.metaClass.createChainJob = { String cronExpression,String name,def input = [] ->
             def suffix = System.currentTimeMillis()
+            name = { parts->
+                if(parts.size() > 1) {
+                    suffix = parts[1]
+                    return parts[0]
+                }
+                return name
+            }.call(name.split(":"))
             if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) }.size() > 0)) {
                 def jobKey = quartzScheduler.getJobKeys(
                     groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
@@ -48,6 +58,7 @@ class JobMeta {
                         .withIdentity("${name}:${suffix}")
                         .withSchedule(cronSchedule(cronExpression))
                         .forJob(jobKey)
+                        .usingJobData("gitAuthorInfo",delegate.getGitAuthorInfo())
                         .build();  
 
                         return [
@@ -57,6 +68,28 @@ class JobMeta {
                         return [
                             error: ex.getLocalizedMessage()
                         ]                        
+                    } finally {                                                
+                        delegate.handleGitWithComment("Updating Scheduled Job ${jobKey.name}") { git,gitFolder,comment ->
+                            def jobDetail = quartzScheduler.getJobDetail(jobKey) 
+                            def dataMap = jobDetail.getJobDataMap()
+                            def gitAuthorInfo = delegate.getGitAuthorInfo()
+                            def relativePath = "jobs/${jobKey.name}.json"
+                            def f = new File(gitFolder,relativePath)
+                            f.text = {js->
+                                js.setPrettyPrint(true)
+                                return js                            
+                            }.call([
+                                group: jobKey.group,
+                                name: jobKey.name,
+                                triggers: quartzScheduler.getTriggersOfJob(jobKey).collect { it.getCronExpression() },
+                                chain: dataMap.getString("chain"),
+                                input: dataMap.get("input")
+                            ] as JSON)
+                            git.add().addFilepattern("${relativePath}").call()
+                            if(!git.status().call().isClean()) {
+                                git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                            }
+                        }                                                
                     }
                 } catch (ex) {                        
                     return [
@@ -65,7 +98,7 @@ class JobMeta {
                 }
             } else {
                 try {
-                    def jobDetail = ClosureJob.createJob(name:"${name}:${suffix}",durability:true,concurrent:false,jobData: [input: input,chain: name]){ jobCtx , appCtx->
+                    def jobDetail = ClosureJob.createJob(name:"${name}:${suffix}",durability:true,concurrent:false,jobData: [input: input,chain: name,gitAuthorInfo: delegate.getGitAuthorInfo()]){ jobCtx , appCtx->
                         log.info "************* it ran ***********"
                         def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))                        
                         if(!!chain) {
@@ -111,6 +144,13 @@ class JobMeta {
         }
         JobService.metaClass.updateChainJob { String name,String newName ->
             def suffix = System.currentTimeMillis()
+            name = { parts->
+                if(parts.size() > 1) {
+                    suffix = parts[1]
+                    return parts[0]
+                }
+                return name
+            }.call(name.split(":"))
             if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
                             jk.name 
                         }.contains(name) }.size() > 0)) {
@@ -118,7 +158,7 @@ class JobMeta {
                     groupEquals(quartzScheduler.getJobGroupNames().find { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { it.name }.contains(name) })
                 ).find { jk -> return (jk.name == name) }
                 def jobDataMap = quartzScheduler.getJobDetail(jobKey).getJobDataMap()
-                def jobDetail = ClosureJob.createJob(name:"${newName}:${suffix}",durability:true,concurrent:false,jobData: [input: jobDataMap.get("input"),chain: newName]){ jobCtx , appCtx->
+                def jobDetail = ClosureJob.createJob(name:"${newName}:${suffix}",durability:true,concurrent:false,jobData: [input: jobDataMap.get("input"),chain: newName,gitAuthorInfo: delegate.getGitAuthorInfo()]){ jobCtx , appCtx->
                     log.info "************* it ran ***********"
                     def chain = Chain.findByName(jobCtx.mergedJobDataMap.get('chain'))
                     if(!!chain) {
@@ -173,6 +213,18 @@ class JobMeta {
                 quartzScheduler.getJobKeys(groupEquals(g)).findAll { jk ->
                     return (jk.name == name)                           
                 }.each { jk ->
+                    delegate.handleGitWithComment("Removing Scheduled Job ${jk.name}") { git,gitFolder,comment ->
+                        def relativePath = "jobs/${jk.name}.json"
+                        def gitAuthorInfo = delegate.getGitAuthorInfo()        
+                        def f = new File(gitFolder,relativePath)
+                        if(f.exists()) {
+                            f.delete()
+                            git.rm().addFilepattern("${relativePath}").call()
+                            if(!git.status().call().isClean()) {
+                                git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                            }
+                        }
+                    }                                            
                     // Delete the whole job
                     results << [
                         jobName: jk.name,
@@ -207,8 +259,41 @@ class JobMeta {
                                 jobGroup: g,
                                 unscheduled: quartzScheduler.unscheduleJob(t.getKey())
                             ]
-                        }                            
+                        }         
+                        delegate.handleGitWithComment("Saving Scheduled Job ${jk.name}") { git,gitFolder,comment ->
+                            def jobDetail = quartzScheduler.getJobDetail(jk) 
+                            def dataMap = jobDetail.getJobDataMap()
+                            def gitAuthorInfo = delegate.getGitAuthorInfo()
+                            def relativePath = "jobs/${jk.name}.json"
+                            def f = new File(gitFolder,relativePath)
+                            f.text = {js->
+                                js.setPrettyPrint(true)
+                                return js                            
+                            }.call([
+                                group: jk.group,
+                                name: jk.name,
+                                triggers: quartzScheduler.getTriggersOfJob(jk).collect { it.getCronExpression() },
+                                chain: dataMap.getString("chain"),
+                                input: dataMap.get("input")
+                            ] as JSON)
+                            git.add().addFilepattern("${relativePath}").call()
+                            if(!git.status().call().isClean()) {
+                                git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                            }
+                        }                        
                     } else {
+                        delegate.handleGitWithComment("Removing Scheduled Job ${jk.name}") { git,gitFolder,comment ->
+                            def relativePath = "jobs/${jk.name}.json"
+                            def gitAuthorInfo = delegate.getGitAuthorInfo()        
+                            def f = new File(gitFolder,relativePath)
+                            if(f.exists()) {
+                                f.delete()
+                                git.rm().addFilepattern("${relativePath}").call()
+                                if(!git.status().call().isClean()) {
+                                    git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                                }
+                            }
+                        }                        
                         results << [
                             jobName: jk.name,
                             jobGroup: g,
@@ -238,18 +323,51 @@ class JobMeta {
                     return ((jk.name == name) && (quartzScheduler.getTriggersOfJob(jk).collect { it.getCronExpression() }.contains(cronExpression)))                            
                 }.each { jk ->
                     quartzScheduler.getTriggersOfJob(jk).findAll { it.getCronExpression() == cronExpression }.each { t ->
-                        results << [
+                        def scheduleResult = [
                             jobName: jk.name,
-                            jobGroup: g,
-                            scheduled: quartzScheduler.rescheduleJob(t.getKey(), t.getTriggerBuilder().withSchedule(cronSchedule(newCronExpression)).build())
-                        ]                            
+                            jobGroup: g                            
+                        ]
+                        try {
+                            scheduleResult.scheduled = quartzScheduler.rescheduleJob(t.getKey(), t.getTriggerBuilder().withSchedule(cronSchedule(newCronExpression)).build())
+                        } catch(ex) {
+                            scheduleResult.error = ex.getLocalizedMessage()
+                        }
+                        results << scheduleResult
                     }
+                    delegate.handleGitWithComment("Updating Scheduled Job ${jk.name}") { git,gitFolder,comment ->
+                        def jobDetail = quartzScheduler.getJobDetail(jk) 
+                        def dataMap = jobDetail.getJobDataMap()
+                        def gitAuthorInfo = delegate.getGitAuthorInfo()
+                        def relativePath = "jobs/${jk.name}.json"
+                        def f = new File(gitFolder,relativePath)
+                        f.text = {js->
+                            js.setPrettyPrint(true)
+                            return js                            
+                        }.call([
+                            group: jk.group,
+                            name: jk.name,
+                            triggers: quartzScheduler.getTriggersOfJob(jk).collect { it.getCronExpression() },
+                            chain: dataMap.getString("chain"),
+                            input: dataMap.get("input")
+                        ] as JSON)
+                        git.add().addFilepattern("${relativePath}").call()
+                        if(!git.status().call().isClean()) {
+                            git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                        }
+                    }                                                
                 }
             }
-            return [ status: results ]
+            return (results.find { sch -> "error" in sch })?[ error: results.find { sch -> "error" in sch }.error ]:[ status: results ]
         }
         JobService.metaClass.addscheduleChainJob { String cronExpression, String name ->
             def suffix = System.currentTimeMillis()
+            name = { parts->
+                if(parts.size() > 1) {
+                    suffix = parts[1]
+                    return parts[0]
+                }
+                return name
+            }.call(name.split(":"))
             if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
                             println "${jk.name} and ${name}"
                             jk.name 
@@ -259,9 +377,10 @@ class JobMeta {
                 ).find { jk -> return (jk.name == name) }
                 try {
                     def trigger = newTrigger()
-                    .withIdentity("${name.split(":")[0]}:${suffix}")
+                    .withIdentity("${name}:${suffix}")
                     .withSchedule(cronSchedule(cronExpression))
                     .forJob(jobKey)
+                    .usingJobData("gitAuthorInfo",delegate.getGitAuthorInfo())
                     .build()
                     return [
                         date: quartzScheduler.scheduleJob(trigger)                                
@@ -270,11 +389,41 @@ class JobMeta {
                     return [
                         error: ex.getLocalizedMessage()
                     ]                        
+                } finally {
+                    delegate.handleGitWithComment("Updating Scheduled Job ${jobKey.name}") { git,gitFolder,comment ->
+                        def jobDetail = quartzScheduler.getJobDetail(jobKey) 
+                        def dataMap = jobDetail.getJobDataMap()
+                        def gitAuthorInfo = delegate.getGitAuthorInfo()
+                        def relativePath = "jobs/${jobKey.name}.json"
+                        def f = new File(gitFolder,relativePath)
+                        f.text = {js->
+                            js.setPrettyPrint(true)
+                            return js                            
+                        }.call([
+                            group: jobKey.group,
+                            name: jobKey.name,
+                            triggers: quartzScheduler.getTriggersOfJob(jobKey).collect { it.getCronExpression() },
+                            chain: dataMap.getString("chain"),
+                            input: dataMap.get("input")
+                        ] as JSON)
+                        git.add().addFilepattern("${relativePath}").call()
+                        if(!git.status().call().isClean()) {
+                            git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                        }
+                    }                                                
                 }
             }
             return [ error: "Job not found" ]
         }
         JobService.metaClass.mergescheduleChainJob { String mergeName, String name ->
+            def suffix = System.currentTimeMillis()
+            name = { parts->
+                if(parts.size() > 1) {
+                    suffix = parts[1]
+                    return parts[0]
+                }
+                return name
+            }.call(name.split(":"))
             if((quartzScheduler.getJobGroupNames().findAll { g -> return quartzScheduler.getJobKeys(groupEquals(g)).collect { jk ->
                             jk.name 
                         }.contains(name) }.size() > 0) &&
@@ -289,9 +438,44 @@ class JobMeta {
                 ).find { jk -> return (jk.name == mergeName) }  
                 def results = [
                     mergedTriggers: quartzScheduler.getTriggersOfJob(removedJobKey).findAll{ t -> !!!(t.getCronExpression() in quartzScheduler.getTriggersOfJob(jobKey).collect { it.getCronExpression() }) }.collect { t ->
-                        return quartzScheduler.scheduleJob(t.getTriggerBuilder().withIdentity("${name.split(":")[0]}:${System.currentTimeMillis()}").forJob(jobKey).build())
+                        return quartzScheduler.scheduleJob(t.getTriggerBuilder().withIdentity("${name}:${suffix}").forJob(jobKey).build())
                     }
                 ]
+                // Git removes this one.
+                delegate.handleGitWithComment("Removing Scheduled Job ${removedJobKey.name}") { git,gitFolder,comment ->
+                    def relativePath = "jobs/${removedJobKey.name}.json"
+                    def gitAuthorInfo = delegate.getGitAuthorInfo()        
+                    def f = new File(gitFolder,relativePath)
+                    if(f.exists()) {
+                        f.delete()
+                        git.rm().addFilepattern("${relativePath}").call()
+                        if(!git.status().call().isClean()) {
+                            git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                        }
+                    }
+                }
+                // Git updates the merged one
+                delegate.handleGitWithComment("Updating Scheduled Job ${jobKey.name}") { git,gitFolder,comment ->
+                    def jobDetail = quartzScheduler.getJobDetail(jobKey) 
+                    def dataMap = jobDetail.getJobDataMap()
+                    def gitAuthorInfo = delegate.getGitAuthorInfo()
+                    def relativePath = "jobs/${jobKey.name}.json"
+                    def f = new File(gitFolder,relativePath)
+                    f.text = {js->
+                        js.setPrettyPrint(true)
+                        return js                            
+                    }.call([
+                        group: jobKey.group,
+                        name: jobKey.name,
+                        triggers: quartzScheduler.getTriggersOfJob(jobKey).collect { it.getCronExpression() },
+                        chain: dataMap.getString("chain"),
+                        input: dataMap.get("input")
+                    ] as JSON)
+                    git.add().addFilepattern("${relativePath}").call()
+                    if(!git.status().call().isClean()) {
+                        git.commit().setAuthor(gitAuthorInfo.user,gitAuthorInfo.email).setMessage(comment).call()
+                    }
+                }                                                                
                 results.delete = quartzScheduler.deleteJob(removedJobKey)
                 return results
             }
@@ -314,6 +498,10 @@ class JobMeta {
                     ]
                 }
             ]
+        }
+        RuleChainsSchedulerListener.metaClass.accessScheduler {Closure closure->
+            closure.delegate = delegate
+            closure.call(quartzScheduler)
         }
     }
 }

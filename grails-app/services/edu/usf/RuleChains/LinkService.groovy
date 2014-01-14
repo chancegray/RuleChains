@@ -7,32 +7,84 @@ import edu.usf.RuleChains.*
 import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
+import au.com.bytecode.opencsv.*
+import grails.util.Holders
 
 class LinkService {
     static transactional = true
     def grailsApplication
     
-    def casSpringSecurityRest(String serviceUrl,String method = "GET",String username,String password,def headers=[:],def query=[:],String springSecurityBaseUrl) {
-        return withCasSpringSecurityRest(
-            serviceUrl,
-            method,
-            username,
-            password,
-            headers,
-            query,
-            springSecurityBaseUrl
-        )                             
+    def getMergedGlobals(def map = [:]) {
+        return [ rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:] ] + map
     }
     
-    def casRest(String serviceUrl,String method = "GET",String username,String password,def headers=[:],def query=[:]) {
-        return withCasRest(
-            serviceUrl,
-            method,
-            username,
-            password,
-            headers,
-            query
-        )
+    def casSpringSecurityRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:],String springSecurityBaseUrl) {
+        try {
+            return { o ->
+                switch(parseEnum) {
+                    case ParseEnum.TEXT:
+                        return [ o ]
+                        break
+                    case ParseEnum.JSON:
+                        return JSON.parse(o)
+                        break
+                    case ParseEnum.XML:
+                        return XML.parse(o)
+                        break                                        
+                }
+            }.call(withCasSpringSecurityRest(
+                serviceUrl,
+                method,
+                username,
+                password,
+                headers,
+                query,
+                springSecurityBaseUrl
+            ))    
+        } catch(Exception e) {
+            log.debug "${method} error: ${e.printStackTrace()} on service ${serviceUrl}"
+            System.out.println("${method} error: ${e.printStackTrace()} on service ${serviceUrl}")
+            return [
+                error: e.message,
+                method: method,
+                type: "CASREST",
+                url: serviceUrl
+            ]                
+        }        
+    }
+    
+    def casRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:]) {
+        try {
+            return { o ->
+                switch(parseEnum) {
+                    case ParseEnum.TEXT:
+                        return [ o ]
+                        break
+                    case ParseEnum.JSON:
+                        return JSON.parse(o)
+                        break
+                    case ParseEnum.XML:
+                        return XML.parse(o)
+                        break                                        
+                }
+            }.call(withCasRest(
+                serviceUrl,
+                method,
+                username,
+                password,
+                headers,
+                query
+            ))
+        } catch(Exception e) {
+            log.debug "${method} error: ${e.printStackTrace()} on service ${serviceUrl}"
+            System.out.println("${method} error: ${e.printStackTrace()} on service ${serviceUrl}")
+            return [
+                error: e.message,
+                method: method,
+                type: "CASREST",
+                url: serviceUrl
+            ]                
+        }
     }
     def justRest(String serviceUrl, MethodEnum methodEnum, AuthTypeEnum authTypeEnum,ParseEnum parseEnum, String username,String password,def headers=[:],def query=[:]) {
         try {
@@ -116,6 +168,137 @@ class LinkService {
             ]                
         }
     }
+    def justPHP(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
+        return Link.withTransaction{ status ->            
+            try {
+                return {rows->
+                    switch(resultEnum) {
+                        case [ ResultEnum.ROW,ResultEnum.APPENDTOROW,ResultEnum.PREPENDTOROW ]:
+                            println "Before ${rows as JSON}"
+                            println "After ${((rows.size() > 0)?rows[0..0]:rows) as JSON}"
+                            return (rows.size() > 0)?rows[0..0]:rows
+                            break
+                        case [ ResultEnum.RECORDSET ]: 
+                            return rows
+                            break
+                        case [ ResultEnum.NONE,ResultEnum.UPDATE ]:
+                            return []
+                            break
+                    }
+                }.call(
+                    {
+                        def gStringTemplateEngine = new GStringTemplateEngine()
+                        def p = gStringTemplateEngine.createTemplate("""php << 'CODE'
+                            <?php
+                            $f = file("php://stdin");
+                            $row = json_decode(urldecode("${input}"));
+                            $rows = array();
+                            ${rule}
+                            ?>
+                            echo json_encode($rows)
+                            CODE
+                            """).make([
+                                'input' : URLEncoder.encode((input as JSON).toString(), 'UTF-8'),
+                                'rule' : { r ->
+                                    def gte = new GStringTemplateEngine()
+                                    return gte.createTemplate(r).make(input).toString() 
+                                }.call(rule)
+                            ]).toString().execute(null,new File('/my/working/dir'))                        
+                        p.waitFor()
+                        return JSON.parse(p.text)
+                    }.call()
+                )
+            } catch(Exception e) {
+                log.debug "${rule.name} error: ${e.printStackTrace()} on source named ${sourceName}"
+                System.out.println("${rule.name} error: ${e.printStackTrace()} on source named ${sourceName}")
+                return [
+                    error: e.message,
+                    rule: rule.name,
+                    type: "PHP",
+                    source: sourceName
+                ]
+            }            
+        }
+
+
+
+        def e = new groovy.text.GStringTemplateEngine()
+
+         def p = e.createTemplate("""php << 'CODE'
+
+
+       <?php
+
+
+       $f = file("php://stdin");
+
+       $row = json_decode(urldecode("${input}"));
+
+       $rows = array();
+
+
+       ${rule}
+
+       ?>
+
+       echo json_encode($rows)
+
+       CODE
+
+       """).make([
+            'input' : URLEncoder.encode((input as JSON).toString(), 'UTF-8'),
+            'rule' : { r ->
+                def gte = new groovy.text.GStringTemplateEngine()
+                return gte.createTemplate(r).make(input).toString() 
+            }.call(rule)
+        ]).toString().execute(null,new File('/my/working/dir'))
+
+
+
+
+       /**
+
+
+
+        def p = """php << 'CODE'
+
+
+       <?php
+
+
+       $f = file("php://stdin");
+
+       $row = json_decode(urldecode("${input}"));
+
+       $rows = array();
+
+
+       ${rule}
+
+       ?>
+
+       echo json_encode($rows)
+
+       CODE
+
+
+
+
+
+       """.execute(null,new File('/my/working/dir'))
+
+
+       **/
+
+        p.waitFor()
+
+
+        return JSON.parse(p.text)
+
+
+       }
+
+    
     def justGroovy(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         return Link.withTransaction{ status ->
             def sql = getSQLSource(sourceName)
@@ -138,13 +321,16 @@ class LinkService {
                     new GroovyShell(new Binding([
                         longSQLplaceHolderUniqueVariable:sql,
                         longSQLSplaceHolderUniqueVariable:getSQLSources(),
-                        longROWplaceHolderVariable: input
+                        longROWplaceHolderVariable: input,
+                        rcGlobals: getMergedGlobals().rcGlobals
                     ])).evaluate("""
                         import grails.converters.*
+                        import au.com.bytecode.opencsv.*
 
                         def sql = longSQLplaceHolderUniqueVariable
                         def sqls = longSQLSplaceHolderUniqueVariable
                         def row = longROWplaceHolderVariable
+                        rcGlobals
 
                         ${rule.rule}
                     """)    

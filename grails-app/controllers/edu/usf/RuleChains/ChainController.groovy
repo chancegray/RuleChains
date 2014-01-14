@@ -4,6 +4,7 @@ import grails.converters.*
 
 class ChainController {
     def chainService
+    def jobService
     def listChains() { 
         withFormat {
             html {

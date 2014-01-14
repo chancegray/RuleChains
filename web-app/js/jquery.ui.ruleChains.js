@@ -1108,6 +1108,7 @@
                                             // self.refreshHandlersButton.trigger('click');
                                         } else {
                                             alert(response.error);
+                                            self.refreshHandlersButton.trigger("click");
                                         }                                                                
                                     });                                    
                                     console.log(this);
@@ -1186,7 +1187,8 @@
                     text: false,
                     icons: {
                         primary: "ui-icon-refresh"
-                    }            
+                    },
+                    disabled: false
                 }).click(function() {
                     $.ruleChains.job.GETlistChainJobs({},function(response) {
                         if("jobGroups" in response) {
@@ -1939,6 +1941,7 @@
                                                         dialog.remove();                                                 
                                                     } else {
                                                         alert(status.error);
+                                                        self.scheduledJobsRefreshButton.trigger('click');
                                                     }
                                                 });                                                
                                             },
@@ -2034,12 +2037,15 @@
                         },
                         open: function() {
                             $(this).append(
-                                $('<label />',{
-                                    "for": "name"
-                                })
-                                .html('Name:')
-                                .css({ "padding-right":"15px"})
-                            ).append($(this).data().name);
+                                $('<p />')
+                                .append(
+                                    $('<label />',{
+                                        "for": "name"
+                                    })
+                                    .html('Name:')
+                                    .css({ "padding-right":"15px"})
+                                ).append($(this).data().name.css({ "float": "right" }))    
+                            );
                             $(this).data().name.width($(this).data().name.parent().width()*0.73);
                         },
                         buttons: {
@@ -2303,104 +2309,111 @@
                                 });
                             })
                         })
-                        .addClass('ui-state-default ui-widget-content')
-                        .append(
-                            $('<p />')
-                            .css({
-                                "text-align": "center",
-                                "margin-top": "0px",
-                                "margin-bottom": "0px",
-                                "padding": "0px"
-                            })
-                        )
-                        .dialog({                    
-                            autoOpen: true,
-                            bgiframe: true,
-                            resizable: false,
-                            title: 'Add New Link',
-                            height:280,
-                            width:400,
-                            modal: true,
-                            zIndex: 3999,
-                            overlay: {
-                                backgroundColor: '#000',
-                                opacity: 0.5
-                            },
-                            open: function() {
-                                $(this).append(
-                                    $('<p />')
-                                    .append(
-                                        $('<label />',{
-                                            "for": "targetSequenceNumber"
-                                        })
-                                        .html('Target Sequence Number:')
-                                        .css({ "padding-right":"15px"})
-                                    ).append($(this).data().targetSequenceNumber.css({ "float": "right" }).find('option:last').attr("selected","selected").end())
-                                )
+                        .each(function() {
+                            var dialog = $(this);
+                            if(dialog.data().ruleSelect.find('option').length < 1) {
+                                dialog.remove(); 
+                                alert("Error: You must have some rules already existing before adding links");
+                            } else {
+                                dialog.addClass('ui-state-default ui-widget-content')
                                 .append(
                                     $('<p />')
-                                    .append(
-                                        $('<label />',{
-                                            "for": "ruleSelect"
-                                        })
-                                        .html('Rule:')
-                                        .css({ "padding-right":"15px"})
-                                    ).append($(this).data().ruleSelect.css({ "float": "right" }))
+                                    .css({
+                                        "text-align": "center",
+                                        "margin-top": "0px",
+                                        "margin-bottom": "0px",
+                                        "padding": "0px"
+                                    })
                                 )
-                                .append(
-                                    $('<p />')
-                                    .append(
-                                        $('<label />',{
-                                            "for": "sourceSelect"
-                                        })
-                                        .html('Source:')
-                                        .css({ "padding-right":"15px"})
-                                    ).append($(this).data().sourceSelect.css({ "float": "right" }))                            
-                                );                                
-                                $(this).dialog("option","width",($(this).dialog( "option", "width" ) > $(this).data().ruleSelect.width()*1.2)?$(this).dialog( "option", "width" ):$(this).data().ruleSelect.width()*1.2);
-                            },
-                            buttons: {
-                                "Add Link": function() {
-                                    var dialog = $(this),
-                                        json = {                                            
-                                            name : self.chainSelect.find('option:selected').text(),
-                                            link: {
-                                                sequenceNumber: dialog.data().targetSequenceNumber.val().trim(),
-                                                rule: {
-                                                    name: dialog.data().ruleSelect.find('option:selected').text()
-                                                },
-                                                sourceName: dialog.data().sourceSelect.val().trim(),
-                                                executeEnum: 'NORMAL',
-                                                linkEnum: "NONE",
-                                                resultEnum: "NONE"
-                                            }
-                                        };
-                                    $.ruleChains.chain.PUTaddChainLink(json,function(chain) {
-                                        if("chain" in chain) {
-//                                            $(self.chainDataTable.fnGetNodes( )).each(function (index,r) {
-//                                                if ( self.chainDataTable.fnIsOpen(r) ) {
-//                                                    $(r).find('button#details').click();
-//                                                }                                                
-//                                            });
-                                            // alert(JSON.stringify(chain.chain.links));
-                                            self.chainDataTable.fnClearTable();
-                                            self.chainDataTable.fnAddData(chain.chain.links);
-                                            dialog.dialog('close');
-                                            dialog.dialog('destroy');
-                                            dialog.remove();                                                                                                                    
-                                        } else {
-                                            alert(chain.error);
+                                .dialog({                    
+                                    autoOpen: true,
+                                    bgiframe: true,
+                                    resizable: false,
+                                    title: 'Add New Link',
+                                    height:280,
+                                    width:400,
+                                    modal: true,
+                                    zIndex: 3999,
+                                    overlay: {
+                                        backgroundColor: '#000',
+                                        opacity: 0.5
+                                    },
+                                    open: function() {
+                                        $(this).append(
+                                            $('<p />')
+                                            .append(
+                                                $('<label />',{
+                                                    "for": "targetSequenceNumber"
+                                                })
+                                                .html('Target Sequence Number:')
+                                                .css({ "padding-right":"15px"})
+                                            ).append($(this).data().targetSequenceNumber.css({ "float": "right" }).find('option:last').attr("selected","selected").end())
+                                        )
+                                        .append(
+                                            $('<p />')
+                                            .append(
+                                                $('<label />',{
+                                                    "for": "ruleSelect"
+                                                })
+                                                .html('Rule:')
+                                                .css({ "padding-right":"15px"})
+                                            ).append($(this).data().ruleSelect.css({ "float": "right" }))
+                                        )
+                                        .append(
+                                            $('<p />')
+                                            .append(
+                                                $('<label />',{
+                                                    "for": "sourceSelect"
+                                                })
+                                                .html('Source:')
+                                                .css({ "padding-right":"15px"})
+                                            ).append($(this).data().sourceSelect.css({ "float": "right" }))                            
+                                        );                                
+                                        $(this).dialog("option","width",($(this).dialog( "option", "width" ) > $(this).data().ruleSelect.width()*1.2)?$(this).dialog( "option", "width" ):$(this).data().ruleSelect.width()*1.2);
+                                    },
+                                    buttons: {
+                                        "Add Link": function() {
+                                            var dialog = $(this),
+                                                json = {                                            
+                                                    name : self.chainSelect.find('option:selected').text(),
+                                                    link: {
+                                                        sequenceNumber: dialog.data().targetSequenceNumber.val().trim(),
+                                                        rule: {
+                                                            name: dialog.data().ruleSelect.find('option:selected').text()
+                                                        },
+                                                        sourceName: dialog.data().sourceSelect.val().trim(),
+                                                        executeEnum: 'NORMAL',
+                                                        linkEnum: "NONE",
+                                                        resultEnum: "NONE"
+                                                    }
+                                                };
+                                            $.ruleChains.chain.PUTaddChainLink(json,function(chain) {
+                                                if("chain" in chain) {
+        //                                            $(self.chainDataTable.fnGetNodes( )).each(function (index,r) {
+        //                                                if ( self.chainDataTable.fnIsOpen(r) ) {
+        //                                                    $(r).find('button#details').click();
+        //                                                }                                                
+        //                                            });
+                                                    // alert(JSON.stringify(chain.chain.links));
+                                                    self.chainDataTable.fnClearTable();
+                                                    self.chainDataTable.fnAddData(chain.chain.links);
+                                                    dialog.dialog('close');
+                                                    dialog.dialog('destroy');
+                                                    dialog.remove();                                                                                                                    
+                                                } else {
+                                                    alert(chain.error);
+                                                }
+                                            });
+                                        },
+                                        "Cancel": function() {
+                                            $(this).dialog('close');
+                                            $(this).dialog('destroy');
+                                            $(this).remove();                                                                        
                                         }
-                                    });
-                                },
-                                "Cancel": function() {
-                                    $(this).dialog('close');
-                                    $(this).dialog('destroy');
-                                    $(this).remove();                                                                        
-                                }
-                            }
-                        });                    
-
+                                    }
+                                });
+                            }                            
+                        });
                     });
                 }),
                 linkMoveButton = $(self.linkMoveButton = $('button#moveLink',chainTable)).button({
@@ -2484,14 +2497,25 @@
                                 opacity: 0.5
                             },
                             open: function() {
-                                $(this)
-                                .append(
-                                    $('<label />',{
-                                        "for": "chainSelect"
-                                    }).html("Select Destination Sequence Number")
+                                $(this).append(
+                                    $('<p />')
+                                    .append(
+                                        $('<label />',{
+                                            "for": "chainSelect"
+                                        })
+                                        .html('Select Destination Sequence Number:')
+                                        .css({ "padding-right":"15px"})
+                                    ).append($(this).data().chainDestinationSequenceNumberSelect.css({ "float": "right" }))    
                                 )
-                                .append($(this).data().chainDestinationSequenceNumberSelect)
-                                .dialog("option","width",$(this).data().chainDestinationSequenceNumberSelect.width()*1.05)
+                                .dialog("option","width",{
+                                    getCombinedWidth: function(children) {
+                                        var totalWidth = 0;
+                                        children.each(function(index) {
+                                            totalWidth += parseInt($(this).width(), 10);
+                                        });      
+                                        return totalWidth+45;
+                                    }
+                                }.getCombinedWidth($(this).data().chainDestinationSequenceNumberSelect.parent().children())*1.05)
                                 .dialog('option', 'position', { my: "center", at: "center", of: window });
                             },
                             buttons: {
@@ -2532,7 +2556,14 @@
                                             $.ruleChains.chain.PUTaddChainLink(addJson,function(chain) {
                                                 if("chain" in chain) {
                                                     // Change to the target chain
-                                                    self.chainSelect.val(chain.chain.id).change();
+                                                    self.chainSelect.children().each(function() {
+                                                        var option = $(this)
+                                                        if(option.text() == chain.chain.name) {
+                                                            option.prop('selected',true);
+                                                        } else {
+                                                            option.prop('selected',false);
+                                                        }
+                                                    }).end().trigger('change');
                                                     dialog.dialog('close');
                                                     dialog.dialog('destroy');
                                                     dialog.remove();                                                                                                                    
@@ -2965,7 +2996,8 @@
                     text: false,
                     icons: {
                         primary: "ui-icon-refresh"
-                    }            
+                    },
+                    disabled: false
                 }).click(function() {
                     if(self.ruleSetSelect.val() === "") {
                         $.ruleChains.ruleSet.GETlistRuleSets({},function(ruleSets) {
@@ -3024,12 +3056,15 @@
                         },
                         open: function() {
                             $(this).append(
-                                $('<label />',{
-                                    "for": "name"
-                                })
-                                .html('Name:')
-                                .css({ "padding-right":"15px"})
-                            ).append($(this).data().name);
+                                $('<p />')
+                                .append(
+                                    $('<label />',{
+                                        "for": "name"
+                                    })
+                                    .html('Name:')
+                                    .css({ "padding-right":"15px"})
+                                ).append($(this).data().name.css({ "float": "right" }))    
+                            );
                         },
                         buttons: {
                             "Create New Rule Set": function() {
@@ -3219,7 +3254,7 @@
                         ruleSetName = select.find('option:selected').text();
                     ruleSetModifyButton.button("option","disabled",(ruleSetId === ""));
                     ruleSetDeleteButton.button("option","disabled",(ruleSetId === ""));
-                    // ruleSetRefreshButton.button("option","disabled",(ruleSetId === ""));
+                    // ruleSetRefreshButton.button("option","disabled",false);
                     if(ruleSetId !== "") {
                         self.ruleTableButtonHeader.fadeIn();
                         $.ruleChains.ruleSet.GETgetRuleSet({
@@ -3262,9 +3297,19 @@
                                 { id: 'DEFINEDSERVICE', name: "Defined Service" },
                                 { id: 'SNIPPET', name: "Snippet"} 
                             ],function(index,type) {
-                                $(select).append($('<option />').val(type.id).html(type.name));
+                                if(type.id === "SNIPPET") {
+                                    if(self.chainSelect.children().length < 2) {
+                                        $(select).append($('<option />').val(type.id).html(type.name).prop('disabled', true));
+                                    } else {
+                                        $(select).append($('<option />').val(type.id).html(type.name));
+                                    }
+                                } else {
+                                    $(select).append($('<option />').val(type.id).html(type.name));
+                                }                                
                             });
-                        })
+                        }),
+                        chainSelect: self.chainSelect.clone().unbind().find('option:first').remove().end().hide(),
+                        nameLabel: $('<label />',{ "for": "name" })
                     })
                     .addClass('ui-state-default ui-widget-content')
                     .append(
@@ -3290,27 +3335,43 @@
                             opacity: 0.5
                         },
                         open: function() {
-                            $(this).append(
-                                $('<label />',{
-                                    "for": "name"
-                                })
-                                .html('Name:')
-                                .css({ "padding-right":"15px"})
-                            ).append($(this).data().name)
+                            var dialog = $(this).append(
+                                $('<p />')
+                                .append(
+                                    $(this).data().nameLabel
+                                    .html('Name:')
+                                    .css({ "padding-right":"15px"})
+                                ).append($(this).data().name.css({ "float": "right" }))
+                                .append($(this).data().chainSelect.css({ "float": "right" }))
+                            )
                             .append(
-                                $('<label />',{
-                                    "for": "serviceType"
-                                })
-                                .html('Service Type:')
-                                .css({ "padding-right":"15px"})
-                            ).append($(this).data().serviceType);
-                            
+                                $('<p />')
+                                .append(
+                                    $('<label />',{
+                                        "for": "serviceType"
+                                    })
+                                    .html('Service Type:')
+                                    .css({ "padding-right":"15px"})
+                                ).append($(this).data().serviceType.css({ "float": "right" }))
+                            );                            
+                            dialog.data().serviceType.change(function () {
+                                var select = $(this);
+                                if(select.val() === "SNIPPET") {
+                                    dialog.data().chainSelect.show();
+                                    dialog.data().name.hide();
+                                    dialog.data().nameLabel.html('Chain:');
+                                } else {
+                                    dialog.data().chainSelect.hide();
+                                    dialog.data().name.show();
+                                    dialog.data().nameLabel.html('Name:');
+                                }
+                            });
                         },
                         buttons: {
                             "Add Rule": function() {
                                 var dialog = $(this),
                                     json = {
-                                        name : dialog.data().name.val().trim(),
+                                        name : (dialog.data().serviceType.val().trim() === "SNIPPET")?dialog.data().chainSelect.find('option:selected').text():dialog.data().name.val().trim(),
                                         serviceType : dialog.data().serviceType.val().trim(),
                                         ruleSetName: self.ruleSetSelect.find('option:selected').text()
                                     };
@@ -3428,7 +3489,7 @@
                     disabled: true
                 }).click(function() {
                     $.ruleChains.ruleSet.DELETEdeleteRule({
-                        name: $('td:eq(2)',$.grep(self.ruleDataTable.fnGetNodes(),function(tr) {
+                        name: $('td:eq(1)',$.grep(self.ruleDataTable.fnGetNodes(),function(tr) {
                             return $(tr).hasClass('ui-widget-shadow');
                         })[0]).html(),
                         ruleSetName: self.ruleSetSelect.find('option:selected').text()                        
@@ -3455,7 +3516,7 @@
                                 return "<button type='button' id='details' />";
                             }
                         },                        
-                        { "bVisible": true,"mDataProp": "id","sDefaultContent":"","aDataSort": [ 0 ],"asSorting": [ "asc" ] },
+                        { "bVisible": false,"mDataProp": "id","sDefaultContent":"","aDataSort": [ 0 ],"asSorting": [ "asc" ] },
                         { "bVisible": true,"mDataProp": "name","sDefaultContent":"" },
                         { "bVisible": true,"mDataProp": null,"sDefaultContent":"","fnRender": 
                             function(oObj) {
@@ -3483,7 +3544,7 @@
                             }
                         }) 
                         .find('button#details').click(function(event) { event.stopPropagation(); }).end()
-                        .find('td:eq(2)').click(function(event) { event.stopPropagation(); }).end()
+                        .find('td:eq(1)').click(function(event) { event.stopPropagation(); }).end()
                         .each(function() {
                             var nRowData = $(nRow).data(),
                                 detailsButton = $(nRowData.detailsButton = $(this).find('button#details'))
@@ -3997,20 +4058,14 @@
                                                     break;
                                                 case "edu.usf.RuleChains.Snippet":
                                                     fieldset.find('legend:first').html('Snippet Details');
-                                                    $(nRowData.chain = self.chainSelect.clone().unbind()).children().each(function(i,opt) {
-                                                        if(i < 1) {
-                                                            $(opt).remove();
-                                                        } else if ( $(opt).val() === self.ruleSetSelect.val() ) {
-                                                            $(opt).remove();
-                                                        }
-                                                    }).end().appendTo(fieldset.append(
+                                                    $(nRowData.chain = self.chainSelect.clone().unbind()).find('option:first').remove().end().appendTo(fieldset.append(
                                                         $('<label />',{
                                                             "for": "chain"
                                                         }).html("Select Chain for use in Snippet")
                                                         .css({
                                                             "padding-right":"15px"
                                                         })
-                                                    ));
+                                                    )).children().filter(function () { return $(this).html() == aData.name; }).prop("selected",true);
                                                     $(nRowData.updateButton = $('<button />')).html("Update Referenced Chain").appendTo(fieldset).button({
                                                         text: false,
                                                         icons: {
@@ -4018,8 +4073,11 @@
                                                         }
                                                     }).click(function() {
                                                         var ajax = $.extend({},aData,{
-                                                            chain: {
-                                                                id: nRowData.nRowData.chain.val()
+                                                            rule: {
+                                                                name: nRowData.chain.find('option:selected').text(),
+                                                                chain: {
+                                                                    name: nRowData.chain.find('option:selected').text()
+                                                                }
                                                             },
                                                             ruleSetName: self.ruleSetSelect.find('option:selected').text()
                                                         });
@@ -4047,37 +4105,94 @@
                                         self.ruleDataTable.fnClose(nRow);                                
                                     }
                                 ),
-                                ruleNameEditable = $(nRowData.ruleNameEditable = $("td:eq(2)",nRow)).editable(function(value, settings) { 
-                                    var result = value;
-                                    $.ruleChains.ruleSet.POSTupdateRuleName({
-                                        name: aData.name,
-                                        newName: $.trim(result),
-                                        ruleSetName: self.ruleSetSelect.find('option:selected').text()
-                                    },function(rule) {
-                                        if("rule" in rule) {  
-                                            if(self.ruleDataTable.fnIsOpen(nRow)) {
-                                                nRowData.detailsButton.click();
-                                                self.ruleDataTable.fnUpdate(rule.rule,nRow);
-                                                nRowData.detailsButton.click();
-                                            } else {
-                                                self.ruleDataTable.fnUpdate(rule.rule,nRow);
-                                            }
-                                            aData = rule.rule;
+                                ruleNameEditable = {
+                                    makeConditionallyEditable: function(ruleNameTd) {
+                                        if(aData.class === "edu.usf.RuleChains.Snippet") {
+                                            return ruleNameTd.editable(function(value,settings) {
+                                                var result = value;
+                                                var ajax = $.extend({},aData,{
+                                                    rule: {
+                                                        name: value,
+                                                        chain: {
+                                                            name: value
+                                                        }
+                                                    },
+                                                    ruleSetName: self.ruleSetSelect.find('option:selected').text()
+                                                });
+                                                $.ruleChains.ruleSet.POSTupdateRule(ajax,function(rule) {
+                                                    if("rule" in rule) {                                                                    
+                                                        aData.chain = rule.rule.chain;
+                                                        aData.name = rule.rule.name;
+                                                        $(nRow).find('td:nth-child(2)').html(aData.name);
+                                                    } else {
+                                                        nRowData.detailsButton.click().click();
+                                                        alert(rule.error);
+                                                    }
+                                                });
+                                                console.log(this);
+                                                console.log(value);
+                                                console.log(settings);
+                                                return(value);
+                                            }, { 
+                                                data: {
+                                                    buildEditableSelectData: function(map) {
+                                                        var obj = new Object();
+                                                        $.each(map, function(i,value) {
+                                                            $.extend(obj,value);
+                                                        });
+                                                        obj.selected = aData.name;
+                                                        return JSON.stringify(obj);
+                                                    }
+                                                }.buildEditableSelectData(self.chainSelect.clone().unbind().find('option:first').remove().end().children().map(function() {
+                                                    var key = $(this).val(),
+                                                        value = $(this).text(),
+                                                        obj = new Object();
+                                                    obj[value]=value;
+                                                    return obj;
+                                                }).get()),
+                                                type    : 'select',
+                                                submit  : 'Update',
+                                                event     : "dblclick",
+                                                tooltip   : 'Doubleclick to edit...',
+                                                style   : 'ui-button ui-widget ui-state-default'
+                                            });
                                         } else {
-                                            alert(rule.error);
-                                        }                                        
-                                    });
-                                    console.log(this);
-                                    console.log(value);
-                                    console.log(settings);
-                                    return(value);
-                                 }, { 
-                                    type    : 'text-ui',
-                                    submit  : 'Update',
-                                    event     : "dblclick",
-                                    tooltip   : 'Doubleclick to edit...'
-                                });
-
+                                            return ruleNameTd.editable(function(value, settings) { 
+                                                var result = value,
+                                                origValue = this.revert;
+                                                $.ruleChains.ruleSet.POSTupdateRuleName({
+                                                    name: aData.name,
+                                                    newName: $.trim(result),
+                                                    ruleSetName: self.ruleSetSelect.find('option:selected').text()
+                                                },function(rule) {
+                                                    if("rule" in rule) {  
+                                                        if(self.ruleDataTable.fnIsOpen(nRow)) {
+                                                            nRowData.detailsButton.click();
+                                                            self.ruleDataTable.fnUpdate(rule.rule,nRow);
+                                                            nRowData.detailsButton.click();
+                                                        } else {
+                                                            self.ruleDataTable.fnUpdate(rule.rule,nRow);
+                                                        }
+                                                        aData = rule.rule;
+                                                    } else {
+                                                        nRowData.detailsButton.click().click();
+                                                        $(nRow).find('td:nth-child(2)').html(origValue);                                                        
+                                                        alert(rule.error);
+                                                    }                                        
+                                                });
+                                                console.log(this);
+                                                console.log(value);
+                                                console.log(settings);
+                                                return(value);
+                                             }, { 
+                                                type    : 'text-ui',
+                                                submit  : 'Update',
+                                                event     : "dblclick",
+                                                tooltip   : 'Doubleclick to edit...'
+                                            });
+                                        }
+                                    }
+                                }.makeConditionallyEditable($("td:eq(1)",nRow));
                         });                
                     }
                 }));

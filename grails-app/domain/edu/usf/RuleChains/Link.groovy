@@ -15,7 +15,8 @@ class Link {
     LinkEnum linkEnum = LinkEnum.NONE
     def input = [:]
     def output  = [[:]] 
-    static transients = ['input','output']
+    boolean isSynced = true    
+    static transients = ['input','output','isSynced']
     static belongsTo = [chain: Chain]
     static mapping = {
         inputReorder type: 'text'
@@ -52,6 +53,26 @@ class Link {
         )
         
     }
+    def afterInsert() {
+        if(isSynced) {
+            saveGitWithComment("Creating ${sequenceNumber} Link")
+        }
+    }
+    def beforeUpdate() {
+        if(isSynced) {
+            updateGitWithComment("Renaming ${sequenceNumber} Link")
+        }
+    }
+    def afterUpdate() {
+        if(isSynced) {
+            saveGitWithComment("Updating ${sequenceNumber} Link")
+        }
+    }
+    def beforeDelete() {
+        if(isSynced) {
+            deleteGitWithComment("Deleted ${sequenceNumber} Link")
+        }
+    }    
     static sourceNameVerified(String sourceName) {
         def grailsApplication = new Link().domainClass.grailsApplication
         def ctx = grailsApplication.mainContext

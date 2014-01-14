@@ -8,14 +8,16 @@ import org.hibernate.FlushMode
 import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
+import grails.util.Holders
 
 class Chain {
     String name
     List<Link> links
     List<List> input = [[:]]
+    boolean isSynced = true
     JobHistory jobHistory
     static hasMany = [links:Link]
-    static transients = ['orderedLinks','input','output','jobHistory']
+    static transients = ['orderedLinks','input','output','jobHistory','isSynced','mergedGlobals']
     static constraints = {
         name(   
                 blank: false,
@@ -40,14 +42,37 @@ class Chain {
                 }
             )               
     }
+
+    def afterInsert() {
+        if(isSynced) {
+            saveGitWithComment("Creating ${name} Chain")
+        }
+    }
+    def beforeUpdate() {
+        if(isSynced) {
+            updateGitWithComment("Updating ${name} Chain")
+        }
+    }
+    def afterDelete() {
+        if(isSynced) {
+            deleteGitWithComment("Deleted ${name} Chain")
+        }
+    }    
+    
     /**
      * Anytime a chain is renamed, snippet reference name needs to be renamed (if exists)
+     * and any ChainServiceHandlers their reference name updated as well
      **/
     def afterUpdate() {        
         Snippet.findAllByChain(this).each { s ->
             if(s.name != name) {
                 s.name=name
-                s.save(flush: true)
+                s.save()
+            }
+        }
+        if(isSynced) {
+            ChainServiceHandler.findAllByChain(this).each { h ->
+                h.saveGitWithComment("Updating ChainServicesHandler referencing ${name} Chain")
             }
         }
     }
@@ -62,6 +87,11 @@ class Chain {
             (new RuleSetService()).deleteRule(s.ruleSet.name,s.name)
         }
     }
+
+    def getMergedGlobals(def map = [:]) {
+        return [ rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:] ] + map
+    }
+    
     def getOrderedLinks() {
         links.sort{it.sequenceNumber}
     }
@@ -102,7 +132,7 @@ class Chain {
                                 def rule = [:]
                                 rule << p
                                 rule << [
-                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString(),
+                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(getMergedGlobals(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder))).toString(),
                                     jobHistory: jobHistory
                                 ]
                                 log.info rule.rule
@@ -146,7 +176,7 @@ class Chain {
                                 def rule = [:]
                                 rule << p
                                 rule << [
-                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)).toString(),
+                                    rule: gStringTemplateEngine.createTemplate(rule.rule).make(getMergedGlobals(Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder))).toString(),
                                     jobHistory: jobHistory
                                 ]
                                 log.info rule.rule
@@ -231,18 +261,73 @@ class Chain {
                             return Chain.rearrange(it,orderedLinks[i].outputReorder)
                         }
                         break
+                    case { it instanceof PHP }:
+                        jobHistory.appendToLog("[PHP] Detected a PHP script for ${orderedLinks[i].rule.name}")                        
+                        log.info "Detected a PHP Script for ${orderedLinks[i].rule.name}"
+                        orderedLinks[i].rule.jobHistory = jobHistory
+                        orderedLinks[i].output = { r ->
+                            if([Collection, Object[]].any { it.isAssignableFrom(r.getClass()) }) {
+                                switch(r) {
+                                    case r.isEmpty():
+                                        return r
+                                        break
+                                    case [Collection, Object[]].any { it.isAssignableFrom(r[0].getClass()) }:
+                                        return r
+                                        break
+                                    default:
+                                        return r
+                                        break
+                                }
+                                return r
+                            } else {
+                                jobHistory.appendToLog("[PHP] Object needs to be an array of objects so wrapping it as an array like this ${[r] as JSON}") 
+                                return [ r ] 
+                            }
+                        }.call(linkService.justPHP(
+                            orderedLinks[i].rule,
+                            orderedLinks[i].sourceName,
+                            orderedLinks[i].executeEnum,    
+                            orderedLinks[i].resultEnum,
+                            { e ->
+                                switch(e) {
+                                    case ExecuteEnum.EXECUTE_USING_ROW: 
+                                        jobHistory.appendToLog("[PHP] Execute Using Row being used")
+                                        jobHistory.appendToLog("[PHP] Unmodified input for Executing Row on link ${i} is ${orderedLinks[i].input as JSON}")
+                                        jobHistory.appendToLog("[PHP] Modified input for Executing Row link ${i} is ${Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder) as JSON}")
+                                        return Chain.rearrange(orderedLinks[i].input,orderedLinks[i].inputReorder)
+                                        break
+                                    default:
+                                        return [:]
+                                        break
+                                }                                        
+                            }.call(orderedLinks[i].executeEnum)
+                        )).collect {
+                            if(orderedLinks[i].resultEnum in [ResultEnum.APPENDTOROW]) {
+                                return Chain.rearrange((([:] << orderedLinks[i].input) << it),orderedLinks[i].outputReorder)
+                            } else if(orderedLinks[i].resultEnum in [ResultEnum.PREPENDTOROW]) {
+                                return Chain.rearrange((([:] << it) << orderedLinks[i].input),orderedLinks[i].outputReorder)
+                            }
+                            return Chain.rearrange(it,orderedLinks[i].outputReorder)
+                        }
+                        break
                     case { it instanceof DefinedService }:
                         jobHistory.appendToLog("[DefinedService] Detected a Defined service for ${orderedLinks[i].rule.name}")                        
                         log.info "Detected a Defined Service ${orderedLinks[i].rule.name}" 
                         orderedLinks[i].rule.jobHistory = jobHistory
+                        def gStringTemplateEngine = new GStringTemplateEngine()
+                        def credentials = [
+                            user: gStringTemplateEngine.createTemplate(orderedLinks[i].rule.user).make(getMergedGlobals().rcGlobals).toString(),
+                            password: gStringTemplateEngine.createTemplate(orderedLinks[i].rule.password).make(getMergedGlobals().rcGlobals).toString()
+                        ]
                         switch(orderedLinks[i].rule.authType) {
                             case AuthTypeEnum.CASSPRING:
                                 jobHistory.appendToLog("[DefinedService] Detected a CASSPRING service") 
                                 orderedLinks[i].output = linkService.casSpringSecurityRest(
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method.name(),
-                                    orderedLinks[i].rule.user,
-                                    orderedLinks[i].rule.password,
+                                    orderedLinks[i].rule.parse,
+                                    credentials.user,
+                                    credentials.password,
                                     orderedLinks[i].rule.headers,
                                     { e ->
                                         switch(e) {
@@ -272,8 +357,9 @@ class Chain {
                                 orderedLinks[i].output = linkService.casRest(
                                     orderedLinks[i].rule.url,
                                     orderedLinks[i].rule.method.name(),
-                                    orderedLinks[i].rule.user,
-                                    orderedLinks[i].rule.password,
+                                    orderedLinks[i].rule.parse,
+                                    credentials.user,
+                                    credentials.password,
                                     orderedLinks[i].rule.headers,
                                     { e ->
                                         switch(e) {
@@ -304,8 +390,8 @@ class Chain {
                                     orderedLinks[i].rule.method,
                                     orderedLinks[i].rule.authType, 
                                     orderedLinks[i].rule.parse,
-                                    orderedLinks[i].rule.user,
-                                    orderedLinks[i].rule.password,
+                                    credentials.user,
+                                    credentials.password,
                                     orderedLinks[i].rule.headers,
                                     { e ->
                                         switch(e) {
@@ -396,12 +482,13 @@ class Chain {
             String toBeEvaluated = """
                 import groovy.sql.Sql
                 import oracle.jdbc.driver.OracleTypes
-
+                
+                rcGlobals
                 row
                 ${rearrange}
             """        
             try {
-                return new GroovyShell(new Binding("row":row)).evaluate(toBeEvaluated)
+                return new GroovyShell(new Binding("row":row,rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:])).evaluate(toBeEvaluated)
             } catch(Exception e) {
                 System.out.println("${row.toString()} error: ${e.message} on closure: ${toBeEvaluated}")
             }
