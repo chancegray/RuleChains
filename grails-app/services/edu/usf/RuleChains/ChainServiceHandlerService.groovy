@@ -2,6 +2,7 @@ package edu.usf.RuleChains
 
 class ChainServiceHandlerService {
     def chainService
+    def jobService
     
     def handleChainService(String name,String method,def input) {
         def chainServiceHandlerResponse = getChainServiceHandler(name)
@@ -11,7 +12,36 @@ class ChainServiceHandlerService {
             // Execute the rule chain
             def chain = Chain.findByName(chainServiceHandlerResponse.chainServiceHandler.chain.name)
             if(!!chain) {
-                return [ result: Chain.rearrange(chain.execute(Chain.rearrange(input,chainServiceHandlerResponse.chainServiceHandler.inputReorder)),chainServiceHandlerResponse.chainServiceHandler.outputReorder) ]
+                def suffix = System.currentTimeMillis()
+                // Attaches a JobHistory to the Chain as a transient
+                chain.jobHistory = { jh -> 
+                    if('error' in jh) {
+                        log.info "Creating a new job history"
+                        jh = jobService.addJobHistory("${name}:${suffix}")
+                        return ('error' in jh)?null:jh.jobHistory
+                    }
+                    return jh.jobHistory
+                }.call(jobService.findJobHistory("${name}:${suffix}:chainServiceHandler"))
+                if(!!chain.jobHistory) {
+                    chain.jobHistory.properties = [
+                        chain: chain.name,
+                        description: "ChainServiceHandler ${name} for ${chain.name}",
+                        groupName: "none",
+                        cron: "rest triggered",
+                        fireTime: new Date(suffix),
+                        scheduledFireTime: new Date(suffix)
+                    ]               
+                    if(!chain.jobHistory.save(failOnError:false, flush: true, insert: false, validate: true)) {
+                        log.error "'${chain.jobHistory.errors.fieldError.field}' value '${chain.jobHistory.errors.fieldError.rejectedValue}' rejected" 
+                        return [ error: "ChainServiceHander aborted due to jobHistory error: '${chain.jobHistory.errors.fieldError.field}' value '${chain.jobHistory.errors.fieldError.rejectedValue}' rejected" ]
+                    } else {
+                        return [ result: Chain.rearrange(chain.execute(Chain.rearrange(input,chainServiceHandlerResponse.chainServiceHandler.inputReorder)),chainServiceHandlerResponse.chainServiceHandler.outputReorder) ]                        
+                    }                                       
+                } else {
+                    log.error "Job History is NULL and won't be used to log execution"
+                    return [ error: "JobHistory cannot be null in executing a ChainServiceHandler"]
+                }                
+                // return [ result: Chain.rearrange(chain.execute(Chain.rearrange(input,chainServiceHandlerResponse.chainServiceHandler.inputReorder)),chainServiceHandlerResponse.chainServiceHandler.outputReorder) ]
             } else {
                 return [ error: "Chain not found ${chainServiceHandlerResponse.chainServiceHandler.chain.name}" ]
             }            
