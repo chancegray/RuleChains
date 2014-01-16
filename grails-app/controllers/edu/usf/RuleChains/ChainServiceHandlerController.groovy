@@ -9,13 +9,13 @@ class ChainServiceHandlerController {
     def handleChainService() {
         withFormat {
             html {
-                JSON.use("deep") { render chainServiceHandlerService.handleChainService(params.handler,request.method,params.input) as JSON }
+                JSON.use("deep") { render ([ result: chainServiceHandlerService.handleChainService(params.handler,request.method,params.input) ]) as JSON }
             }
             xml {
-                render chainServiceHandlerService.handleChainService(params.handler,request.method,params.input) as XML
+                render ([ result: chainServiceHandlerService.handleChainService(params.handler,request.method,params.input) ]) as XML
             }
             json {
-                JSON.use("deep") { render chainServiceHandlerService.handleChainService(params.handler,request.method,params.input) as JSON }
+                JSON.use("deep") { render ([ result: chainServiceHandlerService.handleChainService(params.handler,request.method,params.input) ]) as JSON }
             }
         }        
     }
