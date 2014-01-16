@@ -35,7 +35,7 @@ class ChainServiceHandlerService {
                         log.error "'${chain.jobHistory.errors.fieldError.field}' value '${chain.jobHistory.errors.fieldError.rejectedValue}' rejected" 
                         return [ error: "ChainServiceHander aborted due to jobHistory error: '${chain.jobHistory.errors.fieldError.field}' value '${chain.jobHistory.errors.fieldError.rejectedValue}' rejected" ]
                     } else {
-                        return [ result: Chain.rearrange(chain.execute(Chain.rearrange(input,chainServiceHandlerResponse.chainServiceHandler.inputReorder)),chainServiceHandlerResponse.chainServiceHandler.outputReorder) ]                        
+                        return Chain.rearrange(chain.execute(Chain.rearrange(input,chainServiceHandlerResponse.chainServiceHandler.inputReorder)),chainServiceHandlerResponse.chainServiceHandler.outputReorder)
                     }                                       
                 } else {
                     log.error "Job History is NULL and won't be used to log execution"
