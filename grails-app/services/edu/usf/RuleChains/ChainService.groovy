@@ -92,106 +92,58 @@ class ChainService {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
             chain.isSynced = isSynced
-            def tempChain = addChain("${(new Date()).time}",isSynced)
-            if('chain' in tempChain) {
-                tempChain.chain = Chain.findByName(tempChain.chain.name)
-                tempChain.chain.isSynced = isSynced
-                def rule = Rule.findByName(("name" in newLink.rule)?newLink.rule.name:newLink.rule)
-                if(!!rule) {
-                    rule.isSynced = isSynced
-                    newLink.rule = rule
-                    Link link = new Link(newLink.collectEntries {
-                        switch(it.key) {
-                            case "executeEnum":
-                                return [ "${it.key}": ExecuteEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
-                                break
-                            case "resultEnum":
-                                return [ "${it.key}": ResultEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
-                                break
-                            case "linkEnum":
-                                return [ "${it.key}": LinkEnum.byName((("name" in it.value)?it.value.name:it.value).tokenize('.').last()) ]
-                                break
-                            default:
-                                return [ "${it.key}": it.value ]
-                                break
-                        }
-                    })
-                    link.isSynced = isSynced
-                    def sequenceNumber = 1
-                    def inserted = false
-                    Link.createCriteria().list(sort: 'sequenceNumber',order: 'asc') {
-                        eq('chain',chain)
-                    }.each{ l -> 
-                        if(l.sequenceNumber >= link.sequenceNumber && !inserted) {
-                            // insert the new link
-                            link.sequenceNumber = sequenceNumber
-                            try {
-                                if(!tempChain.chain.addToLinks(link).save(failOnError:false, flush: false, validate: true)) {
-                                    tempChain.chain.errors.allErrors.each {
-                                        println "Error:"+it
-                                    }           
-                                    return [ error : "'${tempChain.chain.errors.fieldError.field}' value '${tempChain.chain.errors.fieldError.rejectedValue}' rejected" ]                                
-                                }
-                                sequenceNumber++                                
-                                inserted = true
-                            } catch(Exception ex) {
-                                link.errors.allErrors.each {
-                                    println it                        
-                                }          
-                                return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
-                            }
-                            println "Added new link"
-                        }
-                        l.sequenceNumber = sequenceNumber
-                        def cl = new Link(l.properties.subMap(['executeEnum','resultEnum','linkEnum','rule','sequenceNumber','sourceName','inputReorder','outputReorder']))
-                        cl.isSynced = isSynced
-                        try {
-                            if(!tempChain.chain.addToLinks(cl).save(failOnError:false, flush: false, validate: true)) {
-                                tempChain.chain.errors.allErrors.each {
-                                    println "Error:"+it
-                                }           
-                                return [ error : "'${tempChain.chain.errors.fieldError.field}' value '${tempChain.chain.errors.fieldError.rejectedValue}' rejected" ]                                
-                            }
-                            sequenceNumber++
-                        } catch(Exception ex) {
-                            cl.errors.allErrors.each {
-                                println it                        
-                            }   
-                            log.info ex.printStackTrace()
-                            return [ error: "'${cl.errors.fieldError.field}' value '${cl.errors.fieldError.rejectedValue}' rejected" ]                
-                        }
-                        println "Adding existing link back"
-                    }
-                    if(!inserted) {
-                        // must be the last entry
-                        // insert the new link
-                        link.sequenceNumber = sequenceNumber
-                        try {
-                            if(!tempChain.chain.addToLinks(link).save(failOnError:false, flush: false, validate: true)) {
-                                tempChain.chain.errors.allErrors.each {
-                                    println "Error:"+it
-                                }           
-                                return [ error : "'${tempChain.chain.errors.fieldError.field}' value '${tempChain.chain.errors.fieldError.rejectedValue}' rejected" ]                                
-                            }
-                            inserted = true
-                        } catch(Exception ex) {
-                            link.errors.allErrors.each {
-                                println it                        
-                            }    
-                            log.info ex.printStackTrace()
-                            return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
-                        }    
-                        println "Added new link (last chance)"
-                    }
-                    // Flipping the names and removing the old chain
-                    // Removing original chain
-                    deleteChain(name.trim(),isSynced)
-                    // Returning the renamed temporary chain with the original name
-                    return modifyChain(tempChain.chain.name,name.trim(),isSynced)
+            // Get an ordered list of links
+            Link.createCriteria().list(sort: 'sequenceNumber',order: 'desc') {
+                eq('chain',chain)
+                ge('sequenceNumber',newLink.sequenceNumber.toLong())
+            }.each { l ->
+                l.isSynced = isSynced
+                // increment each one
+                l.sequenceNumber++
+                if(!l.save(failOnError:false, flush: true, validate: true)) {
+                    return [ error : "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" ]
                 }
-                return [ error: "The rule specified in the new link named ${("name" in newLink.rule)?newLink.rule.name:newLink.rule} doesn't exist"]
             }
-            return [ error : "Could not create the temporary chain" ]
+            def link = new Link(newLink.inject([:]) {l,k,v ->
+                switch(k) {
+                    case "executeEnum":
+                        l[k] = ExecuteEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "resultEnum":
+                        l[k] = ResultEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "linkEnum":
+                        l[k] = LinkEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "sequenceNumber":
+                        l[k] = v.toLong()
+                        break
+                    case "rule":
+                        l[k] = Rule.findByName(("name" in v)?v.name:v)
+                        l[k].isSynced = isSynced
+                        break
+                    default:
+                        l[k] = v
+                        break                    
+                }
+                return l
+            })
+            link.isSynced = isSynced
+            try {
+                if(!chain.addToLinks(link).save(failOnError:false, flush: true, validate: true)) {
+                    chain.errors.allErrors.each {
+                        println "Error:"+it
+                    }           
+                    return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                                
+                }
+            } catch(Exception ex) {
+                link.errors.allErrors.each {
+                    println it                        
+                }    
+                log.info ex.printStackTrace()
+                return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
+            }    
+            return getChain(chain.name)
         }
         return [ error : "Chain named ${name} not found!"]
     }
