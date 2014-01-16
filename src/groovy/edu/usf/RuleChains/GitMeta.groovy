@@ -549,23 +549,30 @@ class GitMeta {
         }
         Link.metaClass.deleteGitWithComment {comment ->
             pull.call()
-            new File("${localRepoFolder.absolutePath}/chains/${delegate.getPersistentValue('chain').name}/${delegate.sequenceNumber}.json").delete()
-            git.add().addFilepattern(".").call()
-            if(!git.status().call().isClean()) {
-                git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+            def relativePath = "chains/${delegate.getPersistentValue('chain').name}/${delegate.sequenceNumber}.json"
+            def f = new File("${localRepoFolder.absolutePath}/chains/${delegate.getPersistentValue('chain').name}/${delegate.sequenceNumber}.json")
+            if(f.exists()) {
+                f.delete()
+                git.rm().addFilepattern("${relativePath}").call()
+                if(!git.status().call().isClean()) {
+                    git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
+                }
+                push.call()
             }
-            push.call()
             pull.call()
         }
         Link.metaClass.updateGitWithComment {comment ->
             def relativePath = "chains/${delegate.chain.name}/${delegate.sequenceNumber}.json"
             pull.call()
-            if (delegate.isDirty('name')) {
+            if (delegate.isDirty('sequenceNumber')) {
                 def f = new File("${localRepoFolder.absolutePath}/chains/${delegate.chain.name}/${delegate.getPersistentValue("sequenceNumber")}.json")
+                def oldRelativePath = "chains/${delegate.chain.name}/${delegate.getPersistentValue("sequenceNumber")}.json"
                 if(f.exists()) {
                     f.renameTo(new File("${localRepoFolder.absolutePath}/chains/${delegate.chain.name}/${delegate.sequenceNumber}.json"))
                     git.add().addFilepattern("${relativePath}").call()
-                    git.add().addFilepattern(".").call()
+                    if(!relativePath.equalsIgnoreCase(oldRelativePath)) {
+                        git.rm().addFilepattern("${oldRelativePath}").call()
+                    }
                     if(!git.status().call().isClean()) {
                         git.commit().setAuthor(resolveUsername.call(),resolveEmail.call(resolveUsername.call())).setMessage(comment).call()
                     }
