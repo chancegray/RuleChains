@@ -180,6 +180,7 @@ class ChainService {
                         eq('chain',chain)
                         ne('sequenceNumber',sequenceNumber.toLong())
                     }.each{ l -> 
+                        l.isSynced = isSynced
                         l.sequenceNumber = sequenceNumberIndex
                         sequenceNumberIndex++
                         if(!l.save(failOnError:false, flush: true, validate: true)) {
