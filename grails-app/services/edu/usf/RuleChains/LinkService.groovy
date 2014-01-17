@@ -20,13 +20,13 @@ class LinkService {
     
     def casSpringSecurityRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:],String springSecurityBaseUrl) {
         try {
-            return { o ->
+            return [ { o ->
                 switch(parseEnum) {
                     case ParseEnum.TEXT:
                         return [ o ]
                         break
                     case ParseEnum.JSON:
-                        return JSON.parse(o)
+                        return (JSON.parse(o) as Map)
                         break
                     case ParseEnum.XML:
                         return XML.parse(o)
@@ -40,7 +40,7 @@ class LinkService {
                 headers,
                 query,
                 springSecurityBaseUrl
-            ))    
+            )) ]  
         } catch(Exception e) {
             log.debug "${method} error: ${e.printStackTrace()} on service ${serviceUrl}"
             System.out.println("${method} error: ${e.printStackTrace()} on service ${serviceUrl}")
@@ -55,13 +55,13 @@ class LinkService {
     
     def casRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:]) {
         try {
-            return { o ->
+            return [ { o ->
                 switch(parseEnum) {
                     case ParseEnum.TEXT:
                         return [ o ]
                         break
                     case ParseEnum.JSON:
-                        return JSON.parse(o)
+                        return (JSON.parse(o) as Map)
                         break
                     case ParseEnum.XML:
                         return XML.parse(o)
@@ -74,7 +74,7 @@ class LinkService {
                 password,
                 headers,
                 query
-            ))
+            )) ]
         } catch(Exception e) {
             log.debug "${method} error: ${e.printStackTrace()} on service ${serviceUrl}"
             System.out.println("${method} error: ${e.printStackTrace()} on service ${serviceUrl}")
@@ -88,13 +88,13 @@ class LinkService {
     }
     def justRest(String serviceUrl, MethodEnum methodEnum, AuthTypeEnum authTypeEnum,ParseEnum parseEnum, String username,String password,def headers=[:],def query=[:]) {
         try {
-            return { o ->
+            return [ { o ->
                 switch(parseEnum) {
                     case ParseEnum.TEXT:
                         return [ o ]
                         break
                     case ParseEnum.JSON:
-                        return JSON.parse(o)
+                        return (JSON.parse(o) as Map)
                         break
                     case ParseEnum.XML:
                         return XML.parse(o)
@@ -156,7 +156,7 @@ class LinkService {
                             break
                     }
                 }
-            )        
+            ) ]     
         } catch(Exception e) {
             log.debug "${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}"
             System.out.println("${rule.name} error: ${e.printStackTrace()} on service ${serviceUrl}")

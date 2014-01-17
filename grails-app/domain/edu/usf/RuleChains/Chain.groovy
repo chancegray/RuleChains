@@ -88,8 +88,8 @@ class Chain {
         }
     }
 
-    def getMergedGlobals(def map = [:]) {
-        return [ rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:] ] + map
+    def getMergedGlobals(def map = [:]) {        
+        return [ rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:] ] + map + [ rcLocals: [chain: name] ]
     }
     
     def getOrderedLinks() {
