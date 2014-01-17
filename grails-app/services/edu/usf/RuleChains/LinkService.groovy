@@ -26,7 +26,7 @@ class LinkService {
                         return [ o ]
                         break
                     case ParseEnum.JSON:
-                        return JSON.parse(o)
+                        return (JSON.parse(o) as Map)
                         break
                     case ParseEnum.XML:
                         return XML.parse(o)
@@ -61,7 +61,7 @@ class LinkService {
                         return [ o ]
                         break
                     case ParseEnum.JSON:
-                        return JSON.parse(o)
+                        return (JSON.parse(o) as Map)
                         break
                     case ParseEnum.XML:
                         return XML.parse(o)
@@ -94,7 +94,7 @@ class LinkService {
                         return [ o ]
                         break
                     case ParseEnum.JSON:
-                        return JSON.parse(o)
+                        return (JSON.parse(o) as Map)
                         break
                     case ParseEnum.XML:
                         return XML.parse(o)
