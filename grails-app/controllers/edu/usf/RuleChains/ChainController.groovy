@@ -2,9 +2,22 @@ package edu.usf.RuleChains
 
 import grails.converters.*
 
+/**
+ * ChainController provides for REST services handling the processing and manipulation of Chain objects
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class ChainController {
     def chainService
     def jobService
+    /**
+     * Returns a list of Chain objects with an option matching filter
+     * 
+     * @return          An object containing the resulting list of Chain objects
+     * @see    Chain
+     */        
     def listChains() { 
         withFormat {
             html {
@@ -18,6 +31,11 @@ class ChainController {
             }
         }                    
     }
+    /**
+     * Creates a new Chain
+     * 
+     * @return           Returns an object containing the new Chain
+     */
     def addChain() {
         withFormat {
             html {
@@ -31,6 +49,11 @@ class ChainController {
             }
         }                    
     }
+    /**
+     * Renames an existing Chain
+     * 
+     * @return                                   Returns an object containing the updated Chain
+     */
     def modifyChain() {
         withFormat {
             html {
@@ -44,6 +67,11 @@ class ChainController {
             }
         }                    
     }
+    /**
+     * Removes an existing Chain by name
+     * 
+     * @return           Returns an object containing the sucess or error message
+     */    
     def deleteChain() {
         withFormat {
             html {
@@ -57,6 +85,12 @@ class ChainController {
             }
         }                    
     }
+    /**
+     * Finds a Chain by it's name
+     * 
+     * @return       Returns a Chain if matched or returns an error message
+     * @see    Chain
+     */
     def getChain() {
         withFormat {
             html {
@@ -70,6 +104,12 @@ class ChainController {
             }
         }                    
     }    
+    /**
+     * Finds a Link by it's sequence number and Chain name
+     * 
+     * @return                 Returns a Link if matched or returns an error message
+     * @see    Link
+     */    
     def getChainLink() {
         withFormat {
             html {
@@ -83,6 +123,11 @@ class ChainController {
             }
         }                            
     }
+    /**
+     * Adds a new link to an existing chain
+     * 
+     * @return          Returns an object containing the updated Chain
+     */    
     def addChainLink() {
         withFormat {
             html {
@@ -96,6 +141,12 @@ class ChainController {
             }
         }                            
     }
+    /**
+     * Removes an existing link by sequence number and Chain name. The Chain links are reordered
+     * sequentially without gaps.
+     * 
+     * @return                 Returns an object containing the updated Chain
+     */    
     def deleteChainLink() {
         withFormat {
             html {
@@ -109,6 +160,13 @@ class ChainController {
             }
         }                            
     }
+    /**
+     * Updates a target links property in a chain.
+     * 
+     * @return                 Returns an object containing the updated Link
+     * @see    Link
+     * @see    Chain
+     */    
     def modifyChainLink() {
         withFormat {
             html {
@@ -122,6 +180,11 @@ class ChainController {
             }
         }                            
     }
+    /**
+     * Retrieves a list of available sources and other objects strictly for the user interface
+     * 
+     * @return  An object containing available sources along with actions,jobgroups and currently executing jobs
+     */
     def getSources() {
         withFormat {
             html {
