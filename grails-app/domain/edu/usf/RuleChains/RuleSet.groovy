@@ -1,6 +1,13 @@
 package edu.usf.RuleChains
 import org.hibernate.FlushMode
 
+/**
+ * RuleSet domain class is a container for organizing rule.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class RuleSet {
     String name
     static hasMany = [rules:Rule]
@@ -29,21 +36,33 @@ class RuleSet {
             }
         )
     }   
+    /*
+     * Handles syncronization for saves 
+     */    
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${name} RuleSet")
         }
     }
+    /*
+     * Handles syncronization for update
+     */    
     def beforeUpdate() {
         if(isSynced) {
             updateGitWithComment("Updating ${name} RuleSet")
         }
     }
+    /*
+     * Handles syncronization for post-update saves 
+     */        
     def afterUpdate() {
         if(isSynced) {
             // saveGitWithComment("Updating ${name} RuleSet")
         }
     }
+    /*
+     * Handles syncronization for deletes 
+     */        
     def afterDelete() {
         if(isSynced) {
             deleteGitWithComment("Deleted ${name} RuleSet")
