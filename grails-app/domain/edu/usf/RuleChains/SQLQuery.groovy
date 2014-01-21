@@ -1,5 +1,13 @@
 package edu.usf.RuleChains
 
+/**
+ * SQLQuery extends the basic Rule domain class and is the unit
+ * for processing a rule containing SQL.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class SQLQuery extends Rule {
     String rule = ""
     static constraints = {
@@ -7,16 +15,25 @@ class SQLQuery extends Rule {
     static mapping = {
         rule type: 'text'
     }
+    /*
+     * Handles syncronization for saves 
+     */    
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${name} SQLQuery")
         }
     }
+    /*
+     * Handles syncronization for update
+     */    
     def beforeUpdate() {
         if(isSynced) {
             updateGitWithComment("Renaming ${name} SQLQuery")
         }
     }
+    /*
+     * Handles syncronization for post-update saves 
+     */        
     def afterUpdate() {
         if(isSynced) {
             saveGitWithComment("Updating ${name} SQLQuery")
@@ -28,6 +45,9 @@ class SQLQuery extends Rule {
             }
         }
     }
+    /*
+     * Handles syncronization for deletes 
+     */            
     def beforeDelete() {
         if(isSynced) {
             deleteGitWithComment("Deleted ${name} SQLQuery")
