@@ -4,6 +4,14 @@ import edu.usf.RuleChains.ExecuteEnum
 import edu.usf.RuleChains.ResultEnum
 import edu.usf.RuleChains.LinkEnum
 
+/**
+ * Link domain class is a wrapper class for target rules with
+ * processing directives.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class Link {
     Long sequenceNumber
     String sourceName
@@ -53,26 +61,44 @@ class Link {
         )
         
     }
+    /*
+     * Handles syncronization for saves 
+     */
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${sequenceNumber} Link")
         }
     }
+    /*
+     * Handles syncronization for update
+     */
     def beforeUpdate() {
         if(isSynced) {
             updateGitWithComment("Renaming ${sequenceNumber} Link")
         }
     }
+    /*
+     * Handles syncronization for post-update saves 
+     */    
     def afterUpdate() {
         if(isSynced) {
             saveGitWithComment("Updating ${sequenceNumber} Link")
         }
     }
+    /*
+     * Handles syncronization for deletes 
+     */    
     def beforeDelete() {
         if(isSynced) {
             deleteGitWithComment("Deleted ${sequenceNumber} Link")
         }
     }    
+    /*
+     * Verifies a source name to determine if it exists (is valid)
+     * 
+     * @param     sourceName   The name of the source
+     * @return                 A boolean of whether the source actually exists
+     */
     static sourceNameVerified(String sourceName) {
         def grailsApplication = new Link().domainClass.grailsApplication
         def ctx = grailsApplication.mainContext
