@@ -2,6 +2,14 @@ package edu.usf.RuleChains
 import edu.usf.RuleChains.*
 import org.hibernate.FlushMode
 
+/**
+ * ChainServiceHandler treats a rule chain as a callable REST service. This domain class
+ * acts as the container to be processed.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class ChainServiceHandler {
     String name
     Chain chain
@@ -48,21 +56,33 @@ class ChainServiceHandler {
             }        
         )
     }
+    /*
+     * Handles syncronization for saves 
+     */
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${name} ChainServiceHandler")
         }
     }
+    /*
+     * Handles syncronization for update
+     */
     def beforeUpdate() {
         if(isSynced) {
             updateGitWithComment("Renaming ${name} ChainServiceHandler")
         }
     }
+    /*
+     * Handles syncronization for post-update saves 
+     */    
     def afterUpdate() {
         if(isSynced) {
             saveGitWithComment("Updating ${name} ChainServiceHandler")
         }
     }
+    /*
+     * Handles syncronization for deletes 
+     */    
     def beforeDelete() {
         if(isSynced) {
             deleteGitWithComment("Deleted ${name} ChainServiceHandler")
