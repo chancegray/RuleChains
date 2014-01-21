@@ -10,6 +10,14 @@ import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
 import grails.util.Holders
 
+/**
+ * Chain domain class is the sequencing object for processing
+ * a sequence of rules.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class Chain {
     String name
     List<Link> links
@@ -42,17 +50,25 @@ class Chain {
                 }
             )               
     }
-
+    /*
+     * Handles syncronization for saves 
+     */    
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${name} Chain")
         }
     }
+    /*
+     * Handles syncronization for update
+     */    
     def beforeUpdate() {
         if(isSynced) {
             updateGitWithComment("Updating ${name} Chain")
         }
     }
+    /*
+     * Handles syncronization for deletes 
+     */            
     def afterDelete() {
         if(isSynced) {
             deleteGitWithComment("Deleted ${name} Chain")
@@ -87,18 +103,41 @@ class Chain {
             (new RuleSetService()).deleteRule(s.ruleSet.name,s.name)
         }
     }
-
+    /**
+     * Retrieves the global variables hashmap from the config called "rcGlobals"
+     * and combines it with an optional provided Map and some local variables on the 
+     * current local environment.
+     * 
+     * @param  map       An optional parameter to add key/value pairs to the merge of global and local variables
+     * @return           Returns an Map containing global,local and provided key/value pairs
+     */
     def getMergedGlobals(def map = [:]) {        
         return [ rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:] ] + map + [ rcLocals: [chain: name] ]
     }
-    
+    /*
+     * Retrieves the links from this chain ordered by sequence number
+     * 
+     * @return     A list of sorted links
+     */
     def getOrderedLinks() {
         links.sort{it.sequenceNumber}
     }
+    /*
+     * Returns the final output of the chain (after execution it is set)
+     * 
+     * @return     The output of the last link that was processed in the sequence
+     */
     def getOutput() {
         getOrderedLinks().last().output
     }
-    def execute(def input = [[:]],List<Link> orderedLinks) {
+    /*
+     * Executes the chain sequence of links with their referenced rules
+     * 
+     * @param     input         An array of objects to be used as input parameters
+     * @param     orderedLinks  A list of links on this chain 
+     * @return                  An array of objects
+     */
+    def execute(def input = [[:]],List<Link> orderedLinks = getOrderedLinks()) {
         println "I'm running"
         jobHistory.appendToLog("[START_EXECUTE] Chain ${name}")
         if(!!!orderedLinks) {
@@ -476,7 +515,13 @@ class Chain {
         jobHistory.appendToLog("[END_EXECUTE] Chain ${name}")
         return (orderedLinks.isEmpty())?[[:]]:orderedLinks.last().output
     }
-    
+    /*
+     * Static method to rearrange an input object
+     * 
+     * @param     row           A source object to be rearranged
+     * @param     rearrange     A string containing groovy code which will handle the reordering
+     * @return                  A rearranged result object
+     */
     static def rearrange(def row,String rearrange){
         if(!!rearrange) {
             String toBeEvaluated = """
@@ -495,6 +540,13 @@ class Chain {
         }
         return row
     }    
+    /*
+     * Static method to iterate through links to find the position of the end loop in the link sequence
+     * 
+     * @param     links     A list of links to be search for a cooresponding end loop position
+     * @param     i         The current position of the start of the loop
+     * @return              The position detected as the corresponding end loop
+     */
     static def findEndLoop(List<Link> links,int i) {
         def endFound = false
         def endIndex = links.size()-1
