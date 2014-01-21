@@ -2,6 +2,14 @@ package edu.usf.RuleChains
 import edu.usf.RuleChains.*
 import org.hibernate.FlushMode
 
+/**
+ * The abstract Rule domain class and is the unit
+ * for processing a rules if different extended types.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 abstract class Rule {
     String name
     JobHistory jobHistory
