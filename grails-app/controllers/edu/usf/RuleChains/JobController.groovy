@@ -1,8 +1,21 @@
 package edu.usf.RuleChains
 import grails.converters.*
 
+/**
+ * JobController provides for REST services handling of tracking quartz job execution,
+ * chain service handler execution and quartz scheduling.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class JobController {
     def jobService
+    /**
+     * Returns a list of available quartz jobs
+     * 
+     * @return          An object containing the resulting list of quartz jobs
+     */            
     def listChainJobs() {
         withFormat {
             html {
@@ -16,6 +29,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Creates a new schedule for a rule chain in quartz
+     * 
+     * @return           Returns the status of quartz after job is created
+     */
     def createChainJob() {
         withFormat {
             html {
@@ -29,6 +47,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Removes a quartz schedule for a rule chain and deletes the job
+     * 
+     * @return           Returns the status of quartz after job is removed
+     */
     def removeChainJob() {
         withFormat {
             html {
@@ -42,6 +65,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Removes a quartz schedule for a rule chain
+     * 
+     * @return           Returns the status of quartz after job is removed
+     */
     def unscheduleChainJob() {
         withFormat {
             html {
@@ -55,6 +83,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Updates a quartz schedule for a rule chain
+     * 
+     * @return           Returns the status of quartz after job is updated
+     */
     def rescheduleChainJob() {
         withFormat {
             html {
@@ -68,8 +101,12 @@ class JobController {
             }
         }   
     }
+    /**
+     * Updates a quartz schedule with a different associated rule chain
+     * 
+     * @return           Returns the status of quartz after job is updated
+     */
     def updateChainJob() {
-        // String name,String newName
         withFormat {
             html {
                 return jobService.updateChainJob(params.name,params.newName)
@@ -82,6 +119,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Adds an additional quartz schedule to an existing rule chain job
+     * 
+     * @return           Returns the status of quartz after job is updated
+     */
     def addscheduleChainJob() {
         withFormat {
             html {
@@ -95,6 +137,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Combines quartz schedules of using a common rule chain
+     * 
+     * @return           Returns the status of quartz after job is updated
+     */
     def mergescheduleChainJob() {
         withFormat {
             html {
@@ -108,6 +155,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Lists all quartz schedules currently executing on rule chains
+     * 
+     * @return           Returns a list of objects containing current execution parameters
+     */
     def listCurrentlyExecutingJobs() {
         withFormat {
             html {
@@ -121,6 +173,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Retrieves a paginated list of job logs for a specified job history
+     * 
+     * @return             Returns an object containing the requested job logs, available job histories and the total county of job logs for the specified job history
+     */
     def getJobLogs() {
         withFormat {
             html {   
@@ -150,6 +207,11 @@ class JobController {
             }
         }           
     }
+    /**
+     * Retrieves a paginated list of calculated job timings for a specified job history
+     * 
+     * @return             Returns an object containing the requested job timings, available job histories and the total county of job logs for the specified job history
+     */
     def getJobRuleTimings() {
         withFormat {
             html {   
@@ -179,6 +241,11 @@ class JobController {
             }
         }           
     }
+    /**
+     * Returns a list of available Job Histories
+     * 
+     * @return     A list of job histories
+     */
     def getJobHistories() {
         withFormat {
             html {
@@ -192,6 +259,11 @@ class JobController {
             }
         }   
     }
+    /**
+     * Removes a specified Job History by name
+     * 
+     * @return             An object containing the sucess or error of the deletion
+     */
     def deleteJobHistory() {
         withFormat {
             html {
