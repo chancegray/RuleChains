@@ -6,9 +6,12 @@
 package edu.usf.RuleChains
 
 /**
- *
- * @author james
- */
+ * ResultEnum is an Enumerator for Link Result Types.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 enum ResultEnum {
     NONE, UPDATE, RECORDSET, ROW, APPENDTOROW, PREPENDTOROW;
     public static ResultEnum byName(String str) {
