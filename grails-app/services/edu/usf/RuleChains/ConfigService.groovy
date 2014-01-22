@@ -8,6 +8,14 @@ import groovy.swing.factory.ListFactory
 import groovy.json.JsonSlurper
 import groovy.io.FileType
 
+/**
+ * ConfigService provides backup and restoration of rules, chains, chainServiceHandlers
+ * and schedules.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class ConfigService {
     static transactional = true
     def grailsApplication
@@ -16,6 +24,13 @@ class ConfigService {
     def chainServiceHandlerService
     def jobService
     
+    /**
+     * Initializes the database from a Git repository
+     * 
+     * @param  isSynced  An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return           An object containing the resulting list of Chain objects
+     * @see    Chain
+     */        
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
         // Clear the Chain/Rule/ChainHandlers data
         ChainServiceHandler.withTransaction { status ->
@@ -143,6 +158,13 @@ class ConfigService {
         println restore as JSON
         // println "Does ruleSets exist? ${ruleSetsFolder.exists()}"
     }
+    /**
+     * Takes the JSON object from the upload and merges it into the syncronized
+     * Git repository and live database
+     * 
+     * @param   restore     A JSON Object containing rules,chains and chainServiceHandlers
+     * @return              Returns a status object indicating the state of the import
+     */
     def uploadChainData(restore) {
         // def o = JSON.parse(new File('Samples/import.json').text); // Parse a JSON String
         switch(restore) {
@@ -228,7 +250,11 @@ class ConfigService {
                 break
         }
     }
-    
+    /**
+     * Returns an object containing rules,chains and chainServiceHandlers
+     * 
+     * @return      An object containing rules,chains and chainSeriveHandlers
+     */
     def downloadChainData() {
         return [
             ruleSets: RuleSet.list(),
@@ -236,7 +262,12 @@ class ConfigService {
             chainServiceHandlers: ChainServiceHandler.list()
         ]
     }
-    
+    /**
+     * Iterates through a chain and checks to ensure all sources exist before importing
+     * 
+     * @param   chains  An object containing an array of chains
+     * @return          A boolean which indicates all sources exists
+     */
     def checkSources(def chains) {
         String sfRoot = "sessionFactory_"
         return grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( sfRoot ) }.collect { sf ->
@@ -249,6 +280,13 @@ class ConfigService {
             }.flatten().unique()
         )
     }
+    /**
+     * Compares existing sources with sources specified in a chain and returns
+     * what sources are missing.
+     * 
+     * @param     chains  An object containing an array of chains
+     * @return            An array of source names that don't exist
+     */
     def missingSources(def chains) {
         String sfRoot = "sessionFactory_"
         return { lsources,sources ->
@@ -266,9 +304,21 @@ class ConfigService {
             }
         )
     }
+    /**
+     * Checks to determine if there are duplicate rule defined
+     * 
+     * @param  ruleSets  A list of rule sets containing rules belonging to those rule sets
+     * @return           True or False on duplicates being detected
+     */
     def checkDuplicateMismatchRuleTypes(def ruleSets) {
         return duplicateRules(ruleSets).size() > 0
     }
+    /**
+     * Iterates through rule sets and finds the duplicates
+     * 
+     * @param  ruleSets  A list of rule sets containing rules belonging to those rule sets
+     * @return           A list of duplicate rules detected
+     */
     def duplicateRules(def ruleSets) {
         def testRules = []
         ruleSets.each { rs ->
