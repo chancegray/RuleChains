@@ -221,7 +221,7 @@ class ChainService {
      * Removes an existing link by sequence number and Chain name. The Chain links are reordered
      * sequentially without gaps.
      * 
-     * @param  name            The name of the ChainServiceHandler to be removed
+     * @param  name            The name of the Chain to be removed
      * @param  sequenceNumber  The sequence number of the link in the chain
      * @param  isSynced        An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
      * @return                 Returns an object containing the updated Chain
