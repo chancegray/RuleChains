@@ -3,9 +3,18 @@ package edu.usf.RuleChains
 import grails.plugins.springsecurity.Secured
 import grails.converters.*
 
+/**
+ * ErrorsController provides for REST services handling of errors
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 @Secured(['permitAll'])
 class ErrorsController {
-
+    /**
+     * Handles error 403
+     */
     def error403 = {
         withFormat {
             html {
@@ -23,6 +32,9 @@ class ErrorsController {
             }
         }                            
     }
+    /**
+     * Handles error 404
+     */
     def error404 = {
         withFormat {
             html {
@@ -40,6 +52,9 @@ class ErrorsController {
             }
         }                                    
     }
+    /**
+     * Handles error 500
+     */
     def error500 = {
         withFormat {
             html {
