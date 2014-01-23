@@ -12,11 +12,25 @@ import static org.quartz.CronScheduleBuilder.cronSchedule
 import grails.converters.*
 
 /**
- *
- * @author James Jones
- */
+ * JobMeta performs all the metaprogramming for the accessing 
+ * the quartz scheduling directly.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class JobMeta {
+    /**
+     * The builder method that creates all the metaprogramming methods
+     * 
+     * @param   quartzScheduler      The Quartz Plugin scheduler object
+     */        
     def buildMeta = {quartzScheduler->
+        /**
+         * Generates a list of Quartz RuleChains jobs
+         * 
+         * @return     A list of objects containing Quartz RuleChains jobs
+         */
         JobService.metaClass.listChainJobs  = {->  
             return [ 
                 jobGroups: quartzScheduler.getJobGroupNames().collect { g ->
@@ -39,6 +53,14 @@ class JobMeta {
                 }
             ]            
         }
+        /**
+         * Creates a Quartz RuleChain job
+         * 
+         * @param      cronExpression      A string containing a Quartz CRON style expression
+         * @param      name                The name of the new job. Either the name of the chain itself or the name of the chain and number
+         * @param      input               An optional array containing objects to be used as input on the chain execution
+         * @return                         Returns an object with the schedule date
+         */
         JobService.metaClass.createChainJob = { String cronExpression,String name,def input = [] ->
             def suffix = System.currentTimeMillis()
             name = { parts->
@@ -142,6 +164,13 @@ class JobMeta {
                 }
             }
         }
+        /**
+         * Renames an existing Quartz RuleChain job
+         * 
+         * @param      name     The name of the target job
+         * @param      newName  The new name for the target job
+         * @return              Returns an object with the schedule date or error response
+         */
         JobService.metaClass.updateChainJob { String name,String newName ->
             def suffix = System.currentTimeMillis()
             name = { parts->
@@ -199,6 +228,12 @@ class JobMeta {
                 updated: false
             ]
         }
+        /**
+         * Removes an existing Quartz RuleChain job
+         * 
+         * @param     name     The name of the Quartz RuleChain job to remove
+         * @return             An object with a status containing an array of operation statuses
+         */
         JobService.metaClass.removeChainJob { String name ->
             def results = []
             quartzScheduler.getJobGroupNames().findAll { g ->
@@ -235,6 +270,15 @@ class JobMeta {
             }
             return [ status: results ]
         }
+        /**
+         * Removes a schedule trigger from an existing Quartz RuleChains job. This
+         * will not remove the job itself unless there are no more triggers associated
+         * with it.
+         * 
+         * @param      cronExpression      A string containing a Quartz CRON style expression to be removed
+         * @param      name                The name of the job
+         * @return                         An object with a status containing an array of operation statuses 
+         */
         JobService.metaClass.unscheduleChainJob { String cronExpression, String name ->
             def results = []
             println(cronExpression)
@@ -308,6 +352,14 @@ class JobMeta {
                 return [ error: "Did not match an existing trigger!" ]
             }
         }
+        /**
+         * Reschedules an existing Quartz RuleChains job with a new schedule.
+         * 
+         * @param      cronExpression      A string containing a Quartz CRON style expression to be replaced
+         * @param      newCronExpression   A string containing a Quartz CRON style expression to be applied
+         * @param      name                The name of the job
+         * @return                         An object with a status containing an array of operation statuses 
+         */
         JobService.metaClass.rescheduleChainJob { String cronExpression, String newCronExpression, String name ->
             def results = []
             quartzScheduler.getJobGroupNames().findAll { g ->
@@ -359,6 +411,12 @@ class JobMeta {
             }
             return (results.find { sch -> "error" in sch })?[ error: results.find { sch -> "error" in sch }.error ]:[ status: results ]
         }
+        /**
+         * Adds another schedule trigger to an existing Quartz RuleChains job
+         * 
+         * @param      cronExpression      A string containing a Quartz CRON style expression
+         * @param      name                The name of the job
+         */
         JobService.metaClass.addscheduleChainJob { String cronExpression, String name ->
             def suffix = System.currentTimeMillis()
             name = { parts->
@@ -415,6 +473,13 @@ class JobMeta {
             }
             return [ error: "Job not found" ]
         }
+        /**
+         * Merges two Quartz RuleChains job schedules on a common RuleChain.
+         * 
+         * @param      mergeName           The name of the job to be removed and give up it's triggers to the other job
+         * @param      name                The name of the job to recieve all the merged triggers
+         * @return                         An object containing all the merged triggers
+         */
         JobService.metaClass.mergescheduleChainJob { String mergeName, String name ->
             def suffix = System.currentTimeMillis()
             name = { parts->
@@ -481,6 +546,11 @@ class JobMeta {
             }
             return [ error: "One of the jobs was not found" ]
         }
+        /** 
+         * Lists out all the currently executing Quartz RuleChains schedules.
+         * 
+         * @return       A list of all the currently executing job objects properties
+         */
         JobService.metaClass.listCurrentlyExecutingJobs {->
             return [
                 executingJobs: quartzScheduler.getCurrentlyExecutingJobs().collect { jec->
@@ -499,6 +569,11 @@ class JobMeta {
                 }
             ]
         }
+        /**
+         * A generic method to expose the quartzScheduler using a closure
+         * 
+         * @param      closure      A closure with the quartzScheduler available to it for custom processing
+         */
         RuleChainsSchedulerListener.metaClass.accessScheduler {Closure closure->
             closure.delegate = delegate
             closure.call(quartzScheduler)
