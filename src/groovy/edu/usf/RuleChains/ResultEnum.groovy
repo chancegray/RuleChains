@@ -14,6 +14,12 @@ package edu.usf.RuleChains
  */ 
 enum ResultEnum {
     NONE, UPDATE, RECORDSET, ROW, APPENDTOROW, PREPENDTOROW;
+    /**
+     * Converts a base string into a corresponding enumerated type
+     * 
+     * @param   str    The string name of the enumerated type
+     * @return         A corresponding enumerated type matched on the string parameter
+     */        
     public static ResultEnum byName(String str) {
         for (resultEnum in ResultEnum.values()) {
             if(str.trim().toUpperCase().equalsIgnoreCase(resultEnum.name())) {
