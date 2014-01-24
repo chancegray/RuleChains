@@ -26,27 +26,34 @@ import grails.converters.*
 import edu.usf.RuleChains.*
 import org.hibernate.FlushMode
 import grails.util.Holders
-
 /**
- *
- * @author james
- */
-
+ * GitMeta performs all the metaprogramming for the accessing 
+ * an internal Git repository where it's needed for syncronization.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class GitMeta {
     def gitRepository = null
+    /**
+     * The builder method that creates all the metaprogramming methods
+     * 
+     * @param   grailsApplication    The Grails GrailsApplication object
+     * @param   usfCasService        The USF CAS service provide by in the USF CAS client plugin
+     */    
     def buildMeta = { grailsApplication,usfCasService ->
         def localRepoFolder = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
         localRepoFolder.deleteDir()
         FileRepositoryBuilder builder = new FileRepositoryBuilder();
         Repository repository = builder.setGitDir(localRepoFolder)
             .readEnvironment().findGitDir().setup().build();
-        
-        
-        
-//        def command = Git.init()
-//        command.directory = new File(grailsApplication.mainContext.getResource('/').file.absolutePath + '/git/')
-
-//        def repository
+        /**
+         * Resolves the Git email address and uses a fallback if necessary
+         * 
+         * @param    username     The username used to resolve an email address
+         * @return                The email address associated or fallback email address if not found
+         */
         def resolveEmail = { username ->
             if(Holders.config.gitConfig.cas.fallbackMap[username]) {
                 return Holders.config.gitConfig.cas.fallbackMap[username]
@@ -63,6 +70,11 @@ class GitMeta {
                 }
             }
         }
+        /**
+         * Resolves the Git username and uses a fallback if necessary
+         * 
+         * @return                The username provided by CAS or fallback username if CAS is not available
+         */
         def resolveUsername = {->
             try {
                 def username = usfCasService.getUsername()
@@ -100,6 +112,11 @@ class GitMeta {
         gitRepository = repository  
         def metaClasses = []        
         for (domainClass in grailsApplication.domainClasses.findAll { sc -> sc.name in ['DefinedService','SQLQuery','Snippet','StoredProcedureQuery','PHP','Groovy']}) {
+            /**
+             * Provides a Git delete method on Rule Domain classes
+             * 
+             * @param    comment       The comment used in the Git commit
+             */
             domainClass.metaClass.deleteGitWithComment {comment ->
                 def relativePath = "ruleSets/${delegate.getPersistentValue('ruleSet').name}/${delegate.name}.json"
                 pull.call()
@@ -114,6 +131,11 @@ class GitMeta {
                 push.call()
                 pull.call()
             }
+            /**
+             * Provides a Git update method on Rule Domain classes
+             * 
+             * @param    comment       The comment used in the Git commit
+             */
             domainClass.metaClass.updateGitWithComment {comment ->
                 def relativePath = "ruleSets/${delegate.ruleSet.name}/${delegate.name}.json"
                 def oldRelativePath = "ruleSets/${delegate.ruleSet.name}/${delegate.getPersistentValue("name")}.json"
@@ -132,6 +154,11 @@ class GitMeta {
                     }
                 }
             }
+            /**
+             * Provides a Git save method on Rule Domain classes
+             * 
+             * @param    comment       The comment used in the Git commit
+             */
             domainClass.metaClass.saveGitWithComment {comment ->
                 def relativePath = "ruleSets/${delegate.ruleSet.name}/${delegate.name}.json"
                 def f = new File("${localRepoFolder.absolutePath}/ruleSets/${delegate.ruleSet.name}/${delegate.name}.json")
@@ -267,6 +294,11 @@ class GitMeta {
                 pull.call()
             }       
         }
+        /**
+         * Provides a Git delete method on RuleSet Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         RuleSet.metaClass.deleteGitWithComment  = {comment->  
             def relativePath = "ruleSets/${delegate.name}/"
             pull.call()
@@ -278,6 +310,11 @@ class GitMeta {
             push.call()
             pull.call()            
         }
+        /**
+         * Provides a Git update method on RuleSet Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         RuleSet.metaClass.updateGitWithComment = {comment ->
             def relativePath = "ruleSets/${delegate.name}/"
             def f = new File("${localRepoFolder.absolutePath}/ruleSets/${delegate.name}/")
@@ -302,6 +339,11 @@ class GitMeta {
                 pull.call()            
             }
         }
+        /**
+         * Provides a Git save method on RuleSet Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         RuleSet.metaClass.saveGitWithComment = {comment ->
             def relativePath = "ruleSets/${delegate.name}/"
             def f = new File("${localRepoFolder.absolutePath}/${relativePath}")
@@ -316,6 +358,11 @@ class GitMeta {
             push.call()
             pull.call()
         }
+        /**
+         * Provides a Git delete method on Chain Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         Chain.metaClass.deleteGitWithComment  = {comment->  
             def relativePath = "chains/${delegate.name}/"
             new File("${localRepoFolder.absolutePath}/chains/${delegate.name}/").deleteDir()
@@ -326,6 +373,11 @@ class GitMeta {
             }
             push.call();
         }
+        /**
+         * Provides a Git update method on Chain Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         Chain.metaClass.updateGitWithComment = {comment ->
             def relativePath = "chains/${delegate.name}/"
             def f = new File("${localRepoFolder.absolutePath}/chains/${delegate.name}/")
@@ -350,6 +402,11 @@ class GitMeta {
                 pull.call()
             }
         }
+        /**
+         * Provides a Git save method on Chain Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         Chain.metaClass.saveGitWithComment = {comment ->
             def relativePath = "chains/${delegate.name}/"
             def f = new File("${localRepoFolder.absolutePath}/chains/${delegate.name}/")
@@ -365,6 +422,11 @@ class GitMeta {
             push.call()
             pull.call()
         }
+        /**
+         * Provides a Git delete method on ChainServiceHandler Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         ChainServiceHandler.metaClass.deleteGitWithComment {comment ->
             def relativePath = "chainServiceHandlers/${delegate.name}.json"
             pull.call()
@@ -379,6 +441,11 @@ class GitMeta {
             }
             pull.call()
         }
+        /**
+         * Provides a Git update method on ChainServiceHandler Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         ChainServiceHandler.metaClass.updateGitWithComment = {comment ->
             def relativePath = "chainServiceHandlers/${delegate.name}.json"
             pull.call()
@@ -397,6 +464,11 @@ class GitMeta {
                 }
             }
         }
+        /**
+         * Provides a Git save method on ChainServiceHandler Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         ChainServiceHandler.metaClass.saveGitWithComment {comment ->
             def relativePath = "chainServiceHandlers/${delegate.name}.json"
             new File("${localRepoFolder.absolutePath}/chainServiceHandlers/").mkdirs()
@@ -435,11 +507,22 @@ class GitMeta {
             push.call()
             pull.call()
         }
+        /**
+         * Retrieves author information for use in Git on the JobService service
+         * 
+         * @return        An object containing the username and email address of the current Git author
+         */
         JobService.metaClass.getGitAuthorInfo { ->
             def gitAuthorInfo = [ user: resolveUsername.call() ]
             gitAuthorInfo.email = resolveEmail.call(gitAuthorInfo.user)
             return gitAuthorInfo
         }
+        /**
+         * Provides a generic method for free form Git handeling on the JobService service
+         * 
+         * @param    comment       The comment used in the Git commit
+         * @param    closure       A closure containing the git object, the repo folder and the comment
+         */
         JobService.metaClass.handleGitWithComment {String comment,Closure closure->
             pull.call()
             closure.delegate = delegate
@@ -447,12 +530,27 @@ class GitMeta {
             push.call()
             pull.call()
         }        
+        /**
+         * Provides a generic method for free form Git handeling on the ConfigService service
+         * 
+         * @param    comment       The comment used in the Git commit
+         * @param    closure       A closure containing the git object, the Git push object, the Git author info and the comment
+         */
         ConfigService.metaClass.handleGit {def comment,Closure closure->
             def gitAuthorInfo = [ user: resolveUsername.call() ]
             gitAuthorInfo.email = resolveEmail.call(gitAuthorInfo.user)
             closure.delegate = delegate
             closure.call(comment,git,push,gitAuthorInfo)
         }
+        /**
+         * Provides a Git save method on RuleChainsSchedulerListener Quartz Schedule Listener
+         * 
+         * @param    jobDetail     The Quartz JobDetail object on the current Quartz schedule
+         * @param    triggers      A list of quartz triggers
+         * @param    comment       The comment used in the Git commit
+         * @see      JobDetail
+         * @see      Trigger
+         */        
         RuleChainsSchedulerListener.metaClass.saveGitWithComment {jobDetail,triggers,comment ->
             def jobFolder = new File("${localRepoFolder.absolutePath}/jobs/")
             if(!jobFolder.exists()) {
@@ -483,6 +581,13 @@ class GitMeta {
             push.call()
             pull.call() 
         }
+        /**
+         * Provides a Git delete method on RuleChainsSchedulerListener Quartz Schedule Listener
+         * 
+         * @param    context       The Quartz JobExecutionContext object on the current Quartz schedule
+         * @param    comment       The comment used in the Git commit
+         * @see      JobExecutionContext
+         */        
         RuleChainsSchedulerListener.metaClass.deleteGitWithComment {context,comment ->
             def jobKey = context.getJobDetail().getKey()
             pull.call()
@@ -500,6 +605,13 @@ class GitMeta {
             }
             pull.call()
         }    
+        /**
+         * Provides a Git delete method on RuleChainsJobListener Quartz Job Listener
+         * 
+         * @param    context       The Quartz JobExecutionContext object on the current Quartz schedule
+         * @param    comment       The comment used in the Git commit
+         * @see      JobExecutionContext
+         */        
         RuleChainsJobListener.metaClass.deleteGitWithComment {context,comment ->
             def jobKey = context.getJobDetail().getKey()
             pull.call()
@@ -517,6 +629,13 @@ class GitMeta {
             }
             pull.call()
         }    
+        /**
+         * Provides a Git save method on RuleChainsJobListener Quartz Job Listener
+         * 
+         * @param    context       The Quartz JobExecutionContext object on the current Quartz schedule
+         * @param    comment       The comment used in the Git commit
+         * @see      JobExecutionContext
+         */        
         RuleChainsJobListener.metaClass.saveGitWithComment {context,comment ->
             def jobFolder = new File("${localRepoFolder.absolutePath}/jobs/")
             if(!jobFolder.exists()) {
@@ -547,6 +666,11 @@ class GitMeta {
             push.call()
             pull.call() 
         }
+        /**
+         * Provides a Git delete method on Link Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         Link.metaClass.deleteGitWithComment {comment ->
             pull.call()
             def relativePath = "chains/${delegate.getPersistentValue('chain').name}/${delegate.sequenceNumber}.json"
@@ -561,6 +685,11 @@ class GitMeta {
             }
             pull.call()
         }
+        /**
+         * Provides a Git update method on Link Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         Link.metaClass.updateGitWithComment {comment ->
             def relativePath = "chains/${delegate.chain.name}/${delegate.sequenceNumber}.json"
             pull.call()
@@ -581,6 +710,11 @@ class GitMeta {
                 }                
             }
         }
+        /**
+         * Provides a Git save method on Link Domain class
+         * 
+         * @param    comment       The comment used in the Git commit
+         */
         Link.metaClass.saveGitWithComment {comment ->
             def relativePath = "chains/${delegate.chain.name}/${delegate.sequenceNumber}.json"
             def f = new File("${localRepoFolder.absolutePath}/chains/${delegate.chain.name}/${delegate.sequenceNumber}.json")
