@@ -38,7 +38,7 @@ class ChainControllerTests {
         assert model.chains[0].name == "nameChange"
     }
 
-    void testListQueuesPattern() {
+    void testListChainsPattern() {
         controller.params.pattern = "^(netid).*"
         controller.request.method = "GET"
         def control = mockFor(ChainService)
@@ -101,5 +101,45 @@ class ChainControllerTests {
         controller.request.contentType = "text/json"
         def model = controller.modifyChain()
         assert model.chain.name == "newChain"
+    }
+    void testDeleteChain() {
+        controller.params.name = "newChain"
+        controller.request.method = "DELETE"
+        def control = mockFor(ChainService)
+        control.demand.deleteChain { name ->
+            def c = new Chain([name: "newChain"])
+            c.isSynced = false
+            c.metaClass.afterUpdate = {-> }
+            c.save(failOnError:true, flush: true, insert: true, validate: true)  
+            def chain = Chain.findByName(name.trim())
+            chain.isSynced = false
+            chain.metaClass.afterUpdate = {-> }
+            chain.delete()
+            return [ success : "Chain deleted" ]
+        }
+        controller.chainService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        def model = controller.deleteChain()
+        assert model.success == "Chain deleted"
+    }
+    
+    void testGetChain() {
+        controller.params.name = "newChain"
+        controller.request.method = "GET"
+        def control = mockFor(ChainService)
+        control.demand.getChain { name ->
+            def c = new Chain([name: "newChain"])
+            c.isSynced = false
+            c.metaClass.afterUpdate = {-> }
+            c.save(failOnError:true, flush: true, insert: true, validate: true) 
+            def chain = Chain.findByName(name.trim())
+            return [ chain: chain ]
+        }
+        controller.chainService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        def model = controller.getChain()
+        assert model.chain.name == "newChain"        
     }
 }
