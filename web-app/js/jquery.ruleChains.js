@@ -643,7 +643,7 @@
             POSTmodifyChain: function(json,callback) {
                 json = jQuery.extend(true,{
                     name: "",
-                    ruleSet: {
+                    chain: {
                         name: ""
                     }
                 },json);
