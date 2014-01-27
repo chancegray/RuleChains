@@ -9,6 +9,7 @@ import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
 import grails.util.Holders
+import grails.util.GrailsUtil
 
 /**
  * Chain domain class is the sequencing object for processing
@@ -37,12 +38,12 @@ class Chain {
                     val ==~ /[A-Za-z0-9_.-]+/ && {  
                         boolean valid = true;
                         Rule.withNewSession { session ->
-                            session.flushMode = FlushMode.MANUAL
+                            session.flushMode = (GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.COMMIT:FlushMode.MANUAL
                             try {
                                 def r = Rule.findByName(val)
                                 valid = ((r instanceof Snippet)?!!!!r:!!!r) && !!!RuleSet.findByName(val) && !!!ChainServiceHandler.findByName(val)
                             } finally {
-                                session.setFlushMode(FlushMode.AUTO)
+                                session.setFlushMode((GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.AUTO:FlushMode.AUTO)
                             }
                         }
                         return valid
