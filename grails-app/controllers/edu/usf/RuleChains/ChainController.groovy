@@ -57,13 +57,13 @@ class ChainController {
     def modifyChain() {
         withFormat {
             html {
-                return chainService.modifyChain(params.name,params.ruleSet.name)
+                return chainService.modifyChain(params.name,params.chain.name)
             }
             xml {
-                render chainService.modifyChain(params.name,params.ruleSet.name) as XML
+                render chainService.modifyChain(params.name,params.chain.name) as XML
             }
             json {
-                render chainService.modifyChain(params.name,params.ruleSet.name) as JSON
+                render chainService.modifyChain(params.name,params.chain.name) as JSON
             }
         }                    
     }
