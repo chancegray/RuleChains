@@ -151,7 +151,7 @@ class ChainControllerTests {
         controller.request.method = "GET"
         def control = mockFor(ChainService)
         control.demand.getChainLink { name,sequenceNumber ->
-            def c = new Chain([name: "newChain"])
+            def c = new Chain(name: "newChain")
             c.isSynced = false
             c.save()
             def rs = new RuleSet(name: "newRuleSet")
@@ -231,5 +231,41 @@ class ChainControllerTests {
         controller.request.contentType = "text/json"
         def model = controller.addChainLink()
         assert model.chain.links[0].sequenceNumber == 1   
+    }
+    
+    void testDeleteChainLink() {
+        controller.params << [
+            name: "newChain",
+            sequenceNumber: 1
+        ]
+        controller.request.method = "DELETE"
+        def control = mockFor(ChainService)
+        control.demand.deleteChainLink { name,sequenceNumber ->
+            def c = new Chain(name: "newChain")
+            c.isSynced = false
+            c.save()
+            def rs = new RuleSet(name: "newRuleSet")
+            rs.isSynced = false
+            rs.save()
+            def sr = new SQLQuery(name: "newRuleName",rule: "")
+            sr.isSynced = false
+            rs.addToRules(sr)
+            rs.save()
+            def l = new Link(rule: sr,sequenceNumber: 1)
+            l.isSynced = false
+            c.addToLinks(l)
+            c.save()
+            def chain = Chain.findByName(name.trim())
+            chain.isSynced = false
+            def link = chain.links.find { it.sequenceNumber == sequenceNumber }
+            link.isSynced = false
+            chain.removeFromLinks(link).save()
+            return [ chain: chain ]
+        }
+        controller.chainService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        def model = controller.deleteChainLink()
+        assert !!!(model.chain.links)
     }
 }
