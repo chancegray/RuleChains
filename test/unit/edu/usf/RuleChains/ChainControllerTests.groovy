@@ -165,7 +165,6 @@ class ChainControllerTests {
             l.isSynced = false
             c.addToLinks(l)
             c.save()
-            println rs.toString()
             def chain = Chain.findByName(name.trim())
             def link = chain.links.find { it.sequenceNumber == 1 }
             return [ link: link ]
@@ -175,5 +174,62 @@ class ChainControllerTests {
         controller.request.contentType = "text/json"
         def model = controller.getChainLink()
         assert model.link.sequenceNumber == 1   
+    }
+    
+    void testAddChainLink() {
+        controller.params << [
+            name: "newChain",
+            link: [
+                rule: "newRuleName",
+                sequenceNumber: 1
+            ]
+        ]
+        controller.request.method = "PUT"
+        def control = mockFor(ChainService)
+        control.demand.addChainLink { name,link ->
+            def c = new Chain([name: "newChain"])
+            c.isSynced = false
+            c.save()
+            def rs = new RuleSet(name: "newRuleSet")
+            rs.isSynced = false
+            rs.save()
+            def sr = new SQLQuery(name: "newRuleName",rule: "")
+            sr.isSynced = false
+            rs.addToRules(sr)
+            rs.save()            
+            def l = new Link(link.inject([:]) {l,k,v ->
+                switch(k) {
+                    case "executeEnum":
+                        l[k] = ExecuteEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "resultEnum":
+                        l[k] = ResultEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "linkEnum":
+                        l[k] = LinkEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "sequenceNumber":
+                        l[k] = v.toLong()
+                        break
+                    case "rule":
+                        l[k] = Rule.findByName(("name" in v)?v.name:v)
+                        l[k].isSynced = false
+                        break
+                    default:
+                        l[k] = v
+                        break                    
+                }
+                return l
+            })
+            l.isSynced = false
+            c.addToLinks(l)
+            c.save()
+            return [ chain: c ]
+        }
+        controller.chainService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        def model = controller.addChainLink()
+        assert model.chain.links[0].sequenceNumber == 1   
     }
 }
