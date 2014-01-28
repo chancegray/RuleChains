@@ -1,6 +1,7 @@
 package edu.usf.RuleChains
 import edu.usf.RuleChains.*
 import org.hibernate.FlushMode
+import grails.util.GrailsUtil
 
 /**
  * The abstract Rule domain class and is the unit
@@ -27,11 +28,11 @@ abstract class Rule {
                 validator: { val, obj -> val ==~ /[A-Za-z0-9_.-]+/ && {
                         boolean valid = true;
                         Chain.withNewSession { session ->
-                            session.flushMode = FlushMode.MANUAL
+                            session.flushMode = (GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.COMMIT:FlushMode.MANUAL
                             try {
                                 valid = (obj instanceof Snippet)?(!!!!Chain.findByName(val) && !!!RuleSet.findByName(val) && !!!ChainServiceHandler.findByName(val)):(!!!Chain.findByName(val) && !!!RuleSet.findByName(val) && !!!ChainServiceHandler.findByName(val))                                
                             } finally {
-                                session.setFlushMode(FlushMode.AUTO)
+                                session.setFlushMode((GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.AUTO:FlushMode.AUTO)
                             }
                         }
                         return valid

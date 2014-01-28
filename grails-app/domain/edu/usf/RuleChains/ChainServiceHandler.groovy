@@ -1,6 +1,7 @@
 package edu.usf.RuleChains
 import edu.usf.RuleChains.*
 import org.hibernate.FlushMode
+import grails.util.GrailsUtil
 
 /**
  * ChainServiceHandler treats a rule chain as a callable REST service. This domain class
@@ -35,11 +36,11 @@ class ChainServiceHandler {
                 val ==~ /[A-Za-z0-9_.-]+/ && {  
                     boolean valid = true;
                     ChainServiceHandler.withNewSession { session ->
-                        session.flushMode = FlushMode.MANUAL
+                        session.flushMode = (GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.COMMIT:FlushMode.MANUAL
                         try {
                             valid = !!!Rule.findByName(val) && !!!RuleSet.findByName(val) && !!!Chain.findByName(val)
                         } finally {
-                            session.setFlushMode(FlushMode.AUTO)
+                            session.setFlushMode((GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.AUTO:FlushMode.AUTO)
                         }
                     }
                     return valid

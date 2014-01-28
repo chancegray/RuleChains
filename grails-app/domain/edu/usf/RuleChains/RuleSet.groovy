@@ -1,5 +1,6 @@
 package edu.usf.RuleChains
 import org.hibernate.FlushMode
+import grails.util.GrailsUtil
 
 /**
  * RuleSet domain class is a container for organizing rule.
@@ -24,11 +25,11 @@ class RuleSet {
             validator: { val, obj -> val ==~ /[A-Za-z0-9_.-]+/ && {
                     boolean valid = true;
                     RuleSet.withNewSession { session ->
-                        session.flushMode = FlushMode.MANUAL
+                        session.flushMode = (GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.COMMIT:FlushMode.MANUAL
                         try {
                             valid = !!!Rule.findByName(val) && !!!Chain.findByName(val) && !!!ChainServiceHandler.findByName(val)
                         } finally {
-                            session.setFlushMode(FlushMode.AUTO)
+                            session.setFlushMode((GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.AUTO:FlushMode.AUTO)
                         }
                     }
                     return valid
