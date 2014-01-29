@@ -336,4 +336,27 @@ class ChainControllerTests {
         def model = controller.modifyChainLink()
         assert model.link.rule.name == "newRuleName2"
     }
+    
+    void testGetSources() {
+        controller.request.method = "GET"
+        def control = mockFor(ChainService)
+        control.demand.getSources { ->
+            def mockObj = [ 
+                sources: [ "testSource "],
+                actions: [
+                    execute: ExecuteEnum.values().collect { it.name() },
+                    result: ResultEnum.values().collect { it.name() },
+                    link: LinkEnum.values().collect { it.name() }
+                ],
+                jobGroups: [],
+                executingJobs: []            
+            ]
+            return mockObj            
+        }
+        controller.chainService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        def model = controller.modifyChainLink()
+        assert model.actions.execute.contains("NORMAL")
+    }
 }
