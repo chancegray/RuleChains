@@ -9,12 +9,22 @@ import org.codehaus.groovy.grails.web.json.*;
 import edu.usf.RuleChains.*
 import java.util.regex.*
 /**
+ * ChainControllerTests provides for unit testing of REST services handling the processing and manipulation of Chain objects
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ * 
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
 @TestFor(ChainController)
 @Mock([Chain,Link,Rule,SQLQuery,RuleSet,ChainServiceHandler,ChainService])
 class ChainControllerTests {
-
+    /**
+     * Tests a return list of Chain objects without an option matching filter
+     * 
+     * @see    Chain
+     */        
     void testListChains() {
         controller.params.pattern = null        
         controller.request.method = "GET"
@@ -37,7 +47,11 @@ class ChainControllerTests {
         def model = controller.listChains()
         assert model.chains[0].name == "nameChange"
     }
-
+    /**
+     * Tests a return list of Chain objects with an option matching filter
+     * 
+     * @see    Chain
+     */        
     void testListChainsPattern() {
         controller.params.pattern = "^(netid).*"
         controller.request.method = "GET"
@@ -59,7 +73,10 @@ class ChainControllerTests {
         def model = controller.listChains()
         assert model.chains[0].name == "netidChange"
     }
-    
+    /**
+     * Tests the create a new Chain
+     * 
+     */
     void testAddChain() {
         controller.params.name = "newChain"
         controller.request.method = "PUT"
@@ -74,6 +91,10 @@ class ChainControllerTests {
         def model = controller.addChain()
         assert model.chain.name == "newChain"
     }
+    /**
+     * Tests the renaming of an existing Chain
+     * 
+     */
     void testModifyChain() {
         controller.params << [
             name: "oldChain",
@@ -102,6 +123,10 @@ class ChainControllerTests {
         def model = controller.modifyChain()
         assert model.chain.name == "newChain"
     }
+    /**
+     * Tests the removal of an existing Chain by name
+     * 
+     */    
     void testDeleteChain() {
         controller.params.name = "newChain"
         controller.request.method = "DELETE"
@@ -123,7 +148,11 @@ class ChainControllerTests {
         def model = controller.deleteChain()
         assert model.success == "Chain deleted"
     }
-    
+    /**
+     * Tests finding a Chain by it's name
+     * 
+     * @see    Chain
+     */
     void testGetChain() {
         controller.params.name = "newChain"
         controller.request.method = "GET"
@@ -142,7 +171,11 @@ class ChainControllerTests {
         def model = controller.getChain()
         assert model.chain.name == "newChain"        
     }
-    
+    /**
+     * Tests finding a Link by it's sequence number and Chain name
+     * 
+     * @see    Link
+     */    
     void testGetChainLink() {
         controller.params << [
             name: "newChain",
@@ -175,7 +208,10 @@ class ChainControllerTests {
         def model = controller.getChainLink()
         assert model.link.sequenceNumber == 1   
     }
-    
+    /**
+     * Tests adding a new link to an existing chain
+     * 
+     */    
     void testAddChainLink() {
         controller.params << [
             name: "newChain",
@@ -232,7 +268,10 @@ class ChainControllerTests {
         def model = controller.addChainLink()
         assert model.chain.links[0].sequenceNumber == 1   
     }
-    
+    /**
+     * Tests removing an existing link by sequence number and Chain name. 
+     * 
+     */ 
     void testDeleteChainLink() {
         controller.params << [
             name: "newChain",
@@ -268,7 +307,12 @@ class ChainControllerTests {
         def model = controller.deleteChainLink()
         assert !!!(model.chain.links)
     }
-    
+    /**
+     * Tests updating a target link's property in a chain.
+     * 
+     * @see    Link
+     * @see    Chain
+     */  
     void testModifyChainLink() {
         controller.params << [
             name: "newChain",
@@ -336,7 +380,10 @@ class ChainControllerTests {
         def model = controller.modifyChainLink()
         assert model.link.rule.name == "newRuleName2"
     }
-    
+    /**
+     * Tests retrieving a list of available sources and other objects strictly for the user interface
+     * 
+     */    
     void testGetSources() {
         controller.request.method = "GET"
         def control = mockFor(ChainService)
