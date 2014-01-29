@@ -268,4 +268,72 @@ class ChainControllerTests {
         def model = controller.deleteChainLink()
         assert !!!(model.chain.links)
     }
+    
+    void testModifyChainLink() {
+        controller.params << [
+            name: "newChain",
+            sequenceNumber: 1,
+            link: [
+                rule: "newRuleName2"
+            ]
+        ]
+        controller.request.method = "POST"
+        def control = mockFor(ChainService)
+        control.demand.modifyChainLink { name,sequenceNumber,link ->
+            def c = new Chain(name: "newChain")
+            c.isSynced = false
+            c.save()
+            def rs = new RuleSet(name: "newRuleSet")
+            rs.isSynced = false
+            rs.save()
+            def sr = new SQLQuery(name: "newRuleName2",rule: "")
+            sr.isSynced = false
+            rs.addToRules(sr)
+            rs.save()
+            sr = new SQLQuery(name: "newRuleName",rule: "")
+            sr.isSynced = false
+            rs.addToRules(sr)
+            rs.save()
+            def l = new Link(rule: sr,sequenceNumber: 1)
+            l.isSynced = false
+            c.addToLinks(l)
+            c.save()
+            def chain = Chain.findByName(name.trim())
+            chain.isSynced = false
+            def updatedLink = chain.links.find { it.sequenceNumber == sequenceNumber }
+            updatedLink.isSynced = false
+            
+            updatedLink.properties = link.inject([:]) {m,k,v ->
+                switch(k) {
+                    case "executeEnum":
+                        m[k] = ExecuteEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "resultEnum":
+                        m[k] = ResultEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "linkEnum":
+                        m[k] = LinkEnum.byName((("name" in v)?v.name:v).tokenize('.').last())
+                        break
+                    case "sequenceNumber":
+                        m[k] = v.toLong()
+                        break
+                    case "rule":
+                        m[k] = Rule.findByName(("name" in v)?v.name:v)
+                        m[k].isSynced = false
+                        break
+                    default:
+                        m[k] = v
+                        break                    
+                }
+                return m
+            }
+            updatedLink.save()
+            return [ link: updatedLink ]
+        }        
+        controller.chainService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        def model = controller.modifyChainLink()
+        assert model.link.rule.name == "newRuleName2"
+    }
 }
