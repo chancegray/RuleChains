@@ -403,7 +403,7 @@ class ChainControllerTests {
         controller.chainService = control.createMock()
         
         controller.request.contentType = "text/json"
-        def model = controller.modifyChainLink()
+        def model = controller.getSources()
         assert model.actions.execute.contains("NORMAL")
     }
 }
