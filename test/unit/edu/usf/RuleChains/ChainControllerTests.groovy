@@ -33,7 +33,7 @@ class ChainControllerTests {
         control.demand.listChains { pattern ->            
             def chainsObj = ["chains": [new Chain(["name": "nameChange"]),new Chain(["name": "netidChange"])]]
             if(pattern) {
-                return [queues: chainsObj.chains.findAll {
+                return [chains: chainsObj.chains.findAll {
                     Pattern.compile(pattern.trim()).matcher(it.name).matches()
                 }]
             } else {
