@@ -10,12 +10,24 @@ import org.codehaus.groovy.grails.web.json.*;
 import edu.usf.RuleChains.*
 import java.util.regex.*
 /**
+ * ChainServiceHandlerControllerTests provides for unit testing of REST services handling the processing and manipulation of ChainServiceHandler objects
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ * 
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
 @TestFor(ChainServiceHandlerController)
 @Mock([ChainServiceHandler,ChainServiceHandlerService,Chain,Link,Rule,SQLQuery,RuleSet])
 class ChainServiceHandlerControllerTests {
-
+    /**
+     * Tests the handling of REST parameters on the matched Chain Service Handler {@link ChainServiceHandler}
+     * against it's embedded Chain {@link Chain} with input parameters.
+     * 
+     * @see    Chain
+     * @see    ChainServiceHandler
+     */     
     void testHandleChainService() {
         controller.params << [
             handler: "newChainHandler",
@@ -54,7 +66,11 @@ class ChainServiceHandlerControllerTests {
         controller.request.contentType = "text/json"
         def model = controller.handleChainService()
     }
-    
+    /**
+     * Tests the return of a list of ChainServiceHandler objects with an without option matching filter
+     * 
+     * @see    ChainServiceHandler
+     */   
     void testListChainServiceHandlers() {
         controller.params.pattern = null        
         controller.request.method = "GET"
@@ -82,7 +98,11 @@ class ChainServiceHandlerControllerTests {
         def model = controller.listChainServiceHandlers()
         assert model.chainServiceHandlers[0].name == "firstHandler"        
     }
-
+    /**
+     * Tests the return of a list of ChainServiceHandler objects with an with option matching filter
+     * 
+     * @see    ChainServiceHandler
+     */   
     void testListChainServiceHandlersPattern() {
         controller.params.pattern = "^(second).*"     
         controller.request.method = "GET"
@@ -110,7 +130,10 @@ class ChainServiceHandlerControllerTests {
         def model = controller.listChainServiceHandlers()
         assert model.chainServiceHandlers[0].name == "secondHandler"        
     }
-
+    /**
+     * Tests the creation of a new ChainServiceHandler
+     * 
+     */ 
     void testAddChainServiceHandler() {
         controller.params << [
             name: "firstHandler",
@@ -145,7 +168,10 @@ class ChainServiceHandlerControllerTests {
         def model = controller.addChainServiceHandler()
         assert model.chainServiceHandler.name == "firstHandler"        
     }
-    
+    /**
+     * Tests the modification of an existing ChainServiceHandler with updated options
+     * 
+     */  
     void testModifyChainServiceHandler() {
         controller.params << [
             name: "firstHandler",
@@ -199,7 +225,10 @@ class ChainServiceHandlerControllerTests {
         def model = controller.modifyChainServiceHandler()
         assert model.chainServiceHandler.name == "modifiedHandler"        
     }
-    
+    /**
+     * Tests the removal of an existing ChainServiceHander by name
+     * 
+     */    
     void testDeleteChainServiceHandler() {
         controller.params.name = "firstHandler"
         controller.request.method = "POST"
