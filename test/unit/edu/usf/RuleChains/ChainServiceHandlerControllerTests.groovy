@@ -145,4 +145,58 @@ class ChainServiceHandlerControllerTests {
         def model = controller.addChainServiceHandler()
         assert model.chainServiceHandler.name == "firstHandler"        
     }
+    
+    void testModifyChainServiceHandler() {
+        controller.params << [
+            name: "firstHandler",
+            chainServiceHandler: [
+                name: "modifiedHandler"
+            ]
+        ]
+        controller.request.method = "POST"
+        def control = mockFor(ChainServiceHandlerService)
+        control.demand.modifyChainServiceHandler { name,chainServiceHandler ->
+            def c = new Chain(name: "newChain")
+            c.isSynced = false
+            c.save()
+            def rs = new RuleSet(name: "newRuleSet")
+            rs.isSynced = false
+            rs.save()
+            def sr = new SQLQuery(name: "newRuleName",rule: "")
+            sr.isSynced = false
+            rs.addToRules(sr)
+            rs.save()
+            def l = new Link(rule: sr,sequenceNumber: 1)
+            l.isSynced = false
+            c.addToLinks(l)
+            c.save()
+            def csh = new ChainServiceHandler(name: name,chain: c)
+            csh.isSynced = false
+            csh.save()
+            def modifiedChainServiceHandler = ChainServiceHandler.findByName(name.trim())
+            modifiedChainServiceHandler.properties = chainServiceHandler.inject([:]) {m,k,v ->
+                switch(k) {
+                    case "method":
+                        m[k] = MethodEnum.byName((("name" in v)?v.name:v))
+                        break
+                    case "chain":
+                        m[k] = Chain.findByName(("name" in v)?v.name:v)
+                        break
+                    default:
+                        m[k] = v
+                        break                    
+                }
+                return m
+            }
+            modifiedChainServiceHandler.isSynced = false
+            modifiedChainServiceHandler.save()
+            return [ chainServiceHandler : modifiedChainServiceHandler ]
+        }
+        controller.chainServiceHandlerService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.modifyChainServiceHandler()
+        assert model.chainServiceHandler.name == "modifiedHandler"        
+    }
 }
