@@ -111,4 +111,38 @@ class ChainServiceHandlerControllerTests {
         assert model.chainServiceHandlers[0].name == "secondHandler"        
     }
 
+    void testAddChainServiceHandler() {
+        controller.params << [
+            name: "firstHandler",
+            chain: "newChain"
+        ]
+        controller.request.method = "PUT"
+        def control = mockFor(ChainServiceHandlerService)
+        control.demand.addChainServiceHandler { name,chain ->
+            def c = new Chain(name: "newChain")
+            c.isSynced = false
+            c.save()
+            def rs = new RuleSet(name: "newRuleSet")
+            rs.isSynced = false
+            rs.save()
+            def sr = new SQLQuery(name: "newRuleName",rule: "")
+            sr.isSynced = false
+            rs.addToRules(sr)
+            rs.save()
+            def l = new Link(rule: sr,sequenceNumber: 1)
+            l.isSynced = false
+            c.addToLinks(l)
+            c.save()
+            def chainServiceHandler = new ChainServiceHandler(name: name,chain: Chain.findByName(chain))
+            chainServiceHandler.isSynced = false
+            chainServiceHandler.save()
+            return [ chainServiceHandler: chainServiceHandler ]
+        }
+        controller.chainServiceHandlerService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.addChainServiceHandler()
+        assert model.chainServiceHandler.name == "firstHandler"        
+    }
 }
