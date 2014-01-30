@@ -199,4 +199,39 @@ class ChainServiceHandlerControllerTests {
         def model = controller.modifyChainServiceHandler()
         assert model.chainServiceHandler.name == "modifiedHandler"        
     }
+    
+    void testDeleteChainServiceHandler() {
+        controller.params.name = "firstHandler"
+        controller.request.method = "POST"
+        def control = mockFor(ChainServiceHandlerService)
+        control.demand.deleteChainServiceHandler { name ->
+            def c = new Chain(name: "newChain")
+            c.isSynced = false
+            c.save()
+            def rs = new RuleSet(name: "newRuleSet")
+            rs.isSynced = false
+            rs.save()
+            def sr = new SQLQuery(name: "newRuleName",rule: "")
+            sr.isSynced = false
+            rs.addToRules(sr)
+            rs.save()
+            def l = new Link(rule: sr,sequenceNumber: 1)
+            l.isSynced = false
+            c.addToLinks(l)
+            c.save()
+            def csh = new ChainServiceHandler(name: "firstHandler",chain: c)
+            csh.isSynced = false
+            csh.save()
+            def chainServiceHandler = ChainServiceHandler.findByName(name.trim())
+            chainServiceHandler.isSynced = false
+            chainServiceHandler.delete()
+            return [ success : "Chain Service Handler deleted" ]
+        }
+        controller.chainServiceHandlerService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.deleteChainServiceHandler()
+        assert model.success == "Chain Service Handler deleted"               
+    }
 }
