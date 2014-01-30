@@ -5,6 +5,10 @@ package edu.usf.RuleChains
 import grails.test.mixin.*
 import org.junit.*
 import groovy.lang.Binding
+import grails.converters.*
+import org.codehaus.groovy.grails.web.json.*;
+import edu.usf.RuleChains.*
+import java.util.regex.*
 /**
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
@@ -50,4 +54,61 @@ class ChainServiceHandlerControllerTests {
         controller.request.contentType = "text/json"
         def model = controller.handleChainService()
     }
+    
+    void testListChainServiceHandlers() {
+        controller.params.pattern = null        
+        controller.request.method = "GET"
+        def control = mockFor(ChainServiceHandlerService)
+
+        control.demand.listChainServiceHandlers { pattern -> 
+            def cshObj = [
+                "chainServiceHandlers": [
+                    new ChainServiceHandler(name: "firstHandler",method: "GET",chain: new Chain(name: "nameChange")),
+                    new ChainServiceHandler(name: "secondHandler",method: "GET",chain: new Chain(name: "nameChange"))
+                ]
+            ] 
+            if(pattern) {
+                return [chainServiceHandlers: cshObj.chainServiceHandlers.findAll {
+                    Pattern.compile(pattern.trim()).matcher(it.name).matches()
+                }]
+            } else {
+                return cshObj
+            }
+        }
+        controller.chainServiceHandlerService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.listChainServiceHandlers()
+        assert model.chainServiceHandlers[0].name == "firstHandler"        
+    }
+
+    void testListChainServiceHandlersPattern() {
+        controller.params.pattern = "^(second).*"     
+        controller.request.method = "GET"
+        def control = mockFor(ChainServiceHandlerService)
+
+        control.demand.listChainServiceHandlers { pattern -> 
+            def cshObj = [
+                "chainServiceHandlers": [
+                    new ChainServiceHandler(name: "firstHandler",method: "GET",chain: new Chain(name: "nameChange")),
+                    new ChainServiceHandler(name: "secondHandler",method: "GET",chain: new Chain(name: "nameChange"))
+                ]
+            ] 
+            if(pattern) {
+                return [chainServiceHandlers: cshObj.chainServiceHandlers.findAll {
+                    Pattern.compile(pattern.trim()).matcher(it.name).matches()
+                }]
+            } else {
+                return cshObj
+            }
+        }
+        controller.chainServiceHandlerService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.listChainServiceHandlers()
+        assert model.chainServiceHandlers[0].name == "secondHandler"        
+    }
+
 }
