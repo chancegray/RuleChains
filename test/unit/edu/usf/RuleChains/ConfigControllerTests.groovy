@@ -7,12 +7,18 @@ import grails.test.mixin.*
 import org.junit.*
 
 /**
+ * Testing ConfigController upload and download of RuleChains data
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
 @TestFor(ConfigController)
 @Mock([ChainServiceHandler,ConfigService,Chain,Link,Rule,SQLQuery,RuleSet])
 class ConfigControllerTests {
-
+    /**
+     * Tests the downloading data method
+     */
     void testDownloadChainData() {
         controller.request.method = "GET"
         def control = mockFor(ConfigService)
@@ -51,7 +57,9 @@ class ConfigControllerTests {
         assert respObj.ruleSets[0].name == "newRuleSet"
         assert respObj.ruleSets[0].rules[0].name == "newRuleName"
     }
-    
+    /**
+     * Tests the uploading data method
+     */
     void testUploadChainData() {
         controller.params << [
             upload: ([
