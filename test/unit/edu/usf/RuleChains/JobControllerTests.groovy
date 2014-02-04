@@ -259,4 +259,30 @@ class JobControllerTests {
         assert model.delete <= new Date()   
         assert model.mergedTriggers == ["0 0 0 0 ? 2014","0 0 0 0 ? 2015"]
     }
+    
+    void testListCurrentlyExecutingJobs() {
+        controller.request.method = "GET"
+        JobService.metaClass.listCurrentlyExecutingJobs = { -> }
+        def control = mockFor(JobService)
+        control.demand.listCurrentlyExecutingJobs { -> 
+            return [
+                executingJobs: [
+                    chain: "testChain",
+                    name: "testJob",
+                    description: "a test job description",
+                    group: "default",
+                    cron: "0 0 0 0 ? 2014",
+                    fireTime: new Date(),
+                    scheduledFireTime: new Date(),
+                    input: []
+                ]
+            ]
+        }
+        controller.jobService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.listCurrentlyExecutingJobs()
+        assert model.executingJobs[0].chain == "testChain"           
+    }
 }
