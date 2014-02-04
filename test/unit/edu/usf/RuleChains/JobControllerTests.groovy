@@ -142,7 +142,7 @@ class JobControllerTests {
                 ]
             ]
             return [ 
-                status: [ jobsMock.find { it.jobName == "testJob" }.inject([:]) {m,k,v ->
+                status: [ jobsMock.find { it.jobName == name }.inject([:]) {m,k,v ->
                     switch(k) {
                         case 'triggers':
                             assert v.findAll { it == cronExpression }.size() < 2
@@ -163,5 +163,33 @@ class JobControllerTests {
         def model = controller.rescheduleChainJob()
         assert model.status[0].jobName == "testJob"              
         assert model.status[0].scheduled <= new Date()              
+    }
+    
+    void testUpdateChainJob() {
+        controller.params << [
+            name: "testJob", 
+            newName: "renamedTestJob"
+        ]
+        controller.request.method = "POST"
+        JobService.metaClass.updateChainJob = { String name, String newName -> }
+        def control = mockFor(JobService)
+        control.demand.updateChainJob { name,newName ->
+            def jobsMock = [
+                [
+                    jobName: "testJob",
+                    jobGroup: "default",
+                    triggers: ["0 0 0 0 ? 2014"]
+                ]
+            ]
+            return [
+                updated: (jobsMock.find { it.jobName == name }.jobName != newName)
+            ]
+        }
+        controller.jobService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.updateChainJob()
+        assert model.updated == true                      
     }
 }
