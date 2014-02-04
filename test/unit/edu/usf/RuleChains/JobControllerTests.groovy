@@ -224,4 +224,39 @@ class JobControllerTests {
         def model = controller.addscheduleChainJob()
         assert model.date <= new Date()                              
     }
+    
+    void testMergescheduleChainJob() {
+        controller.params << [
+            mergeName: "testJob",
+            name: "testJobDup"
+        ]
+        controller.request.method = "POST"
+        JobService.metaClass.mergescheduleChainJob = { String mergeName, String name -> }
+        def control = mockFor(JobService)
+        control.demand.mergescheduleChainJob { mergeName,name -> 
+            def jobsMock = [
+                [
+                    jobName: "testJob",
+                    jobGroup: "default",
+                    triggers: ["0 0 0 0 ? 2014"]
+                ],
+                [
+                    jobName: "testJobDup",
+                    jobGroup: "default",
+                    triggers: ["0 0 0 0 ? 2015"]
+                ]
+            ]        
+            return [
+                mergedTriggers: jobsMock.findAll { it.jobName in [mergeName,name] }.collect { return it.triggers }.flatten(),
+                delete: new Date()
+            ]
+        }
+        controller.jobService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.mergescheduleChainJob()
+        assert model.delete <= new Date()   
+        assert model.mergedTriggers == ["0 0 0 0 ? 2014","0 0 0 0 ? 2015"]
+    }
 }
