@@ -192,4 +192,36 @@ class JobControllerTests {
         def model = controller.updateChainJob()
         assert model.updated == true                      
     }
+    
+    void testAddscheduleChainJob() {
+        controller.params << [
+            cronExpression: "0 0 0 0 ? 2015",
+            name: "testJob"
+        ]
+        controller.request.method = "PUT"
+        JobService.metaClass.addscheduleChainJob = { String cronExpression, String name -> }
+        def control = mockFor(JobService)
+        control.demand.addscheduleChainJob { cronExpression,name -> 
+            def jobsMock = [
+                [
+                    jobName: "testJob",
+                    jobGroup: "default",
+                    triggers: ["0 0 0 0 ? 2014"]
+                ]
+            ]        
+            return [
+                date: { t ->
+                    t << cronExpression
+                    assert t.size() > 1
+                    return new Date()
+                }.call(jobsMock.find { it.jobName == name }.triggers)
+            ]
+        }
+        controller.jobService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.addscheduleChainJob()
+        assert model.date <= new Date()                              
+    }
 }
