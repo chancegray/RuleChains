@@ -123,4 +123,45 @@ class JobControllerTests {
         def model = controller.unscheduleChainJob()
         assert model.status[0].jobName == "testJob"      
     }
+    
+    void testRescheduleChainJob() {
+        controller.params << [
+            cronExpression: "0 0 0 0 ? 2014",
+            cron: "0 0 0 0 ? 2015",
+            name: "testJob"
+        ]
+        controller.request.method = "POST"
+        JobService.metaClass.rescheduleChainJob = { String cronExpression, String cron, String name -> }
+        def control = mockFor(JobService)
+        control.demand.rescheduleChainJob { cronExpression,cron,name ->
+            def jobsMock = [
+                [
+                    jobName: "testJob",
+                    jobGroup: "default",
+                    triggers: ["0 0 0 0 ? 2014"]
+                ]
+            ]
+            return [ 
+                status: [ jobsMock.find { it.jobName == "testJob" }.inject([:]) {m,k,v ->
+                    switch(k) {
+                        case 'triggers':
+                            assert v.findAll { it == cronExpression }.size() < 2
+                            m["scheduled"] = new Date()
+                            break
+                        default:
+                            m[k] = v
+                            break
+                    }
+                    return m
+                } ]
+            ]
+        }
+        controller.jobService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.rescheduleChainJob()
+        assert model.status[0].jobName == "testJob"              
+        assert model.status[0].scheduled <= new Date()              
+    }
 }
