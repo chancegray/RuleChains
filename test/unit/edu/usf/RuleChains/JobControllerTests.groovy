@@ -4,12 +4,13 @@ package edu.usf.RuleChains
 
 import grails.test.mixin.*
 import org.junit.*
-
+import org.hibernate.criterion.CriteriaSpecification
+import groovy.time.*
 /**
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
 @TestFor(JobController)
-@Mock([JobService])
+@Mock([JobService,JobHistory,JobLog])
 class JobControllerTests {
 
     void testListChainJobs() {
@@ -267,14 +268,16 @@ class JobControllerTests {
         control.demand.listCurrentlyExecutingJobs { -> 
             return [
                 executingJobs: [
-                    chain: "testChain",
-                    name: "testJob",
-                    description: "a test job description",
-                    group: "default",
-                    cron: "0 0 0 0 ? 2014",
-                    fireTime: new Date(),
-                    scheduledFireTime: new Date(),
-                    input: []
+                    [
+                        chain: "testChain",
+                        name: "testJob",
+                        description: "a test job description",
+                        group: "default",
+                        cron: "0 0 0 0 ? 2014",
+                        fireTime: new Date(),
+                        scheduledFireTime: new Date(),
+                        input: []
+                    ]
                 ]
             ]
         }
@@ -284,5 +287,68 @@ class JobControllerTests {
         // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
         def model = controller.listCurrentlyExecutingJobs()
         assert model.executingJobs[0].chain == "testChain"           
+    }
+    
+    void testGetJobLogs() {
+        controller.params << [
+            name: "testChain:1234",
+            records: 3,
+            offset: 0
+        ]
+        controller.request.method = "GET"
+        def control = mockFor(JobService)
+        control.demand.getJobLogs { String name,Integer records,Integer offset-> 
+            [
+                [ 
+                    jobHistory: [
+                        name: "testChain:1234",
+                        chain: "testChain",
+                        groupName: "default",
+                        description: "",
+                        cron: "0 0 0 0 ? 2014",
+                        fireTime: new Date(),
+                        scheduledFireTime: new Date()
+                    ] as JobHistory,
+                    jobLogs: [
+                        [
+                            line: "Line 1",
+                            logTime: new Date()
+                        ] as JobLog,
+                        [
+                            line: "Line 2",
+                            logTime: new Date()
+                        ] as JobLog,
+                        [
+                            line: "Line 3",
+                            logTime: new Date()
+                        ] as JobLog,
+                        [
+                            line: "Line 4",
+                            logTime: new Date()
+                        ] as JobLog                        
+                    ]
+                ]
+            ].each { jh -> 
+                jh.jobHistory.save()
+                jh.jobLogs.each { jl ->
+                    jh.jobHistory.addToJobLogs(jl)
+                    jh.jobHistory.save()
+                }
+            }
+            def jobHistory = JobHistory.findByName(name.trim())
+            return [
+                jobLogs: JobLog.createCriteria().list(sort: 'id', order:'desc', max: records, offset: offset) {
+                    eq('jobHistory',jobHistory)
+                },
+                jobHistories: JobHistory.list(),
+                total: JobLog.countByJobHistory(jobHistory)
+            ]            
+        }
+        controller.jobService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.getJobLogs()
+        assert model.jobLogs.size() == 3          
     }
 }
