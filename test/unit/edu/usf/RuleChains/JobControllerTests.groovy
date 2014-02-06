@@ -7,12 +7,20 @@ import org.junit.*
 import org.hibernate.criterion.CriteriaSpecification
 import groovy.time.*
 /**
+ * Testing JobController handling of tracking quartz job execution,
+ * chain service handler execution and quartz scheduling.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
 @TestFor(JobController)
 @Mock([JobService,JobHistory,JobLog])
 class JobControllerTests {
-
+    /**
+     * Tests a list of available quartz jobs
+     * 
+     */            
     void testListChainJobs() {
         controller.request.method = "GET"
         def control = mockFor(JobService)
@@ -40,7 +48,10 @@ class JobControllerTests {
         def model = controller.listChainJobs()
         assert model.jobGroups[0].name == "default"
     }
-    
+    /**
+     * Tests creation of a new schedule for a rule chain in quartz
+     * 
+     */
     void testCreateChainJob() {
         controller.params << [
             cronExpression: "0 0 0 0 ? 2015",
@@ -62,7 +73,10 @@ class JobControllerTests {
         def model = controller.createChainJob()
         assert model.date <= System.currentTimeMillis()        
     }
-    
+    /**
+     * Tests removing a quartz schedule for a rule chain and deletes the job
+     * 
+     */
     void testRemoveChainJob() {
         controller.params.name = "testJob"
         controller.request.method = "DELETE"
@@ -86,6 +100,10 @@ class JobControllerTests {
         def model = controller.removeChainJob()
         assert model.status[0].jobName == "testJob"      
     }
+    /**
+     * Tests removing a quartz schedule for a rule chain
+     * 
+     */
     void testUnscheduleChainJob() {
         controller.params << [
             name: "testJob",
@@ -124,7 +142,10 @@ class JobControllerTests {
         def model = controller.unscheduleChainJob()
         assert model.status[0].jobName == "testJob"      
     }
-    
+    /**
+     * Tests updating a quartz schedule for a rule chain
+     * 
+     */
     void testRescheduleChainJob() {
         controller.params << [
             cronExpression: "0 0 0 0 ? 2014",
@@ -165,7 +186,10 @@ class JobControllerTests {
         assert model.status[0].jobName == "testJob"              
         assert model.status[0].scheduled <= new Date()              
     }
-    
+    /**
+     * Tests updating a quartz schedule with a different associated rule chain
+     * 
+     */
     void testUpdateChainJob() {
         controller.params << [
             name: "testJob", 
@@ -193,7 +217,10 @@ class JobControllerTests {
         def model = controller.updateChainJob()
         assert model.updated == true                      
     }
-    
+    /**
+     * Tests adding an additional quartz schedule to an existing rule chain job
+     * 
+     */
     void testAddscheduleChainJob() {
         controller.params << [
             cronExpression: "0 0 0 0 ? 2015",
@@ -225,7 +252,10 @@ class JobControllerTests {
         def model = controller.addscheduleChainJob()
         assert model.date <= new Date()                              
     }
-    
+    /**
+     * Tests combining quartz schedules of using a common rule chain
+     * 
+     */
     void testMergescheduleChainJob() {
         controller.params << [
             mergeName: "testJob",
@@ -260,7 +290,10 @@ class JobControllerTests {
         assert model.delete <= new Date()   
         assert model.mergedTriggers == ["0 0 0 0 ? 2014","0 0 0 0 ? 2015"]
     }
-    
+    /**
+     * Tests listing all quartz schedules currently executing on rule chains
+     * 
+     */
     void testListCurrentlyExecutingJobs() {
         controller.request.method = "GET"
         JobService.metaClass.listCurrentlyExecutingJobs = { -> }
@@ -288,7 +321,10 @@ class JobControllerTests {
         def model = controller.listCurrentlyExecutingJobs()
         assert model.executingJobs[0].chain == "testChain"           
     }
-    
+    /**
+     * Tests retrieving a paginated list of job logs for a specified job history
+     * 
+     */
     void testGetJobLogs() {
         controller.params << [
             name: "testChain:1234",
@@ -351,7 +387,10 @@ class JobControllerTests {
         def model = controller.getJobLogs()
         assert model.jobLogs.size() == 3          
     }
-    
+    /**
+     * Tests retrieving a paginated list of calculated job timings for a specified job history
+     * 
+     */
     void testGetJobRuleTimings() {
         controller.params << [
             name: "testChain:1234",
@@ -432,7 +471,10 @@ class JobControllerTests {
         assert model.jobLogs.size() == 3    
         assert model.jobLogs.last().logTime > model.jobLogs.first().logTime
     }
-    
+    /**
+     * Tests returning a list of available Job Histories
+     * 
+     */
     void testGetJobHistories() {
         controller.request.method = "GET"
         def control = mockFor(JobService)
@@ -504,7 +546,10 @@ class JobControllerTests {
         def model = controller.getJobHistories()
         assert model.jobHistories.size() == 1    
     }
-    
+    /**
+     * Tests removing a specified Job History by name
+     * 
+     */
     void testDeleteJobHistory() {
         controller.params.name = "testChain:1234"
     
