@@ -351,4 +351,85 @@ class JobControllerTests {
         def model = controller.getJobLogs()
         assert model.jobLogs.size() == 3          
     }
+    
+    void testGetJobRuleTimings() {
+        controller.params << [
+            name: "testChain:1234",
+            records: 3,
+            offset: 0
+        ]
+        controller.request.method = "GET"
+        def control = mockFor(JobService)
+        control.demand.getJobRuleTimings { String name,Integer records,Integer offset-> 
+            def now = new Date()
+            use (TimeCategory) {
+                [
+                    [ 
+                        jobHistory: [
+                            name: "testChain:1234",
+                            chain: "testChain",
+                            groupName: "default",
+                            description: "",
+                            cron: "0 0 0 0 ? 2014",
+                            fireTime: new Date(),
+                            scheduledFireTime: new Date()
+                        ] as JobHistory,
+                        jobLogs: [
+                            [
+                                line: "Line 1",
+                                logTime: new Date() + 1.seconds
+                            ] as JobLog,
+                            [
+                                line: "Line 2",
+                                logTime: new Date() + 2.seconds
+                            ] as JobLog,
+                            [
+                                line: "Line 3",
+                                logTime: new Date() + 3.seconds
+                            ] as JobLog,
+                            [
+                                line: "Line 4",
+                                logTime: new Date() + 4.seconds
+                            ] as JobLog                        
+                        ]
+                    ]
+                ].each { jh -> 
+                    jh.jobHistory.save()
+                    jh.jobLogs.each { jl ->
+                        jh.jobHistory.addToJobLogs(jl)
+                        jh.jobHistory.save()
+                    }
+                }
+            }
+            def jobHistory = JobHistory.findByName(name.trim())
+            return [
+                jobLogs: { jls ->
+                    def endTime = JobLog.createCriteria().get {
+                        eq('jobHistory',jobHistory)
+                        projections {
+                            max('logTime')
+                        }
+                    }
+                    jls.reverse().collect { jl ->
+                        def jlobj = jl.properties as Map
+                        jlobj.duration = TimeCategory.minus(endTime, jl.logTime).toString()
+                        endTime = jl.logTime
+                        // jl.ruleName = jl.line.tokenize().last()
+                        return jlobj                            
+                    }
+                }.call(JobLog.createCriteria().list(sort: 'id', order:'desc', max: records, offset: offset) {
+                    eq('jobHistory',jobHistory)
+                }),
+                jobHistories: JobHistory.list(),
+                total: JobLog.countByJobHistory(jobHistory)
+            ]            
+        }
+        controller.jobService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.getJobRuleTimings()
+        assert model.jobLogs.size() == 3    
+        assert model.jobLogs.last().logTime > model.jobLogs.first().logTime
+    }
 }
