@@ -504,4 +504,31 @@ class JobControllerTests {
         def model = controller.getJobHistories()
         assert model.jobHistories.size() == 1    
     }
+    
+    void testDeleteJobHistory() {
+        controller.params.name = "testChain:1234"
+    
+        controller.request.method = "DELETE"
+        def control = mockFor(JobService)
+        control.demand.deleteJobHistory { name -> 
+            def jh = new JobHistory(name: "testChain:1234",
+                chain: "testChain",
+                groupName: "default",
+                description: "",
+                cron: "0 0 0 0 ? 2014",
+                fireTime: new Date(),
+                scheduledFireTime: new Date()
+            )
+            jh.save()
+            def jobHistory = JobHistory.findByName(name.trim())
+            jobHistory.delete()
+            return [ success : "Job History deleted" ]
+        }
+        controller.jobService = control.createMock()
+        
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.deleteJobHistory()
+        assert model.success == "Job History deleted"        
+    }
 }
