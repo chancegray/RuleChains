@@ -9,7 +9,7 @@ import java.util.regex.*
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
 @TestFor(RuleSetController)
-@Mock([RuleSetService,Rule,SQLQuery,RuleSet])
+@Mock([RuleSetService,Rule,SQLQuery,RuleSet,ChainServiceHandler,Chain,Link])
 class RuleSetControllerTests {
 
     void testListRuleSets() {
@@ -66,5 +66,24 @@ class RuleSetControllerTests {
         // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
         def model = controller.listRuleSets()
         assert model.ruleSets[0].name == "secondRuleSet"        
+    }
+    
+    void testAddRuleSet() {
+        controller.params.name = "newRuleSet"
+        controller.request.method = "PUT"
+        def control = mockFor(RuleSetService)
+
+        control.demand.addRuleSet { name -> 
+            def rs = new RuleSet(name: "newRuleSet")
+            rs.isSynced = false
+            rs.save()
+            return [ ruleSet: rs ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.addRuleSet()
+        assert model.ruleSet.name == "newRuleSet"          
     }
 }
