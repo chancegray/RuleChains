@@ -74,7 +74,7 @@ class RuleSetControllerTests {
         def control = mockFor(RuleSetService)
 
         control.demand.addRuleSet { name -> 
-            def rs = new RuleSet(name: "newRuleSet")
+            def rs = new RuleSet(name: name)
             rs.isSynced = false
             rs.save()
             return [ ruleSet: rs ]
@@ -84,6 +84,26 @@ class RuleSetControllerTests {
         controller.request.contentType = "text/json"
         // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
         def model = controller.addRuleSet()
+        assert model.ruleSet.name == "newRuleSet"          
+    }
+    
+    void testGetRuleSet() {
+        controller.params.name = "newRuleSet"
+        controller.request.method = "GET"
+        def control = mockFor(RuleSetService)
+
+        control.demand.getRuleSet { name -> 
+            def rs = new RuleSet(name: name)
+            rs.isSynced = false
+            rs.save()
+            def ruleSet = RuleSet.findByName(name.trim())
+            return [ ruleSet: ruleSet ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.getRuleSet()
         assert model.ruleSet.name == "newRuleSet"          
     }
 }
