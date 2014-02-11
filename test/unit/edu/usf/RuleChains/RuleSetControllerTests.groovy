@@ -128,4 +128,32 @@ class RuleSetControllerTests {
         def model = controller.deleteRuleSet()
         assert model.success == "RuleSet deleted"          
     }
+    
+    void testModifyRuleSet() {
+        controller.params << [
+            name: "newRuleSet",
+            ruleSet: [
+                name: "renamedRuleSet"
+            ]
+        ]
+        controller.request.method = "POST"
+        def control = mockFor(RuleSetService)
+
+        control.demand.modifyRuleSet { name,ruleSetname -> 
+            def rs = new RuleSet(name: name)
+            rs.isSynced = false
+            rs.save()
+            def modifyRuleSet = RuleSet.findByName(name.trim())
+            modifyRuleSet.isSynced = false
+            modifyRuleSet.name = ruleSetname
+            modifyRuleSet.save()
+            return [ ruleSet: modifyRuleSet ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.modifyRuleSet()
+        assert model.ruleSet.name == "renamedRuleSet"        
+    }
 }
