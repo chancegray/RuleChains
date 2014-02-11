@@ -156,4 +156,34 @@ class RuleSetControllerTests {
         def model = controller.modifyRuleSet()
         assert model.ruleSet.name == "renamedRuleSet"        
     }
+    
+    void testGetRule() {
+        controller.params << [
+            name: "newRuleSet",
+            id: "newRule"
+        ]        
+        controller.request.method = "GET"
+        def control = mockFor(RuleSetService)
+
+        control.demand.getRule { name,id -> 
+            def rs = new RuleSet(name: name)
+            rs.isSynced = false
+            rs.save()
+            def r = new SQLQuery(name: id)
+            r.isSynced = false
+            rs.addToRules(r)
+            rs.save()     
+            def ruleSet = RuleSet.findByName(name)
+            def rule = ruleSet.rules.find {
+                it.name == id
+            }
+            return [ rule: rule ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.getRule()
+        assert model.rule.name == "newRule"   
+    }
 }
