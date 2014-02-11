@@ -186,4 +186,62 @@ class RuleSetControllerTests {
         def model = controller.getRule()
         assert model.rule.name == "newRule"   
     }
+    
+    void testAddRule() {
+        controller.params << [
+            name: "newRuleSet",
+            id: "newRule",
+            serviceType: "SQLQUERY"
+        ]        
+        controller.request.method = "PUT"
+        def control = mockFor(RuleSetService)
+
+        control.demand.addRule { name,id,serviceType -> 
+            def rs = new RuleSet(name: name)
+            rs.isSynced = false
+            rs.save()
+            def ruleSet = RuleSet.findByName(name)
+            ruleSet.isSynced = false
+            def serviceTypeEnum = ServiceTypeEnum.byName(serviceType.trim())
+            def rule
+            switch(serviceTypeEnum) {
+                case ServiceTypeEnum.SQLQUERY:
+                    rule = [ name: id, rule: "" ] as SQLQuery
+                    rule.isSynced = false
+                    break
+                case ServiceTypeEnum.GROOVY:
+                    rule = [ name: id, rule: "" ] as Groovy
+                    rule.isSynced = false
+                    break
+                case ServiceTypeEnum.STOREDPROCEDUREQUERY:
+                    rule = [ name: id ] as StoredProcedureQuery
+                    rule.isSynced = false
+                    break
+                case ServiceTypeEnum.DEFINEDSERVICE:
+                    rule = [ name: id ] as DefinedService
+                    rule.isSynced = false                    
+                    break
+                case ServiceTypeEnum.SNIPPET:
+                    def chain = Chain.findByName(id)
+                    /** TODO
+                     * Removed temporarily until the Chain interface is in place
+                     **/
+                    if(!chain) {
+                        return [ error: "Chain '${id}' does not exist! You must specify a name for an existing chain to reference it as a snippet."]
+                    }
+                    rule = [ name: id, chain: chain ] as Snippet
+                    rule.isSynced = false                    
+                    break
+            }
+            ruleSet.addToRules(rule)
+            ruleSet.save() 
+            return [ rule: rule ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.addRule()
+        assert model.rule.name == "newRule" 
+    }
 }
