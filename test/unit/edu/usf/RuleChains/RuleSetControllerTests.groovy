@@ -106,4 +106,26 @@ class RuleSetControllerTests {
         def model = controller.getRuleSet()
         assert model.ruleSet.name == "newRuleSet"          
     }
+    
+    void testDeleteRuleSet() {
+        controller.params.name = "newRuleSet"
+        controller.request.method = "DELETE"
+        def control = mockFor(RuleSetService)
+
+        control.demand.deleteRuleSet { name -> 
+            def rs = new RuleSet(name: name)
+            rs.isSynced = false
+            rs.save()
+            def ruleSet = RuleSet.findByName(name.trim())
+            ruleSet.isSynced = false
+            ruleSet.delete()
+            return [ success : "RuleSet deleted" ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.deleteRuleSet()
+        assert model.success == "RuleSet deleted"          
+    }
 }
