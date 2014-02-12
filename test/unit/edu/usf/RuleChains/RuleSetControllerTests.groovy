@@ -363,4 +363,46 @@ class RuleSetControllerTests {
         def model = controller.deleteRule()
         assert model.status == "Rule Removed From Set" 
     }
+    
+    void testMoveRule() {
+        controller.params << [
+            name: "newRuleSet",
+            id: "newRule",
+            nameUpdate: "destRuleSet"
+        ]
+        
+        controller.request.method = "PUT"
+        def control = mockFor(RuleSetService)
+
+        control.demand.moveRule { ruleSetName,name,nameUpdate -> 
+            def rs = new RuleSet(name: ruleSetName)
+            rs.isSynced = false
+            rs.save()
+            def r = new SQLQuery(name: name)
+            r.isSynced = false
+            rs.addToRules(r)
+            rs.save()     
+            rs = new RuleSet(name: nameUpdate)
+            rs.isSynced = false
+            rs.save()
+            def ruleSet = RuleSet.findByName(ruleSetName)
+            ruleSet.isSynced = false
+            def rule = ruleSet.rules.find { it.name == name }
+            rule.isSynced = false
+            def targetRuleSet = RuleSet.findByName(nameUpdate)
+            targetRuleSet.isSynced = false
+            ruleSet.removeFromRules(rule)
+            ruleSet.save()
+            targetRuleSet.addToRules(rule)
+            targetRuleSet.save() 
+            return [ rule: rule ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.moveRule()
+        assert model.rule.name == "newRule" 
+        assert model.rule.ruleSet.name == "destRuleSet"
+    }
 }
