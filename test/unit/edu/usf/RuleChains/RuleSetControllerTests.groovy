@@ -330,4 +330,37 @@ class RuleSetControllerTests {
         def model = controller.updateRuleName()
         assert model.rule.name == "updatedRule"  
     }
+    
+    void testDeleteRule() {
+        controller.params << [
+            name: "newRuleSet",
+            id: "newRule"        ]
+        
+        controller.request.method = "DELETE"
+        def control = mockFor(RuleSetService)
+
+        control.demand.deleteRule { ruleSetName,name -> 
+            def rs = new RuleSet(name: ruleSetName)
+            rs.isSynced = false
+            rs.save()
+            def r = new SQLQuery(name: name)
+            r.isSynced = false
+            rs.addToRules(r)
+            rs.save()     
+            def ruleSet = RuleSet.findByName(ruleSetName)
+            ruleSet.isSynced = false
+            def rule = ruleSet.rules.find { it.name == name }
+            rule.isSynced = false
+            ruleSet.removeFromRules(rule)
+            ruleSet.save()
+            rule.delete()
+            return [ status: "Rule Removed From Set" ] 
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.deleteRule()
+        assert model.status == "Rule Removed From Set" 
+    }
 }
