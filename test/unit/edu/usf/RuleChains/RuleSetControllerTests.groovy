@@ -244,4 +244,57 @@ class RuleSetControllerTests {
         def model = controller.addRule()
         assert model.rule.name == "newRule" 
     }
+    
+    void testUpdateRule() {
+        controller.params << [
+            name: "newRuleSet",
+            id: "newRule",
+            rule: [
+                rule: "select 1 from dual"
+            ]
+        ]        
+        controller.request.method = "POST"
+        def control = mockFor(RuleSetService)
+
+        control.demand.updateRule { ruleSetName,name,ruleUpdate -> 
+            def rs = new RuleSet(name: ruleSetName)
+            rs.isSynced = false
+            rs.save()
+            def r = new SQLQuery(name: name)
+            r.isSynced = false
+            rs.addToRules(r)
+            rs.save()     
+            def ruleSet = RuleSet.findByName(ruleSetName)
+            def rule = ruleSet.rules.find { it.name == name }
+            rule.properties = ruleUpdate.inject([:]) {m,k,v ->
+                switch(k) {
+                    case "chain":
+                        m[k] = ("name" in v)?Chain.findByName(v.name):Chain.findByName(v)
+                        break
+                    case "method":
+                        m[k] = MethodEnum.byName(("name" in v)?v.name:v)
+                        break
+                    case "parse":
+                        m[k] = ParseEnum.byName(("name" in v)?v.name:v)
+                        break
+                    case "authType":
+                        m[k] = AuthTypeEnum.byName(("name" in v)?v.name:v)
+                        break
+                    default:
+                        m[k] = v
+                        break
+                }
+                return m
+            }
+            rule.isSynced = false
+            rule.save()
+            return [ rule: rule ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.updateRule()
+        assert model.rule.rule == "select 1 from dual"         
+    }
 }
