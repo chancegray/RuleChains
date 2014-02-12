@@ -297,4 +297,37 @@ class RuleSetControllerTests {
         def model = controller.updateRule()
         assert model.rule.rule == "select 1 from dual"         
     }
+    
+    void testUpdateRuleName() {
+        controller.params << [
+            name: "newRuleSet",
+            id: "newRule",
+            nameUpdate: "updatedRule"
+        ]
+        
+        controller.request.method = "POST"
+        def control = mockFor(RuleSetService)
+
+        control.demand.updateRuleName { ruleSetName,name,nameUpdate -> 
+            def rs = new RuleSet(name: ruleSetName)
+            rs.isSynced = false
+            rs.save()
+            def r = new SQLQuery(name: name)
+            r.isSynced = false
+            rs.addToRules(r)
+            rs.save()     
+            def ruleSet = RuleSet.findByName(ruleSetName)
+            def rule = ruleSet.rules.find { it.name == name }
+            rule.name = nameUpdate
+            rule.isSynced = false
+            rule.save()
+            return [ rule: rule ]
+        }
+        controller.ruleSetService = control.createMock()
+
+        controller.request.contentType = "text/json"
+        // controller.request.content = (["pattern": null] as JSON).toString().getBytes()
+        def model = controller.updateRuleName()
+        assert model.rule.name == "updatedRule"  
+    }
 }
