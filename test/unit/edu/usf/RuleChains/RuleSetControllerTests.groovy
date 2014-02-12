@@ -6,12 +6,21 @@ import grails.test.mixin.*
 import org.junit.*
 import java.util.regex.*
 /**
+ * RuleSetControllerTests provides for unit testing of REST services handling the processing and manipulation of RuleSet objects
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ * 
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
 @TestFor(RuleSetController)
 @Mock([RuleSetService,Rule,SQLQuery,RuleSet,ChainServiceHandler,Chain,Link])
 class RuleSetControllerTests {
-
+    /**
+     * Tests the returns of a list of RuleSet objects objects without a matching filter
+     * 
+     */  
     void testListRuleSets() {
         controller.params.pattern = null        
         controller.request.method = "GET"
@@ -39,7 +48,10 @@ class RuleSetControllerTests {
         def model = controller.listRuleSets()
         assert model.ruleSets[0].name == "firstRuleSet"        
     }
-
+    /**
+     * Tests the returns of a list of RuleSet objects objects with a matching filter
+     * 
+     */  
     void testListRuleSetsPattern() {
         controller.params.pattern = "^(second).*"        
         controller.request.method = "GET"
@@ -67,7 +79,10 @@ class RuleSetControllerTests {
         def model = controller.listRuleSets()
         assert model.ruleSets[0].name == "secondRuleSet"        
     }
-    
+    /**
+     * Tests creating a new RuleSet
+     * 
+     */    
     void testAddRuleSet() {
         controller.params.name = "newRuleSet"
         controller.request.method = "PUT"
@@ -86,7 +101,10 @@ class RuleSetControllerTests {
         def model = controller.addRuleSet()
         assert model.ruleSet.name == "newRuleSet"          
     }
-    
+    /**
+     * Tests finding a RuleSet by it's name
+     * 
+     */
     void testGetRuleSet() {
         controller.params.name = "newRuleSet"
         controller.request.method = "GET"
@@ -106,7 +124,10 @@ class RuleSetControllerTests {
         def model = controller.getRuleSet()
         assert model.ruleSet.name == "newRuleSet"          
     }
-    
+    /**
+     * Tests removing an existing RuleSet by name
+     * 
+     */ 
     void testDeleteRuleSet() {
         controller.params.name = "newRuleSet"
         controller.request.method = "DELETE"
@@ -128,7 +149,10 @@ class RuleSetControllerTests {
         def model = controller.deleteRuleSet()
         assert model.success == "RuleSet deleted"          
     }
-    
+    /**
+     * Tests renaming an existing RuleSet
+     * 
+     */
     void testModifyRuleSet() {
         controller.params << [
             name: "newRuleSet",
@@ -156,7 +180,10 @@ class RuleSetControllerTests {
         def model = controller.modifyRuleSet()
         assert model.ruleSet.name == "renamedRuleSet"        
     }
-    
+    /**
+     * Tests retrieving a Rule by it's RuleSet name and Rule name
+     * 
+     */  
     void testGetRule() {
         controller.params << [
             name: "newRuleSet",
@@ -186,7 +213,10 @@ class RuleSetControllerTests {
         def model = controller.getRule()
         assert model.rule.name == "newRule"   
     }
-    
+    /**
+     * Tests creating a new Rule in an existing RuleSet
+     * 
+     */
     void testAddRule() {
         controller.params << [
             name: "newRuleSet",
@@ -244,7 +274,10 @@ class RuleSetControllerTests {
         def model = controller.addRule()
         assert model.rule.name == "newRule" 
     }
-    
+    /**
+     * Tests updating an existing rule in a RuleSet
+     * 
+     */
     void testUpdateRule() {
         controller.params << [
             name: "newRuleSet",
@@ -297,7 +330,10 @@ class RuleSetControllerTests {
         def model = controller.updateRule()
         assert model.rule.rule == "select 1 from dual"         
     }
-    
+    /**
+     * Tests renaming an existing Rule
+     * 
+     */
     void testUpdateRuleName() {
         controller.params << [
             name: "newRuleSet",
@@ -330,7 +366,10 @@ class RuleSetControllerTests {
         def model = controller.updateRuleName()
         assert model.rule.name == "updatedRule"  
     }
-    
+    /**
+     * Tests removing an existing Rule by RuleSet name and Rule name. 
+     * 
+     */   
     void testDeleteRule() {
         controller.params << [
             name: "newRuleSet",
@@ -363,7 +402,10 @@ class RuleSetControllerTests {
         def model = controller.deleteRule()
         assert model.status == "Rule Removed From Set" 
     }
-    
+    /**
+     * Tests relocating an existing Rule in a different RuleSet
+     *
+     */
     void testMoveRule() {
         controller.params << [
             name: "newRuleSet",
