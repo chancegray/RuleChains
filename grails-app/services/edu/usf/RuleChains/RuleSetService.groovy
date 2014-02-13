@@ -266,7 +266,7 @@ class RuleSetService {
                         }           
                         return [ error: "'${rule.errors.fieldError.field}' value '${rule.errors.fieldError.rejectedValue}' rejected" ]                        
                     }
-                    return [ rule: getRule(ruleSetName,rule.name).rule ]
+                    return [ rule: (GrailsUtil.environment in ['test'])?rule:getRule(ruleSetName,rule.name).rule ]
                 }
                 return [ error: "Rule specified does not exist!" ]
             }
