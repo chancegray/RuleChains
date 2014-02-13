@@ -109,4 +109,17 @@ class RuleSetServiceTests {
         def result = ruleSetService.addRule("firstRuleSet","newRule","SQLQUERY",false)
         assert result.rule.name == "newRule"
     }
+    
+    void testUpdateRule() {
+        def ruleSetService = new RuleSetService()
+        def rs = new RuleSet(name: "firstRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def r = new SQLQuery(name: "newRule")
+        r.isSynced = false
+        rs.addToRules(r)
+        rs.save()
+        def result = ruleSetService.updateRule("firstRuleSet","newRule",[ rule: "SELECT 'test' FROM DUAL" ],false)
+        assert result.rule.rule == "SELECT 'test' FROM DUAL"
+    }
 }
