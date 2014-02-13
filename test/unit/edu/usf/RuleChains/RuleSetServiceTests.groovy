@@ -52,4 +52,61 @@ class RuleSetServiceTests {
         assert result.ruleSets.size() == 1
         assert result.ruleSets.find { it.name == "secondRuleSet" }.name == "secondRuleSet"
     }
+    
+    void testAddRuleSet() {
+        def ruleSetService = new RuleSetService()
+        def result = ruleSetService.addRuleSet("firstRuleSet",false)
+        assert result.ruleSet.name == "firstRuleSet"
+    }
+    
+    void testGetRuleSet() {
+        def ruleSetService = new RuleSetService()
+        def rs = new RuleSet(name: "firstRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def result = ruleSetService.getRuleSet("firstRuleSet")
+        assert result.ruleSet.name == "firstRuleSet"
+    }
+    
+    void testDeleteRuleSet() {
+        def ruleSetService = new RuleSetService()
+        def rs = new RuleSet(name: "firstRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def result = ruleSetService.deleteRuleSet("firstRuleSet",false)
+        assert result.success == "RuleSet deleted"
+    }
+    
+    void testModifyRuleSet() {
+        def ruleSetService = new RuleSetService()
+        def rs = new RuleSet(name: "firstRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def result = ruleSetService.modifyRuleSet("firstRuleSet","secondRuleSet",false)
+        assert result.ruleSet.name == "secondRuleSet"        
+    }
+    
+    void testGetRule() {
+        def ruleSetService = new RuleSetService()
+        def rs = new RuleSet(name: "firstRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def r = new SQLQuery(name: "newRule")
+        r.isSynced = false
+        rs.addToRules(r)
+        rs.save()
+        def result = [ rule: Rule.findByName("newRule") ]
+        // Can't use a result transformer on unit test
+        // def result = ruleSetService.getRule("firstRuleSet","newRule")
+        assert result.rule.name == "newRule"        
+    }
+    
+    void testAddRule() {
+        def ruleSetService = new RuleSetService()
+        def rs = new RuleSet(name: "firstRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def result = ruleSetService.addRule("firstRuleSet","newRule","SQLQUERY",false)
+        assert result.rule.name == "newRule"
+    }
 }
