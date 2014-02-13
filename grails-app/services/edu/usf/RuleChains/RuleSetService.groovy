@@ -9,6 +9,7 @@ import edu.usf.RuleChains.AuthTypeEnum
 import edu.usf.RuleChains.Rule
 import grails.converters.*
 import org.hibernate.criterion.CriteriaSpecification
+import grails.util.GrailsUtil
 /**
  * RuleSetService provide for the creation and manipulation of RuleSet and Rule objects
  * <p>
@@ -123,12 +124,13 @@ class RuleSetService {
      * @param  newName                           The new name of the RuleSet to be updated
      * @return                                   Returns an object containing the updated RuleSet
      */
-    def modifyRuleSet(String name,String newName) {
+    def modifyRuleSet(String name,String newName,boolean isSynced = true) {
         if(!!name && !!newName) {
             def ruleSet = RuleSet.findByName(name.trim())
             if(!!ruleSet) {
                 System.out.println(newName)
                 ruleSet.name = newName.trim()
+                ruleSet.isSynced = isSynced
                 if(!ruleSet.save(failOnError:false, flush: true, validate: true)) {
                     return [ error : "Name value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
                 } else {
@@ -155,8 +157,6 @@ class RuleSetService {
             def ruleSet = RuleSet.findByName(ruleSetName)
             if(!!ruleSet) {
                 ruleSet.isSynced = isSynced
-                System.out.println(serviceType)
-                System.out.println(name)
                 def serviceTypeEnum = ServiceTypeEnum.byName(serviceType.trim())
                 def rule
                 switch(serviceTypeEnum) {
@@ -188,21 +188,20 @@ class RuleSetService {
                     rule.isSynced = isSynced                    
                     break
                 }
-                System.out.println(rule.name)
                 try {
                     if(!ruleSet.addToRules(rule).save(failOnError:false, flush: false, validate: true)) {
                         ruleSet.errors.allErrors.each {
                             println it
                         }           
-                        return [ error : "'${ruleSet.errors.fieldError.field}' value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
+                        return [ error : "RuleSet '${ruleSet.errors.fieldError.field}' value '${ruleSet.errors.fieldError.rejectedValue}' rejected" ]
                     } else {
-                        return [ rule: getRule(ruleSetName,rule.name).rule ]
+                        return [ rule: (GrailsUtil.environment in ['test'])?rule:getRule(ruleSetName,rule.name).rule ]
                     }                    
                 } catch(Exception ex) {
                     rule.errors.allErrors.each {
                         println it
                     }           
-                    return [ error: "'${rule.errors.fieldError?.field}' value '${rule.errors.fieldError?.rejectedValue}' rejected" ]
+                    return [ error: "Rule '${rule.errors.fieldError?.field}' value '${rule.errors.fieldError?.rejectedValue}' rejected" ]
                 }
             } else {
                 return [ error: "Rule Set specified does not exist!" ]
