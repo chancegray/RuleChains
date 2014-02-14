@@ -52,13 +52,19 @@ class RuleSetServiceTests {
         assert result.ruleSets.size() == 1
         assert result.ruleSets.find { it.name == "secondRuleSet" }.name == "secondRuleSet"
     }
-    
+    /**
+     * Tests creating a new RuleSet
+     * 
+     */   
     void testAddRuleSet() {
         def ruleSetService = new RuleSetService()
         def result = ruleSetService.addRuleSet("firstRuleSet",false)
         assert result.ruleSet.name == "firstRuleSet"
     }
-    
+    /**
+     * Tests finding a RuleSet by it's name
+     * 
+     */
     void testGetRuleSet() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
@@ -67,7 +73,10 @@ class RuleSetServiceTests {
         def result = ruleSetService.getRuleSet("firstRuleSet")
         assert result.ruleSet.name == "firstRuleSet"
     }
-    
+    /**
+     * Tests removing an existing RuleSet by name
+     * 
+     */ 
     void testDeleteRuleSet() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
@@ -76,7 +85,10 @@ class RuleSetServiceTests {
         def result = ruleSetService.deleteRuleSet("firstRuleSet",false)
         assert result.success == "RuleSet deleted"
     }
-    
+    /**
+     * Tests renaming an existing RuleSet
+     * 
+     */
     void testModifyRuleSet() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
@@ -85,7 +97,10 @@ class RuleSetServiceTests {
         def result = ruleSetService.modifyRuleSet("firstRuleSet","secondRuleSet",false)
         assert result.ruleSet.name == "secondRuleSet"        
     }
-    
+    /**
+     * Tests retrieving a Rule by it's RuleSet name and Rule name
+     * 
+     */ 
     void testGetRule() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
@@ -100,7 +115,10 @@ class RuleSetServiceTests {
         // def result = ruleSetService.getRule("firstRuleSet","newRule")
         assert result.rule.name == "newRule"        
     }
-    
+    /**
+     * Tests creating a new Rule in an existing RuleSet
+     * 
+     */
     void testAddRule() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
@@ -109,7 +127,10 @@ class RuleSetServiceTests {
         def result = ruleSetService.addRule("firstRuleSet","newRule","SQLQUERY",false)
         assert result.rule.name == "newRule"
     }
-    
+    /**
+     * Tests updating an existing rule in a RuleSet
+     * 
+     */
     void testUpdateRule() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
@@ -122,7 +143,10 @@ class RuleSetServiceTests {
         def result = ruleSetService.updateRule("firstRuleSet","newRule",[ rule: "SELECT 'test' FROM DUAL" ],false)
         assert result.rule.rule == "SELECT 'test' FROM DUAL"
     }
-    
+    /**
+     * Tests renaming an existing Rule
+     * 
+     */
     void testUpdateRuleName() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
@@ -135,7 +159,10 @@ class RuleSetServiceTests {
         def result = ruleSetService.updateRuleName("firstRuleSet","newRule","renamedRule",false)
         assert result.rule.name == "renamedRule"
     }
-    
+    /**
+     * Tests removing an existing Rule by RuleSet name and Rule name. 
+     * 
+     */   
     void testDeleteRule() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
@@ -148,7 +175,10 @@ class RuleSetServiceTests {
         def result = ruleSetService.deleteRule("firstRuleSet","newRule",false)
         assert result.status == "Rule Removed From Set"
     }
-    
+    /**
+     * Tests relocating an existing Rule in a different RuleSet
+     *
+     */
     void testMoveRule() {
         def ruleSetService = new RuleSetService()
         def rs = new RuleSet(name: "firstRuleSet")
