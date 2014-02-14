@@ -72,11 +72,11 @@ class JobService {
                         eq('jobHistory',jobHistory)
                         if(!(GrailsUtil.environment in ['test'])) {
                             resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
-                        }
-                        projections {
-                            property('logTime', 'logTime')
-                            property('line', 'line')
-                            property('id','id')
+                            projections {
+                                property('logTime', 'logTime')
+                                property('line', 'line')
+                                property('id','id')
+                            }
                         }
                     },
                     jobHistories: getJobHistories().jobHistories,
@@ -103,7 +103,9 @@ class JobService {
                     jobLogs: { jls ->                        
                         endTime = JobLog.createCriteria().get {
                             eq('jobHistory',jobHistory)
-                            gt('id',jls.last().id)
+                            if(!!jls) {
+                                gt('id',jls.last().id)
+                            }
                             or {
                                 like('line','[%] Detected a % for%')
                                 like('line','[Finished] %')
@@ -115,7 +117,9 @@ class JobService {
                         if(!!!endTime) {
                             endTime = JobLog.createCriteria().get {
                                 eq('jobHistory',jobHistory)
-                                gt('id',jls.last().id)
+                                if(!!jls) {
+                                    gt('id',jls.last().id)
+                                }
                                 projections {
                                     min('logTime')
                                 }
@@ -132,11 +136,11 @@ class JobService {
                         like('line','[%] Detected a % for%')
                         if(!(GrailsUtil.environment in ['test'])) {
                             resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
-                        }
-                        projections {
-                            property('logTime', 'logTime')
-                            property('line', 'line')
-                            property('id','id')
+                            projections {
+                                property('logTime', 'logTime')
+                                property('line', 'line')
+                                property('id','id')
+                            }
                         }
                     }),
                     jobHistories: getJobHistories().jobHistories,
@@ -154,7 +158,7 @@ class JobService {
      */
     def getJobHistories() {
         return [ 
-            jobHistories: JobHistory.withCriteria {
+            jobHistories: (GrailsUtil.environment in ['test'])?JobHistory.list():JobHistory.withCriteria {
                 resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
                 projections {
                     property('id', 'id')
