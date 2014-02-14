@@ -17,13 +17,19 @@ import groovy.time.*
 @TestFor(JobService)
 @Mock([JobHistory,JobLog])
 class JobServiceTests {
-
+    /**
+     * Tests adding a new Job History
+     * 
+     */
     void testAddJobHistory() {
         def jobService = new JobService()
         def result = jobService.addJobHistory("testHistory")
         assert result.jobHistory.name == "testHistory"
     }
-    
+    /**
+     * Tests finding a Job History by name
+     * 
+     */
     void testFindJobHistory() {
         def jobService = new JobService()
         def h = new JobHistory(name: "testHistory")
@@ -31,7 +37,10 @@ class JobServiceTests {
         def result = jobService.findJobHistory("testHistory")
         assert result.jobHistory.name == "testHistory"
     }
-    
+    /**
+     * Tests retrieving a paginated list of job logs for a specified job history
+     * 
+     */
     void testGetJobLogs() {
         def jobService = new JobService()
         def h = new JobHistory(name: "testHistory")
@@ -62,7 +71,10 @@ class JobServiceTests {
         def result = jobService.getJobLogs("testHistory",3,0)
         assert result.jobLogs.size() == 3
     }
-    
+    /**
+     * Tests retrieving a paginated list of calculated job timings for a specified job history
+     * 
+     */
     void testGetJobRuleTimings() {
         def jobService = new JobService()
         def h = new JobHistory(name: "testHistory")
@@ -100,5 +112,27 @@ class JobServiceTests {
         }
         def result = jobService.getJobRuleTimings("testHistory",3,0)
         assert result.jobLogs.size() == 0
+    }
+    /**
+     * Tests returning a list of available Job Histories
+     * 
+     */
+    void testGetJobHistories() {
+        def jobService = new JobService()
+        def h = new JobHistory(name: "testHistory")
+        h.save()
+        def result = jobService.getJobHistories()
+        assert result.jobHistories.size() == 1
+    }
+    /**
+     * Tests removing a specified Job History by name
+     * 
+     */
+    void testDeleteJobHistory() {
+        def jobService = new JobService()
+        def h = new JobHistory(name: "testHistory")
+        h.save()
+        def result = jobService.deleteJobHistory("testHistory")
+        assert result.success == "Job History deleted"
     }
 }
