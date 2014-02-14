@@ -9,6 +9,7 @@ import static org.quartz.TriggerBuilder.*;
 import static org.quartz.impl.matchers.GroupMatcher.*
 import grails.plugin.quartz2.InvokeMethodJob    
 import grails.plugin.quartz2.ClosureJob    
+import grails.util.GrailsUtil
 /**
  * JobService provides tracking quartz job execution as well as
  * chain service handler execution. This service is also metaprogrammed
@@ -69,7 +70,9 @@ class JobService {
                 return [
                     jobLogs: JobLog.createCriteria().list(sort: 'id', order:'desc', max: records, offset: offset) {
                         eq('jobHistory',jobHistory)
-                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                        if(!(GrailsUtil.environment in ['test'])) {
+                            resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                        }
                         projections {
                             property('logTime', 'logTime')
                             property('line', 'line')
@@ -127,7 +130,9 @@ class JobService {
                     }.call(JobLog.createCriteria().list(sort: 'id', order:'asc', max: records, offset: offset) {
                         eq('jobHistory',jobHistory)
                         like('line','[%] Detected a % for%')
-                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                        if(!(GrailsUtil.environment in ['test'])) {
+                            resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                        }
                         projections {
                             property('logTime', 'logTime')
                             property('line', 'line')
