@@ -493,9 +493,10 @@ class RuleSetService {
      * @param  nameUpdate      The unique name of the target RuleSet
      * @return                 Returns moved Rule if successful or returns an error message
      */
-    def moveRule(String ruleSetName,String name,String nameUpdate) {
+    def moveRule(String ruleSetName,String name,String nameUpdate,boolean isSynced = true) {
         if(!!name && !!ruleSetName && !!nameUpdate) {
             def ruleSet = RuleSet.findByName(ruleSetName)
+            ruleSet.isSynced = isSynced
             if(!!ruleSet) {
                 def rule = ruleSet.rules.collect { r ->
                     def er
@@ -522,7 +523,9 @@ class RuleSetService {
                     it.name == name
                 }
                 if(!!rule) {
+                    rule.isSynced = isSynced
                     def targetRuleSet = RuleSet.findByName(nameUpdate)
+                    targetRuleSet.isSynced = isSynced
                     if(!!targetRuleSet) {
                         try {
                             if(!ruleSet.removeFromRules(rule).save(failOnError:false, flush: false, validate: true)) {
@@ -538,7 +541,7 @@ class RuleSetService {
                                         }           
                                         return [ error : "'${targetRuleSet.errors.fieldError.field}' value '${targetRuleSet.errors.fieldError.rejectedValue}' rejected" ]
                                     } else {
-                                        return [ rule: getRule(nameUpdate,rule.name).rule ]
+                                        return [ rule: (GrailsUtil.environment in ['test'])?rule:getRule(nameUpdate,rule.name).rule ]
                                     }                    
                                 } catch(Exception ex) {
                                     rule.errors.allErrors.each {
