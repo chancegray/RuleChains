@@ -282,7 +282,7 @@ class RuleSetService {
      * @param  nameUpdate                        The new name of the Rule being updated
      * @return                                   Returns an object containing the updated Rule
      */
-    def updateRuleName(String ruleSetName,String name,String nameUpdate) {
+    def updateRuleName(String ruleSetName,String name,String nameUpdate,boolean isSynced = true) {
         if(!!name && !!ruleSetName && !!nameUpdate) {
             def ruleSet = RuleSet.findByName(ruleSetName)
             if(!!ruleSet) {
@@ -312,13 +312,14 @@ class RuleSetService {
                 }
                 if(!!rule) {
                     rule.name = nameUpdate
+                    rule.isSynced = isSynced
                     if(!rule.save(failOnError:false, flush: true, validate: true)) {
                         rule.errors.allErrors.each {
                             println it
                         }           
                         return [ error: "'${rule.errors.fieldError.field}' value '${rule.errors.fieldError.rejectedValue}' rejected" ]                        
                     }
-                    return [ rule: getRule(ruleSetName,rule.name).rule ]                    
+                    return [ rule: (GrailsUtil.environment in ['test'])?rule:getRule(ruleSetName,rule.name).rule ]                    
                 }
                 return [ error: "Rule specified does not exist!" ]
             }
