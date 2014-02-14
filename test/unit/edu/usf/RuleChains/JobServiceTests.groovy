@@ -54,11 +54,51 @@ class JobServiceTests {
                     line: "Line 4",
                     logTime: new Date() + 4.seconds
                 ] as JobLog                        
-            ].each { jh ->
-                jh.save()
+            ].each { jl ->
+                h.addToJobLogs(jl)
+                h.save()
             }
         }
         def result = jobService.getJobLogs("testHistory",3,0)
         assert result.jobLogs.size() == 3
+    }
+    
+    void testGetJobRuleTimings() {
+        def jobService = new JobService()
+        def h = new JobHistory(name: "testHistory")
+        h.save()
+        use (TimeCategory) {
+            [
+                [
+                    line: "[START_EXECUTE] Chain testChain",
+                    logTime: new Date() + 1.seconds
+                ] as JobLog,
+                [
+                    line: "[SQLQuery] Detected a SQLQuery for rule1",
+                    logTime: new Date() + 1.seconds
+                ] as JobLog,
+                [
+                    line: "[SQLQuery] Detected a SQLQuery for rule2",
+                    logTime: new Date() + 2.seconds
+                ] as JobLog,
+                [
+                    line: "[SQLQuery] Detected a SQLQuery for rule3",
+                    logTime: new Date() + 3.seconds
+                ] as JobLog,
+                [
+                    line: "[END_EXECUTE] Chain testChain",
+                    logTime: new Date() + 3.seconds
+                ] as JobLog,
+                [
+                    line: "[Finished] testHistory",
+                    logTime: new Date() + 4.seconds
+                ] as JobLog                        
+            ].each { jl ->
+                h.addToJobLogs(jl)
+                h.save()
+            }
+        }
+        def result = jobService.getJobRuleTimings("testHistory",3,0)
+        assert result.jobLogs.size() == 0
     }
 }
