@@ -135,4 +135,17 @@ class RuleSetServiceTests {
         def result = ruleSetService.updateRuleName("firstRuleSet","newRule","renamedRule",false)
         assert result.rule.name == "renamedRule"
     }
+    
+    void testDeleteRule() {
+        def ruleSetService = new RuleSetService()
+        def rs = new RuleSet(name: "firstRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def r = new SQLQuery(name: "newRule")
+        r.isSynced = false
+        rs.addToRules(r)
+        rs.save()        
+        def result = ruleSetService.deleteRule("firstRuleSet","newRule",false)
+        assert result.status == "Rule Removed From Set"
+    }
 }
