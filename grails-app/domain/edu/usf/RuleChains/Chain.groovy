@@ -26,6 +26,7 @@ class Chain {
     boolean isSynced = true
     JobHistory jobHistory
     static hasMany = [links:Link]
+    static fetchMode = [links: 'eager']
     static transients = ['orderedLinks','input','output','jobHistory','isSynced','mergedGlobals']
     static constraints = {
         name(   
