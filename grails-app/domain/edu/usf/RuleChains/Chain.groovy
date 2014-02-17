@@ -81,11 +81,14 @@ class Chain {
      * Anytime a chain is renamed, snippet reference name needs to be renamed (if exists)
      * and any ChainServiceHandlers their reference name updated as well
      **/
-    def afterUpdate() {        
-        Snippet.findAllByChain(this).each { s ->
-            if(s.name != name) {
-                s.name=name
-                s.save()
+    def afterUpdate() {  
+        if(!(GrailsUtil.environment in ['test'])) {
+            Snippet.findAllByChain(this).each { s ->
+                if(s.name != name) {
+                    s.name=name
+                    s.isSynced = isSynced
+                    s.save()
+                }
             }
         }
         if(isSynced) {
