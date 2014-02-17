@@ -26,7 +26,7 @@ class ChainService {
      */    
     def listChains(String pattern = null) { 
         if(!!pattern) {
-            return [chains: Chain.list().findAll(fetch:[links:"eager"]) {
+            return [chains: Chain.list().findAll {
                 Pattern.compile(pattern.trim()).matcher(it.name).matches()
             }]
         } else {
