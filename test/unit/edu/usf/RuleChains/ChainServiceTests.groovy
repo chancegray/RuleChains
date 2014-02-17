@@ -9,7 +9,7 @@ import org.junit.*
  * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
  */
 @TestFor(ChainService)
-@Mock([Chain,Link,RuleSet,Rule,ChainServiceHandler])
+@Mock([Chain,Link,RuleSet,Rule,Snippet,ChainServiceHandler])
 class ChainServiceTests {
     /**
      * Tests a return list of Chain objects without an option matching filter
@@ -45,5 +45,26 @@ class ChainServiceTests {
         def result = chainService.listChains("^(1st).*")
         assert result.chains.size() == 1
         assert result.chains[0].name == "1stChain"
+    }
+    /**
+     * Tests the create a new Chain
+     * 
+     */
+    void testAddChain() {
+        def chainService = new ChainService()
+        def result = chainService.addChain("testChain",false)
+        assert result.chain.name == "testChain"
+    }
+    /**
+     * Tests the renaming of an existing Chain
+     * 
+     */
+    void testModifyChain() {
+        def c = new Chain(name: "testChain")
+        c.isSynced = false
+        c.save()
+        def chainService = new ChainService()
+        def result = chainService.modifyChain("testChain","renamedChain",false)
+        assert result.chain.name == "renamedChain"
     }
 }
