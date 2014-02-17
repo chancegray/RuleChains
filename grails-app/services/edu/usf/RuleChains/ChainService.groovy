@@ -65,7 +65,6 @@ class ChainService {
             def chain = Chain.findByName(name.trim())
             if(!!chain) {         
                 chain.isSynced = isSynced
-                System.out.println(newName)
                 chain.name = newName.trim()
                 if(!chain.save(failOnError:false, flush: true, validate: true)) {
                     return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]
