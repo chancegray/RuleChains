@@ -111,17 +111,19 @@ class ChainService {
                 if(!!!!resultSet.links) {
                     resultSet.links = Link.createCriteria().list(sort: 'sequenceNumber',order: 'asc') {
                         eq('chain',chain)
-                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
-                        projections {
-                            property('sequenceNumber', 'sequenceNumber')
-                            property('rule', 'rule')
-                            property('sourceName','sourceName')
-                            property('executeEnum', 'executeEnum')
-                            property('resultEnum', 'resultEnum')
-                            property('linkEnum', 'linkEnum')
-                            property('inputReorder', 'inputReorder')
-                            property('outputReorder', 'outputReorder')
-                        }                        
+                        if(!(GrailsUtil.environment in ['test'])) {
+                            resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                            projections {
+                                property('sequenceNumber', 'sequenceNumber')
+                                property('rule', 'rule')
+                                property('sourceName','sourceName')
+                                property('executeEnum', 'executeEnum')
+                                property('resultEnum', 'resultEnum')
+                                property('linkEnum', 'linkEnum')
+                                property('inputReorder', 'inputReorder')
+                                property('outputReorder', 'outputReorder')
+                            }                        
+                        }
                     }
                 }
                 return [ chain: resultSet ]                    
