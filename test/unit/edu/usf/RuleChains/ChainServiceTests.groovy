@@ -67,4 +67,16 @@ class ChainServiceTests {
         def result = chainService.modifyChain("testChain","renamedChain",false)
         assert result.chain.name == "renamedChain"
     }
+    /**
+     * Tests the removal of an existing Chain by name
+     * 
+     */    
+    void testDeleteChain() {
+        def c = new Chain(name: "testChain")
+        c.isSynced = false
+        c.save()
+        def chainService = new ChainService()
+        def result = chainService.deleteChain("testChain",false)
+        assert result.success == "Chain deleted"
+    }
 }
