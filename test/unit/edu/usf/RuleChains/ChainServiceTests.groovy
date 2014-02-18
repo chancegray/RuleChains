@@ -10,7 +10,7 @@ import grails.util.GrailsUtil
  * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
  */
 @TestFor(ChainService)
-@Mock([Chain,Link,RuleSet,Rule,Snippet,ChainServiceHandler])
+@Mock([Chain,Link,RuleSet,Rule,Snippet,SQLQuery,ChainServiceHandler])
 class ChainServiceTests {
     /**
      * Tests a return list of Chain objects without an option matching filter
@@ -91,5 +91,28 @@ class ChainServiceTests {
         def chainService = new ChainService()
         def result = chainService.getChain("testChain")
         assert result.chain.name == "testChain"
+    }
+    /**
+     * Tests finding a Link by it's sequence number and Chain name
+     * 
+     */    
+    void testGetChainLink() {
+        def c = new Chain(name: "testChain")
+        c.isSynced = false
+        c.save()
+        def rs = new RuleSet(name: "newRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def sr = new SQLQuery(name: "newRuleName",rule: "")
+        sr.isSynced = false
+        rs.addToRules(sr)
+        rs.save()
+        def l = new Link(rule: sr,sequenceNumber: 1)
+        l.isSynced = false
+        c.addToLinks(l)
+        c.save()
+        def chainService = new ChainService()
+        def result = chainService.getChainLink("testChain",1)
+        assert result.link.sequenceNumber == 1
     }
 }
