@@ -4,6 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import grails.converters.*
 import org.hibernate.criterion.CriteriaSpecification
+import grails.util.GrailsUtil
 
 /**
  * ChainService provide for the creation and manipulation of Chain and Link objects
