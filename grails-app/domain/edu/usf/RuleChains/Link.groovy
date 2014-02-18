@@ -3,6 +3,7 @@ package edu.usf.RuleChains
 import edu.usf.RuleChains.ExecuteEnum
 import edu.usf.RuleChains.ResultEnum
 import edu.usf.RuleChains.LinkEnum
+import grails.util.GrailsUtil
 
 /**
  * Link domain class is a wrapper class for target rules with
@@ -100,6 +101,9 @@ class Link {
      * @return                 A boolean of whether the source actually exists
      */
     static sourceNameVerified(String sourceName) {
+        if(GrailsUtil.environment in ['test']) {
+            return true
+        }
         def grailsApplication = new Link().domainClass.grailsApplication
         def ctx = grailsApplication.mainContext
         def config = grailsApplication.config
