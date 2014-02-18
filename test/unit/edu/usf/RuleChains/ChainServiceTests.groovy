@@ -115,4 +115,30 @@ class ChainServiceTests {
         def result = chainService.getChainLink("testChain",1)
         assert result.link.sequenceNumber == 1
     }
+    /**
+     * Tests adding a new link to an existing chain
+     * 
+     */    
+    void testAddChainLink() {
+        def c = new Chain(name: "testChain")
+        c.isSynced = false
+        c.save()
+        def rs = new RuleSet(name: "newRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def sr = new SQLQuery(name: "newRuleName",rule: "")
+        sr.isSynced = false
+        rs.addToRules(sr)
+        rs.save()
+        def chainService = new ChainService()
+        def result = chainService.addChainLink("testChain",[
+            sequenceNumber: 1,
+            rule: "newRuleName",
+            executeEnum: "NORMAL",
+            resultEnum: "NONE",
+            linkEnum: "NONE",
+            sourceName: "mytestsource"
+        ],false)
+        assert result.chain.links.find { it.sequenceNumber == 1 }.rule.name == "newRuleName"
+    }
 }
