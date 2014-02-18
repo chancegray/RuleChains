@@ -4,6 +4,7 @@ package edu.usf.RuleChains
 
 import grails.test.mixin.*
 import org.junit.*
+import grails.util.GrailsUtil
 
 /**
  * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
@@ -78,5 +79,17 @@ class ChainServiceTests {
         def chainService = new ChainService()
         def result = chainService.deleteChain("testChain",false)
         assert result.success == "Chain deleted"
+    }
+    /**
+     * Tests finding a Chain by it's name
+     * 
+     */
+    void testGetChain() {
+        def c = new Chain(name: "testChain")
+        c.isSynced = false
+        c.save()
+        def chainService = new ChainService()
+        def result = chainService.getChain("testChain")
+        assert result.chain.name == "testChain"
     }
 }
