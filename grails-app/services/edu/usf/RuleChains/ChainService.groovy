@@ -232,10 +232,7 @@ class ChainService {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
             chain.isSynced = isSynced
-            def link = Link.createCriteria().get {
-                eq("chain",chain)
-                eq("sequenceNumber",sequenceNumber.toLong())
-            }
+            def link = (!!!chain.links)?null:chain.links.find { it.sequenceNumber.toString() == sequenceNumber.toString() }
             if(!!link) {
                 link.isSynced = isSynced
                 if(!chain.removeFromLinks(link).save(failOnError:false, flush: false, validate: true)) {
