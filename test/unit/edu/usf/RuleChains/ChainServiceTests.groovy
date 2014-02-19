@@ -2,6 +2,7 @@ package edu.usf.RuleChains
 
 
 
+import grails.converters.*
 import grails.test.mixin.*
 import org.junit.*
 import grails.util.GrailsUtil
@@ -140,5 +141,30 @@ class ChainServiceTests {
             sourceName: "mytestsource"
         ],false)
         assert result.chain.links.find { it.sequenceNumber == 1 }.rule.name == "newRuleName"
+    }
+    /**
+     * Tests removing an existing link by sequence number and Chain name. 
+     * 
+     */ 
+    void testDeleteChainLink() {
+        def c = new Chain(name: "testChain")
+        c.isSynced = false
+        c.save()
+        def rs = new RuleSet(name: "newRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def sr = new SQLQuery(name: "newRuleName",rule: "")
+        sr.isSynced = false
+        rs.addToRules(sr)
+        rs.save()
+        def l = new Link(rule: sr,sequenceNumber: 1)
+        l.isSynced = false
+        c.addToLinks(l)
+        c.save()
+        l.save()
+        def chainService = new ChainService()
+        def result = chainService.deleteChainLink("testChain",1,false)
+        assert result.chain.links.size() == 0
+        assert result.chain.name == "testChain"
     }
 }
