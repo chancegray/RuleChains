@@ -59,7 +59,7 @@ class JobControllerTests {
             input: []
         ]
         controller.request.method = "PUT"
-        JobService.metaClass.createChainJob = { String cronExpression,String name,def input = [] -> }
+        JobService.metaClass.createChainJob = { String cronExpression,String name,def input = [[:]] -> }
         def control = mockFor(JobService)
         control.demand.createChainJob { cronExpression,name,input -> 
             return [
