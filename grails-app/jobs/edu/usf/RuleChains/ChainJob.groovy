@@ -23,7 +23,7 @@ class ChainJob {
         def input = Chain.findByName(context.mergedJobDataMap.get('input'))
         //println context.mergedJobDataMap.get('name')
         if(!!chain) {
-            chain.execute(input)
+            chain.execute((!!input)?input:[[:]])
         }
     }
 }
