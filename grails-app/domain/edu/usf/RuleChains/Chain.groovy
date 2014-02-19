@@ -150,7 +150,7 @@ class Chain {
         }
         
         def linkService = new LinkService()
-        input.each { row ->
+        ((!!input)?input:[[:]]).each { row ->
             /**
              * Pre-populate input based on incoming data array
             **/
