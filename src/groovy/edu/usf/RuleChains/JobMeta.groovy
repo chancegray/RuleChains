@@ -61,7 +61,7 @@ class JobMeta {
          * @param      input               An optional array containing objects to be used as input on the chain execution
          * @return                         Returns an object with the schedule date
          */
-        JobService.metaClass.createChainJob = { String cronExpression,String name,def input = [] ->
+        JobService.metaClass.createChainJob = { String cronExpression,String name,def input = [[:]] ->
             def suffix = System.currentTimeMillis()
             name = { parts->
                 if(parts.size() > 1) {
