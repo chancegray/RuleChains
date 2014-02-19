@@ -172,8 +172,11 @@ class ChainService {
                         l[k] = v.toLong()
                         break
                     case "rule":
+                        println ("name" in v)?v.name:v
                         l[k] = Rule.findByName(("name" in v)?v.name:v)
-                        l[k].isSynced = isSynced
+                        if(!!l[k]) {
+                            l[k].isSynced = isSynced
+                        }
                         break
                     default:
                         l[k] = v
@@ -181,22 +184,26 @@ class ChainService {
                 }
                 return l
             })
-            link.isSynced = isSynced
-            try {
-                if(!chain.addToLinks(link).save(failOnError:false, flush: true, validate: true)) {
-                    chain.errors.allErrors.each {
-                        println "Error:"+it
-                    }           
-                    return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                                
-                }
-            } catch(Exception ex) {
-                link.errors.allErrors.each {
-                    println it                        
+            if(!!link.rule) {
+                link.isSynced = isSynced
+                try {
+                    if(!chain.addToLinks(link).save(failOnError:false, flush: true, validate: true)) {
+                        chain.errors.allErrors.each {
+                            println "Error:"+it
+                        }           
+                        return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                                
+                    }
+                } catch(Exception ex) {
+                    link.errors.allErrors.each {
+                        println it                        
+                    }    
+                    log.info ex.printStackTrace()
+                    return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
                 }    
-                log.info ex.printStackTrace()
-                return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
-            }    
-            return getChain(chain.name)
+                return getChain(chain.name)
+            } else {
+                return [ error : "The target rule for the link ${("name" in newLink.rule)?newLink.rule.name:newLink.rule} was not found!"]
+            }
         }
         return [ error : "Chain named ${name} not found!"]
     }
