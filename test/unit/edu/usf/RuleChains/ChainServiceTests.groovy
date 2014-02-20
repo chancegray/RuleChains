@@ -157,7 +157,7 @@ class ChainServiceTests {
         sr.isSynced = false
         rs.addToRules(sr)
         rs.save()
-        def l = new Link(rule: sr,sequenceNumber: 1)
+        def l = new Link(rule: sr,sequenceNumber: 1,sourceName: "mytestsource")
         l.isSynced = false
         c.addToLinks(l)
         c.save()
@@ -166,5 +166,37 @@ class ChainServiceTests {
         def result = chainService.deleteChainLink("testChain",1,false)
         assert result.chain.links.size() == 0
         assert result.chain.name == "testChain"
+    }
+    /**
+     * Tests updating a target link's property in a chain.
+     * 
+     */  
+    void testModifyChainLink() {
+        def c = new Chain(name: "testChain")
+        c.isSynced = false
+        c.save()
+        def rs = new RuleSet(name: "newRuleSet")
+        rs.isSynced = false
+        rs.save()
+        def sr = new SQLQuery(name: "newRuleName",rule: "")
+        sr.isSynced = false
+        rs.addToRules(sr)
+        rs.save()
+        sr.save()
+        sr = new SQLQuery(name: "newRuleNameModified",rule: "")
+        sr.isSynced = false
+        rs.addToRules(sr)
+        rs.save()
+        sr.save()
+        def l = new Link(rule: sr,sequenceNumber: 1,sourceName: "mytestsource")
+        l.isSynced = false
+        c.addToLinks(l)
+        c.save()
+        l.save()        
+        def chainService = new ChainService()
+        def result = chainService.modifyChainLink("testChain",1,[
+            rule: "newRuleNameModified"
+        ],false)
+        assert result.link.rule.name == "newRuleNameModified"
     }
 }
