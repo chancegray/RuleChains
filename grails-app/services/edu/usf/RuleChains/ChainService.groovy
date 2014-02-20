@@ -282,13 +282,13 @@ class ChainService {
      * @see    Link
      * @see    Chain
      */    
-    def modifyChainLink(String name,def sequenceNumber,def updatedLink) {
+    def modifyChainLink(String name,def sequenceNumber,def updatedLink,boolean isSynced = true) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            println "Modify chain link ${sequenceNumber}"
-            def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber }
+            chain.isSynced = isSynced
+            def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber.toString() }
             if(!!link) {
-                println "Found Link"
+                link.isSynced = isSynced
                 link.properties['sourceName','inputReorder','outputReorder','sequenceNumber','executeEnum','linkEnum','resultEnum'] = updatedLink.collectEntries {
                     if(it.key in ['executeEnum','linkEnum','resultEnum']) {
                         switch(it.key) {
@@ -305,7 +305,7 @@ class ChainService {
                     }
                     return [ "${it.key}": it.value ]
                 }
-                link.rule = ("name" in updatedLink.rule)?Rule.findByName(updatedLink.rule.name):Rule.get(updatedLink.rule.id)
+                link.rule = ("name" in updatedLink.rule)?Rule.findByName(updatedLink.rule.name):(("id" in updatedLink.rule)?Rule.get(updatedLink.rule.id):Rule.findByName(updatedLink.rule))
                 if(!link.save(failOnError:false, flush: true, validate: true)) {
                     link.errors.allErrors.each {
                         println it
@@ -313,8 +313,6 @@ class ChainService {
                     return [ error : "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
                 }
                 return [ link : link]
-            } else {
-                println "Didn't Find link"
             }
             return [ error : "Link with sequence ${sequenceNumber} not found!"]
         }
