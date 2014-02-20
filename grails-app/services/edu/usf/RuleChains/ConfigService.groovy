@@ -7,6 +7,7 @@ import grails.util.DomainBuilder
 import groovy.swing.factory.ListFactory
 import groovy.json.JsonSlurper
 import groovy.io.FileType
+import grails.util.GrailsUtil
 
 /**
  * ConfigService provides backup and restoration of rules, chains, chainServiceHandlers
@@ -165,7 +166,7 @@ class ConfigService {
      * @param   restore     A JSON Object containing rules,chains and chainServiceHandlers
      * @return              Returns a status object indicating the state of the import
      */
-    def uploadChainData(restore) {
+    def uploadChainData(def restore,boolean isSynced = false) {
         // def o = JSON.parse(new File('Samples/import.json').text); // Parse a JSON String
         switch(restore) {
             case { (("ruleSets" in it)?checkDuplicateMismatchRuleTypes(it.ruleSets):false) && (("chains" in it)?!checkSources(it.chains):false) }:
@@ -182,30 +183,30 @@ class ConfigService {
                     restore.ruleSets.each { rs ->
                         print rs.name
                         def ruleSet = { r ->
-                            if("error" in r) {
-                                r = ruleSetService.addRuleSet(rs.name)
-                                if("error" in r) {
-                                    println "Error ${r.error}"
+                            if("error" in r || !!!r) {
+                                r = ruleSetService.addRuleSet(rs.name,isSynced)                                
+                                if("error" in r || !!!r) {
+                                    println "Error ${(!!!r)?null:r.error}"
                                     return null
                                 }
                                 return r.ruleSet
                             }
                             return r.ruleSet
-                        }.call(ruleSetService.getRuleSet(rs.name))
+                        }.call((GrailsUtil.environment in ['test'])?RuleSet.findByName(rs.name):ruleSetService.getRuleSet(rs.name))                        
                         if(!!!!ruleSet) {
-                            rs.rules.each { r ->
+                            (("rules" in rs)?rs.rules:[]).each { r ->
                                 { r2 ->
                                     if(r."class".endsWith("Snippet")) {
                                         { c ->
                                             if("error" in c) {
-                                                chainService.addChain(r.name)
+                                                chainService.addChain(r.name,isSynced)
                                             }
                                         }.call(chainService.getChain(r.name))                                
                                     }
                                     if("error" in r2) {                                
-                                        ruleSetService.addRule(ruleSet.name,r.name,r."class".tokenize('.').last())                                
+                                        ruleSetService.addRule(ruleSet.name,r.name,r."class".tokenize('.').last(),isSynced)                                
                                     }
-                                    ruleSetService.updateRule(ruleSet.name,r.name,r) 
+                                    ruleSetService.updateRule(ruleSet.name,r.name,r,isSynced) 
                                 }.call(ruleSetService.getRule(ruleSet.name,r.name))                        
                             }
                         } else {
@@ -218,11 +219,14 @@ class ConfigService {
                 if("chains" in restore) {                        
                     restore.chains.each { c ->
                         def chain = { ch ->
-                            if("error" in ch) {
+                            if("error" in ch || !!!ch) {
+                                if(!!!ch) {
+                                    return null
+                                }
                                 return chainService.addChain(c.name).chain
                             }
                             return ch.chain
-                        }.call(chainService.getChain(c.name)) 
+                        }.call((GrailsUtil.environment in ['test'])?Chain.findByName(rs.name):chainService.getChain(c.name)) 
                         if(!!!!chain) {
                             c.links.sort { a, b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
                                 println "${l.sequenceNumber}"
@@ -231,11 +235,11 @@ class ConfigService {
                                 println chainService.getChainLink(c.name,l.sequenceNumber) as JSON
                                 if("error" in chainService.getChainLink(c.name,l.sequenceNumber)) {
                                     println "Added chain link"
-                                    chainService.addChainLink(c.name,l)
+                                    chainService.addChainLink(c.name,l,isSynced)
                                     // chain.refresh()
                                 } else {
                                     println "Modified chain link"
-                                    chainService.modifyChainLink(c.name,l.sequenceNumber,l)
+                                    chainService.modifyChainLink(c.name,l.sequenceNumber,l,isSynced)
                                 }
                                 println "${l.sequenceNumber}"
                             }
