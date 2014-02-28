@@ -6,6 +6,10 @@ import grails.test.mixin.*
 import org.junit.*
 
 /**
+ * Testing ConfigService upload and download of RuleChains data
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
  * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
  */
 @TestFor(ConfigService)
