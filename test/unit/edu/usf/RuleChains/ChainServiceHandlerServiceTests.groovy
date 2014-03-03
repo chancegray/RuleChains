@@ -128,4 +128,29 @@ class ChainServiceHandlerServiceTests {
         def result = chainServiceHandlerService.listChainServiceHandlers("^(2nd).*")
         assert result.chainServiceHandlers.first().name == "2ndChainHandler"                
     }
+    /**
+     * Tests the creation of a new ChainServiceHandler
+     * 
+     */ 
+    void testAddChainServiceHandler() {
+        def chainServiceHandlerService = new ChainServiceHandlerService()
+        def c = new Chain([name: "newChain"])
+        c.isSynced = false
+        c.save()
+        def rs = new RuleSet(name: "newRuleSet")
+        rs.isSynced = false
+        rs.save()
+        // def sr = new SQLQuery(name: "newRuleName",rule: "SELECT :mykey as testKey FROM DUAL")
+        def sr = new Groovy(name: "newRuleName",rule: "return [ [ testKey: row.mykey ] ]")
+        sr.isSynced = false
+        rs.addToRules(sr)
+        rs.save()         
+        def l = new Link(rule: sr,sequenceNumber: 1,executeEnum: ExecuteEnum.EXECUTE_USING_ROW,resultEnum: ResultEnum.ROW,linkEnum: LinkEnum.NONE,sourceName: "testSource")
+        l.isSynced = false
+        c.addToLinks(l)
+        c.save()
+        l.save()
+        def result = chainServiceHandlerService.addChainServiceHandler("1stChainHandler",[ name: "newChain" ],false)
+        assert result.chainServiceHandler.name == "1stChainHandler"
+    }
 }
