@@ -3,6 +3,8 @@ package edu.usf.RuleChains
 import grails.converters.*
 import groovy.lang.GroovyShell
 import groovy.lang.Binding
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 import groovy.sql.Sql
 import oracle.jdbc.driver.OracleTypes
 import grails.util.Holders
@@ -136,7 +138,7 @@ class ChainServiceHandlerService {
      */
     def listChainServiceHandlers(String pattern = null) { 
         if(!!pattern) {
-            return [chainServiceHandlers: ChainServiceHandler.list().findAll(fetch:[links:"eager"]) {
+            return [chainServiceHandlers: ChainServiceHandler.list().findAll {
                     Pattern.compile(pattern.trim()).matcher(it.name).matches()
                 }]
         } else {
