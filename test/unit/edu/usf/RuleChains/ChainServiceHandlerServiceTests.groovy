@@ -181,4 +181,32 @@ class ChainServiceHandlerServiceTests {
         def result = chainServiceHandlerService.modifyChainServiceHandler("1stChainHandler",[ method: "POST" ],false)
         assert result.chainServiceHandler.name == "1stChainHandler"
     }
+    /**
+     * Tests the removal of an existing ChainServiceHander by name
+     * 
+     */    
+    void testDeleteChainServiceHandler() {
+        def chainServiceHandlerService = new ChainServiceHandlerService()
+        def c = new Chain([name: "newChain"])
+        c.isSynced = false
+        c.save()
+        def rs = new RuleSet(name: "newRuleSet")
+        rs.isSynced = false
+        rs.save()
+        // def sr = new SQLQuery(name: "newRuleName",rule: "SELECT :mykey as testKey FROM DUAL")
+        def sr = new Groovy(name: "newRuleName",rule: "return [ [ testKey: row.mykey ] ]")
+        sr.isSynced = false
+        rs.addToRules(sr)
+        rs.save()         
+        def l = new Link(rule: sr,sequenceNumber: 1,executeEnum: ExecuteEnum.EXECUTE_USING_ROW,resultEnum: ResultEnum.ROW,linkEnum: LinkEnum.NONE,sourceName: "testSource")
+        l.isSynced = false
+        c.addToLinks(l)
+        c.save()
+        l.save()
+        def csh = new ChainServiceHandler(name: "1stChainHandler",chain: c,method: MethodEnum.GET)
+        csh.isSynced = false
+        csh.save()
+        def result = chainServiceHandlerService.deleteChainServiceHandler("1stChainHandler",false)
+        assert result.success == "Chain Service Handler deleted"
+    }
 }
