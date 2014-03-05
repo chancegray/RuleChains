@@ -16,8 +16,8 @@ class ChainServiceHandlerTagLib {
      * @return A list of available chain service handlers formatted in an HTML select element
      */         
     def chainServiceHandlerSelect = {
-        out << '<label for="chain" style="padding-right:15px;">Select Chain To View</label>'
-        out << g.select(name:"chain",from:chainService.listChains().chains.sort{ it.name },optionKey:"id",optionValue:"name",noSelection:['':'--ALL--'])
+        out << '<label for="chain" style="padding-right:15px;">Select Chain Service Handler To View</label>'
+        out << g.select(name:"chainServiceHandle",from:chainServiceHandlerService.listChainServiceHandlers().chainServiceHandlers.sort{ it.name },optionKey:"id",optionValue:"name",noSelection:['':'--ALL--'])
     }
 
 }
