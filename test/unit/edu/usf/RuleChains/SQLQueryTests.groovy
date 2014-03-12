@@ -17,7 +17,9 @@ import org.junit.*
 @TestFor(SQLQuery)
 @Mock([Rule,RuleSet,Chain,ChainServiceHandler])
 class SQLQueryTests {
-
+    /**
+     * Testing creating a new SQLQuery
+     */
     void testNewSQLQuery() {
         mockDomain(SQLQuery)
         def rs = new RuleSet(name: "newRuleSet")
@@ -27,10 +29,10 @@ class SQLQueryTests {
         assert r.validate()
     }
     /**
-     * Testing a missing source name
+     * Testing a missing ruleset
      */
     void testSQLRuleMissingRuleSet() {
-        mockDomain(Link)
+        mockDomain(SQLQuery)
         def r = new SQLQuery(name: 'testRule')
         assert r.validate() == false
         assert r.errors.hasFieldErrors("ruleSet")
