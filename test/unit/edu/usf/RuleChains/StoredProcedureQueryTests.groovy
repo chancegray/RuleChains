@@ -18,7 +18,7 @@ import org.junit.*
 @Mock([Rule,RuleSet,Chain,ChainServiceHandler])
 class StoredProcedureQueryTests {
     /**
-     * Testing creating a new SQLQuery
+     * Testing creating a new StoredProcedureQuery
      */
     void testNewStoredProcedureQuery() {
         mockDomain(StoredProcedureQuery)
