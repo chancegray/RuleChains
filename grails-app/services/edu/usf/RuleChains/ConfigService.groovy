@@ -91,23 +91,26 @@ class ConfigService {
         if(chainsFolder.exists()) {
             restore.chains = []
             Chain.withTransaction { status ->
+                def chains = []
                 chainsFolder.eachDir{ chainFolder ->
+                    def links = []
                     println "Chain to create ${chainFolder.name}"
                     chainService.addChain(chainFolder.name,isSynced)
-                    def cs = []
                     chainFolder.eachFile(FileType.FILES) { linkFile ->
                         def link = JSON.parse(linkFile.text)
-                        cs << link
-                        chainService.addChainLink(chainFolder.name,link,isSynced)
+                        links << link
                     }
-                    restore.chains << [ "${chainFolder.name}": cs.collect { link -> 
-                            link.chain = chainFolder.name
-                            link.isSynced = isSynced
-                            return link
-                        },
-                        "isSynced": isSynced
-                    ]
-                }  
+                    restore.chains << [
+                        name: chainFolder.name,
+                        links: links.sort { a,b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
+                            chainService.addChainLink(chainFolder.name,l,isSynced)
+                        }.collect { l ->
+                            l.chain = chainFolder.name
+                            l.isSynced = isSynced
+                            return l
+                        }
+                    ]                        
+                }
                 status.flush()
             }
         }
