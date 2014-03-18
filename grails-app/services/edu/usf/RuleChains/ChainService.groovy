@@ -145,17 +145,25 @@ class ChainService {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
             chain.isSynced = isSynced
-            // Get an ordered list of links
-            Link.createCriteria().list(sort: 'sequenceNumber',order: 'desc') {
-                eq('chain',chain)
-                ge('sequenceNumber',newLink.sequenceNumber.toLong())
-            }.each { l ->
-                l.isSynced = isSynced
-                // increment each one
-                l.sequenceNumber++
-                if(!l.save(failOnError:false, flush: true, validate: true)) {
-                    return [ error : "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" ]
+            // Make SURE there's a valid rule on this link
+            if(!!!Rule.findByName(("name" in newLink.rule)?newLink.rule.name:newLink.rule)) {
+                return [ error : "Link rule named ${("name" in newLink.rule)?newLink.rule.name:newLink.rule} not found!"]
+            }
+            // Move the links greater or equal to the target up one
+            Chain.withTransaction { status ->
+                // Get an ordered list of links
+                Link.createCriteria().list(sort: 'sequenceNumber',order: 'desc') {
+                    eq('chain',chain)
+                    ge('sequenceNumber',newLink.sequenceNumber.toLong())
+                }.each { l ->
+                    l.isSynced = isSynced
+                    // increment each one
+                    l.sequenceNumber++
+                    if(!l.save(failOnError:false, flush: true, validate: true)) {
+                        return [ error : "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" ]
+                    }
                 }
+                status.flush()
             }
             def link = new Link(newLink.inject([:]) {l,k,v ->
                 switch(k) {
@@ -289,23 +297,26 @@ class ChainService {
             def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber.toString() }
             if(!!link) {
                 link.isSynced = isSynced
-                link.properties['sourceName','inputReorder','outputReorder','sequenceNumber','executeEnum','linkEnum','resultEnum'] = updatedLink.collectEntries {
-                    if(it.key in ['executeEnum','linkEnum','resultEnum']) {
-                        switch(it.key) {
-                            case "executeEnum":
-                                return [ "${it.key}": ("name" in it.value)?ExecuteEnum.byName(it.value.name):ExecuteEnum.byName(it.value) ]                                
-                                break
-                            case "linkEnum":
-                                return [ "${it.key}": ("name" in it.value)?LinkEnum.byName(it.value.name):LinkEnum.byName(it.value) ]                                
-                                break
-                            case "resultEnum":
-                                return [ "${it.key}": ("name" in it.value)?ResultEnum.byName(it.value.name):ResultEnum.byName(it.value) ]                                
-                                break
-                        }
+                link.properties['sourceName','inputReorder','outputReorder','sequenceNumber','executeEnum','linkEnum','resultEnum','rule'] = updatedLink.inject([:]) { m,k,v ->
+                    switch(k) {
+                        case "executeEnum":
+                            m[k] = ExecuteEnum.byName(("name" in v)?v.name:v)
+                            break
+                        case "linkEnum":
+                            m[k] = LinkEnum.byName(("name" in v)?v.name:v)
+                            break
+                        case "resultEnum":
+                            m[k] = ResultEnum.byName(("name" in v)?v.name:v)
+                            break
+                        case "rule":
+                            m[k] = Rule.findByName(("name" in v)?v.name:v)
+                            break
+                        default:
+                            m[k] = v
+                            break
                     }
-                    return [ "${it.key}": it.value ]
+                    return m
                 }
-                link.rule = ("name" in updatedLink.rule)?Rule.findByName(updatedLink.rule.name):(("id" in updatedLink.rule)?Rule.get(updatedLink.rule.id):Rule.findByName(updatedLink.rule))
                 if(!link.save(failOnError:false, flush: true, validate: true)) {
                     link.errors.allErrors.each {
                         println it
