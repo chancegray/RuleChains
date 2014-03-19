@@ -180,18 +180,19 @@ class ChainServiceHandlerService {
     def modifyChainServiceHandler(String name,def updatedChainServiceHandler,boolean isSynced = true) {
         def chainServiceHandler = ChainServiceHandler.findByName(name.trim())
         if(!!chainServiceHandler) {
-            chainServiceHandler.properties = updatedChainServiceHandler.collectEntries {
-                switch(it.key) {
-                case "method":
-                    return [ "${it.key}": MethodEnum.byName((("name" in it.value)?it.value.name:it.value)) ]
-                    break
-                case "chain":
-                    return [ "${it.key}": Chain.findByName(("name" in it.value)?it.value.name:it.value) ]
-                    break
-                default:
-                    return [ "${it.key}": it.value ]
-                    break
+            chainServiceHandler.properties = updatedChainServiceHandler.inject([:]) {m,k,v ->
+                switch(k) {
+                    case "method":
+                        m[k] = MethodEnum.byName((("name" in v)?v.name:v))
+                        break
+                    case "chain":
+                        m[k] = Chain.findByName(("name" in v)?v.name:v)
+                        break
+                    default:
+                        m[k] = v
+                        break
                 }
+                return m
             }
             chainServiceHandler.isSynced = isSynced
             if(!chainServiceHandler.save(failOnError:false, flush: true, validate: true)) {

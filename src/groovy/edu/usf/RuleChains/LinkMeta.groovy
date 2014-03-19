@@ -59,8 +59,9 @@ class LinkMeta {
          */
         LinkService.metaClass.getSQLSources {
             String sfRoot = "sessionFactory_"
-            def sfb = grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( 'sessionFactory_' ) }.collectEntries { b ->
-                return [ (b[sfRoot.size()..-1]) : new Sql(grailsApplication.mainContext."${b}".currentSession.connection()) ]
+            return grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( 'sessionFactory_' ) }.inject([:]) {m,b ->
+                m[b[sfRoot.size()..-1]] = new Sql(grailsApplication.mainContext."${b}".currentSession.connection())
+                return m
             }
         }
         
