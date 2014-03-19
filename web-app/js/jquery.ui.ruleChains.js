@@ -2135,7 +2135,7 @@
                                 var dialog = $(this);
                                 $.ruleChains.chain.POSTmodifyChain({ 
                                         name: self.chainSelect.find('option:selected').text(),
-                                        ruleSet: {
+                                        chain: {
                                             name: dialog.data().name.val().trim()
                                         }
                                     },function(chain) {

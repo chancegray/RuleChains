@@ -4,6 +4,15 @@ import edu.usf.RuleChains.MethodEnum
 import edu.usf.RuleChains.AuthTypeEnum
 import edu.usf.RuleChains.ParseEnum
 
+/**
+ * DefinedService extends the basic Rule domain class and is the unit
+ * for processing a rule containing parameters in calling an external
+ * REST service.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class DefinedService extends Rule {
     MethodEnum method = MethodEnum.GET
     AuthTypeEnum authType = AuthTypeEnum.NONE
@@ -33,17 +42,25 @@ class DefinedService extends Rule {
             }        
         )
     }
-    
+    /*
+     * Handles syncronization for saves 
+     */    
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${name} DefinedService")
         }
     }
+    /*
+     * Handles syncronization for update
+     */    
     def beforeUpdate() {
         if(isSynced) {
             updateGitWithComment("Renaming ${name} DefinedService")
         }
     }
+    /*
+     * Handles syncronization for post-update saves 
+     */        
     def afterUpdate() {
         if(isSynced) {
             saveGitWithComment("Updating ${name} DefinedService")
@@ -55,6 +72,9 @@ class DefinedService extends Rule {
             }
         }
     }
+    /*
+     * Handles syncronization for deletes 
+     */        
     def beforeDelete() {
         if(isSynced) {
             deleteGitWithComment("Deleted ${name} DefinedService")

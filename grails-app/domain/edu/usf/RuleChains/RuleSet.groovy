@@ -1,6 +1,14 @@
 package edu.usf.RuleChains
 import org.hibernate.FlushMode
+import grails.util.GrailsUtil
 
+/**
+ * RuleSet domain class is a container for organizing rule.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class RuleSet {
     String name
     static hasMany = [rules:Rule]
@@ -17,11 +25,11 @@ class RuleSet {
             validator: { val, obj -> val ==~ /[A-Za-z0-9_.-]+/ && {
                     boolean valid = true;
                     RuleSet.withNewSession { session ->
-                        session.flushMode = FlushMode.MANUAL
+                        session.flushMode = (GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.COMMIT:FlushMode.MANUAL
                         try {
                             valid = !!!Rule.findByName(val) && !!!Chain.findByName(val) && !!!ChainServiceHandler.findByName(val)
                         } finally {
-                            session.setFlushMode(FlushMode.AUTO)
+                            session.setFlushMode((GrailsUtil.environment in ['test'])?javax.persistence.FlushModeType.AUTO:FlushMode.AUTO)
                         }
                     }
                     return valid
@@ -29,21 +37,33 @@ class RuleSet {
             }
         )
     }   
+    /*
+     * Handles syncronization for saves 
+     */    
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${name} RuleSet")
         }
     }
+    /*
+     * Handles syncronization for update
+     */    
     def beforeUpdate() {
         if(isSynced) {
             updateGitWithComment("Updating ${name} RuleSet")
         }
     }
+    /*
+     * Handles syncronization for post-update saves 
+     */        
     def afterUpdate() {
         if(isSynced) {
             // saveGitWithComment("Updating ${name} RuleSet")
         }
     }
+    /*
+     * Handles syncronization for deletes 
+     */        
     def afterDelete() {
         if(isSynced) {
             deleteGitWithComment("Deleted ${name} RuleSet")

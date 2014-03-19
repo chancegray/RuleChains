@@ -4,21 +4,43 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import grails.converters.*
 import org.hibernate.criterion.CriteriaSpecification
+import grails.util.GrailsUtil
 
+/**
+ * ChainService provide for the creation and manipulation of Chain and Link objects
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class ChainService {
     static transactional = true
     def grailsApplication
     def jobService
     
+    /**
+     * Returns a list of Chain objects with an option matching filter
+     * 
+     * @param  pattern  An optional parameter. When provided the full list (default) will be filtered down with the regex pattern string when provided
+     * @return          An object containing the resulting list of Chain objects
+     * @see    Chain
+     */    
     def listChains(String pattern = null) { 
         if(!!pattern) {
-            return [chains: Chain.list().findAll(fetch:[links:"eager"]) {
+            return [chains: Chain.list().findAll {
                 Pattern.compile(pattern.trim()).matcher(it.name).matches()
             }]
         } else {
             return [ chains: Chain.list() ]
         }
     }
+    /**
+     * Creates a new Chain
+     * 
+     * @param  name      The unique name of the new Chain
+     * @param  isSynced  An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return           Returns an object containing the new Chain
+     */
     def addChain(String name,boolean isSynced = true) {
         if(!!name) {
             def chain = [ name: name.trim() ] as Chain
@@ -31,12 +53,19 @@ class ChainService {
         }
         return [ error: "You must supply a name" ]
     }
+    /**
+     * Renames an existing Chain
+     * 
+     * @param  name                              The name of the Chain to be updated
+     * @param  newName                           The new name of the Chain to be updated
+     * @param  isSynced                          An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return                                   Returns an object containing the updated Chain
+     */
     def modifyChain(String name,String newName,boolean isSynced = true) {
         if(!!name && !!newName) {
             def chain = Chain.findByName(name.trim())
             if(!!chain) {         
                 chain.isSynced = isSynced
-                System.out.println(newName)
                 chain.name = newName.trim()
                 if(!chain.save(failOnError:false, flush: true, validate: true)) {
                     return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]
@@ -48,6 +77,13 @@ class ChainService {
         }
         return [ error : "You must supply a name and new name for the target chain"]
     }
+    /**
+     * Removes an existing Chain by name
+     * 
+     * @param  name      The name of the Chain to be removed
+     * @param  isSynced  An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return           Returns an object containing the sucess or error message
+     */    
     def deleteChain(String name,boolean isSynced = true) {
         if(!!name) {
             def chain = Chain.findByName(name.trim())
@@ -60,6 +96,13 @@ class ChainService {
         }
         return [ error : "You must supply a name for the target Chain"]
     }
+    /**
+     * Finds a Chain by it's name
+     * 
+     * @param  name  The unique name of the Chain
+     * @return       Returns a Chain if matched or returns an error message
+     * @see    Chain
+     */
     def getChain(String name) {
         if(!!name) {
             def chain = Chain.findByName(name.trim())
@@ -69,17 +112,19 @@ class ChainService {
                 if(!!!!resultSet.links) {
                     resultSet.links = Link.createCriteria().list(sort: 'sequenceNumber',order: 'asc') {
                         eq('chain',chain)
-                        resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
-                        projections {
-                            property('sequenceNumber', 'sequenceNumber')
-                            property('rule', 'rule')
-                            property('sourceName','sourceName')
-                            property('executeEnum', 'executeEnum')
-                            property('resultEnum', 'resultEnum')
-                            property('linkEnum', 'linkEnum')
-                            property('inputReorder', 'inputReorder')
-                            property('outputReorder', 'outputReorder')
-                        }                        
+                        if(!(GrailsUtil.environment in ['test'])) {
+                            resultTransformer(CriteriaSpecification.ALIAS_TO_ENTITY_MAP)
+                            projections {
+                                property('sequenceNumber', 'sequenceNumber')
+                                property('rule', 'rule')
+                                property('sourceName','sourceName')
+                                property('executeEnum', 'executeEnum')
+                                property('resultEnum', 'resultEnum')
+                                property('linkEnum', 'linkEnum')
+                                property('inputReorder', 'inputReorder')
+                                property('outputReorder', 'outputReorder')
+                            }                        
+                        }
                     }
                 }
                 return [ chain: resultSet ]                    
@@ -88,21 +133,37 @@ class ChainService {
         }
         return [ error : "You must supply a name for the target Chain"]
     }
+    /**
+     * Adds a new link to an existing chain
+     * 
+     * @param  name     The unique name of the Chain
+     * @param  newLink  An object containing the link object to be added
+     * @param  isSynced An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return          Returns an object containing the updated Chain
+     */
     def addChainLink(String name,def newLink,boolean isSynced = true) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
             chain.isSynced = isSynced
-            // Get an ordered list of links
-            Link.createCriteria().list(sort: 'sequenceNumber',order: 'desc') {
-                eq('chain',chain)
-                ge('sequenceNumber',newLink.sequenceNumber.toLong())
-            }.each { l ->
-                l.isSynced = isSynced
-                // increment each one
-                l.sequenceNumber++
-                if(!l.save(failOnError:false, flush: true, validate: true)) {
-                    return [ error : "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" ]
+            // Make SURE there's a valid rule on this link
+            if(!!!Rule.findByName(("name" in newLink.rule)?newLink.rule.name:newLink.rule)) {
+                return [ error : "Link rule named ${("name" in newLink.rule)?newLink.rule.name:newLink.rule} not found!"]
+            }
+            // Move the links greater or equal to the target up one
+            Chain.withTransaction { status ->
+                // Get an ordered list of links
+                Link.createCriteria().list(sort: 'sequenceNumber',order: 'desc') {
+                    eq('chain',chain)
+                    ge('sequenceNumber',newLink.sequenceNumber.toLong())
+                }.each { l ->
+                    l.isSynced = isSynced
+                    // increment each one
+                    l.sequenceNumber++
+                    if(!l.save(failOnError:false, flush: true, validate: true)) {
+                        return [ error : "'${l.errors.fieldError.field}' value '${l.errors.fieldError.rejectedValue}' rejected" ]
+                    }
                 }
+                status.flush()
             }
             def link = new Link(newLink.inject([:]) {l,k,v ->
                 switch(k) {
@@ -119,8 +180,11 @@ class ChainService {
                         l[k] = v.toLong()
                         break
                     case "rule":
+                        println ("name" in v)?v.name:v
                         l[k] = Rule.findByName(("name" in v)?v.name:v)
-                        l[k].isSynced = isSynced
+                        if(!!l[k]) {
+                            l[k].isSynced = isSynced
+                        }
                         break
                     default:
                         l[k] = v
@@ -128,25 +192,37 @@ class ChainService {
                 }
                 return l
             })
-            link.isSynced = isSynced
-            try {
-                if(!chain.addToLinks(link).save(failOnError:false, flush: true, validate: true)) {
-                    chain.errors.allErrors.each {
-                        println "Error:"+it
-                    }           
-                    return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                                
-                }
-            } catch(Exception ex) {
-                link.errors.allErrors.each {
-                    println it                        
+            if(!!link.rule) {
+                link.isSynced = isSynced
+                try {
+                    if(!chain.addToLinks(link).save(failOnError:false, flush: true, validate: true)) {
+                        chain.errors.allErrors.each {
+                            println "Error:"+it
+                        }           
+                        return [ error : "'${chain.errors.fieldError.field}' value '${chain.errors.fieldError.rejectedValue}' rejected" ]                                
+                    }
+                } catch(Exception ex) {
+                    link.errors.allErrors.each {
+                        println it                        
+                    }    
+                    log.info ex.printStackTrace()
+                    return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
                 }    
-                log.info ex.printStackTrace()
-                return [ error: "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
-            }    
-            return getChain(chain.name)
+                return getChain(chain.name)
+            } else {
+                return [ error : "The target rule for the link ${("name" in newLink.rule)?newLink.rule.name:newLink.rule} was not found!"]
+            }
         }
         return [ error : "Chain named ${name} not found!"]
     }
+    /**
+     * Finds a Link by it's sequence number and Chain name
+     * 
+     * @param  name            The unique name of the Chain
+     * @param  sequenceNumber  The sequence number of the link in the chain
+     * @return                 Returns a Link if matched or returns an error message
+     * @see    Link
+     */    
     def getChainLink(String name,def sequenceNumber) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
@@ -158,14 +234,20 @@ class ChainService {
         }        
         return [ error : "Chain named ${name} not found!"]
     }
+    /**
+     * Removes an existing link by sequence number and Chain name. The Chain links are reordered
+     * sequentially without gaps.
+     * 
+     * @param  name            The name of the Chain to be removed
+     * @param  sequenceNumber  The sequence number of the link in the chain
+     * @param  isSynced        An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return                 Returns an object containing the updated Chain
+     */    
     def deleteChainLink(String name,def sequenceNumber,boolean isSynced = true) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
             chain.isSynced = isSynced
-            def link = Link.createCriteria().get {
-                eq("chain",chain)
-                eq("sequenceNumber",sequenceNumber.toLong())
-            }
+            def link = (!!!chain.links)?null:chain.links.find { it.sequenceNumber.toString() == sequenceNumber.toString() }
             if(!!link) {
                 link.isSynced = isSynced
                 if(!chain.removeFromLinks(link).save(failOnError:false, flush: false, validate: true)) {
@@ -197,30 +279,44 @@ class ChainService {
         }
         return [ error : "Chain named ${name} not found!"]
     }
-    def modifyChainLink(String name,def sequenceNumber,def updatedLink) {
+    /**
+     * Updates a target links property in a chain.
+     * 
+     * @param  name            The name of the ChainServiceHandler to be removed
+     * @param  sequenceNumber  The sequence number of the target link in the chain
+     * @param  updatedLink     An updated link object with updated properties to be applied to the target link
+     * @param  isSynced        An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return                 Returns an object containing the updated Link
+     * @see    Link
+     * @see    Chain
+     */    
+    def modifyChainLink(String name,def sequenceNumber,def updatedLink,boolean isSynced = true) {
         def chain = Chain.findByName(name.trim())
         if(!!chain) {
-            println "Modify chain link ${sequenceNumber}"
-            def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber }
+            chain.isSynced = isSynced
+            def link = chain.links.find { it.sequenceNumber.toString() == sequenceNumber.toString() }
             if(!!link) {
-                println "Found Link"
-                link.properties['sourceName','inputReorder','outputReorder','sequenceNumber','executeEnum','linkEnum','resultEnum'] = updatedLink.collectEntries {
-                    if(it.key in ['executeEnum','linkEnum','resultEnum']) {
-                        switch(it.key) {
-                            case "executeEnum":
-                                return [ "${it.key}": ("name" in it.value)?ExecuteEnum.byName(it.value.name):ExecuteEnum.byName(it.value) ]                                
-                                break
-                            case "linkEnum":
-                                return [ "${it.key}": ("name" in it.value)?LinkEnum.byName(it.value.name):LinkEnum.byName(it.value) ]                                
-                                break
-                            case "resultEnum":
-                                return [ "${it.key}": ("name" in it.value)?ResultEnum.byName(it.value.name):ResultEnum.byName(it.value) ]                                
-                                break
-                        }
+                link.isSynced = isSynced
+                link.properties['sourceName','inputReorder','outputReorder','sequenceNumber','executeEnum','linkEnum','resultEnum','rule'] = updatedLink.inject([:]) { m,k,v ->
+                    switch(k) {
+                        case "executeEnum":
+                            m[k] = ExecuteEnum.byName(("name" in v)?v.name:v)
+                            break
+                        case "linkEnum":
+                            m[k] = LinkEnum.byName(("name" in v)?v.name:v)
+                            break
+                        case "resultEnum":
+                            m[k] = ResultEnum.byName(("name" in v)?v.name:v)
+                            break
+                        case "rule":
+                            m[k] = Rule.findByName(("name" in v)?v.name:v)
+                            break
+                        default:
+                            m[k] = v
+                            break
                     }
-                    return [ "${it.key}": it.value ]
+                    return m
                 }
-                link.rule = ("name" in updatedLink.rule)?Rule.findByName(updatedLink.rule.name):Rule.get(updatedLink.rule.id)
                 if(!link.save(failOnError:false, flush: true, validate: true)) {
                     link.errors.allErrors.each {
                         println it
@@ -228,13 +324,16 @@ class ChainService {
                     return [ error : "'${link.errors.fieldError.field}' value '${link.errors.fieldError.rejectedValue}' rejected" ]                
                 }
                 return [ link : link]
-            } else {
-                println "Didn't Find link"
             }
             return [ error : "Link with sequence ${sequenceNumber} not found!"]
         }
         return [ error : "Chain named ${name} not found!"]
     }
+    /**
+     * Retrieves a list of available sources and other objects strictly for the user interface
+     * 
+     * @return  An object containing available sources along with actions,jobgroups and currently executing jobs
+     */
     def getSources() {
         String sfRoot = "sessionFactory_"
         return [ 

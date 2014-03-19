@@ -1,5 +1,13 @@
 package edu.usf.RuleChains
 
+/**
+ * PHP extends the basic Rule domain class and is the unit
+ * for processing a rule containing text in the PHP language.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class PHP extends Rule {
     String rule = ""
     static constraints = {
@@ -8,16 +16,27 @@ class PHP extends Rule {
         rule type: 'text'
     }
     
+    /*
+     * Handles syncronization for saves 
+     */    
     def afterInsert() {
         if(isSynced) {
             saveGitWithComment("Creating ${name} PHP")
         }
     }
+    
+    /*
+     * Handles syncronization for update
+     */    
     def beforeUpdate() {
         if(isSynced) {
             updateGitWithComment("Renaming ${name} PHP")
         }
     }
+    
+    /*
+     * Handles syncronization for post-update saves 
+     */        
     def afterUpdate() {
         if(isSynced) {
             saveGitWithComment("Updating ${name} PHP")
@@ -29,6 +48,10 @@ class PHP extends Rule {
             }        
         }
     }
+    
+    /*
+     * Handles syncronization for deletes 
+     */        
     def beforeDelete() {
         if(isSynced) {
             deleteGitWithComment("Deleted ${name} PHP")

@@ -9,15 +9,41 @@ import oracle.jdbc.driver.OracleTypes
 import groovy.text.*
 import au.com.bytecode.opencsv.*
 import grails.util.Holders
-
+/**
+ * LinkService provides for the execution of various rule types and helper functions.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class LinkService {
     static transactional = true
     def grailsApplication
-    
+    /**
+     * Retrieves the global variables hashmap from the config called "rcGlobals"
+     * and combines it with an optional provided Map and some local variables on the 
+     * current local environment.
+     * 
+     * @param  map       An optional parameter to add key/value pairs to the merge of global and local variables
+     * @return           Returns an Map containing global,local and provided key/value pairs
+     */
     def getMergedGlobals(def map = [:]) {
         return [ rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:] ] + map
     }
-    
+    /**
+     * Executes a DefinedService with CAS SpringSecurity authentication
+     * 
+     * @param     serviceUrl             The URL of the REST service
+     * @param     method                 GET,POST,DELETE or PUT method for REST submission
+     * @param     parseEnum              The enumerator value indicating the result of the REST call will be parsed as that type
+     * @param     username               The username for authorization
+     * @param     password               The password for authorization
+     * @param     headers                Any special headers to pass in the REST call
+     * @param     query                  A set of parameters to send in the REST call
+     * @param     springSecurityBaseUrl  The URL for SpringSecurity for that service
+     * @return                           A parsed response from the REST service call
+     * @see       ParseEnum
+     */
     def casSpringSecurityRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:],String springSecurityBaseUrl) {
         try {
             return [ { o ->
@@ -52,7 +78,19 @@ class LinkService {
             ]                
         }        
     }
-    
+    /**
+     * Executes a DefinedService with CAS authentication
+     * 
+     * @param     serviceUrl             The URL of the REST service
+     * @param     method                 GET,POST,DELETE or PUT method for REST submission
+     * @param     parseEnum              The enumerator value indicating the result of the REST call will be parsed as that type
+     * @param     username               The username for authorization
+     * @param     password               The password for authorization
+     * @param     headers                Any special headers to pass in the REST call
+     * @param     query                  A set of parameters to send in the REST call
+     * @return                           A parsed response from the REST service call
+     * @see       ParseEnum
+     */
     def casRest(String serviceUrl,String method = "GET",ParseEnum parseEnum,String username,String password,def headers=[:],def query=[:]) {
         try {
             return [ { o ->
@@ -86,6 +124,20 @@ class LinkService {
             ]                
         }
     }
+    /**
+     * Executes a DefinedService with CAS authentication
+     * 
+     * @param     serviceUrl             The URL of the REST service
+     * @param     methodEnum             GET,POST,DELETE or PUT method for REST submission
+     * @param     authTypeEnum           The enumerator value indicating the authorization type of the REST call
+     * @param     parseEnum              The enumerator value indicating the result of the REST call will be parsed as that type
+     * @param     username               The username for authorization
+     * @param     password               The password for authorization
+     * @param     headers                Any special headers to pass in the REST call
+     * @param     query                  A set of parameters to send in the REST call
+     * @return                           A parsed response from the REST service call
+     * @see       ParseEnum
+     */
     def justRest(String serviceUrl, MethodEnum methodEnum, AuthTypeEnum authTypeEnum,ParseEnum parseEnum, String username,String password,def headers=[:],def query=[:]) {
         try {
             return [ { o ->
@@ -168,6 +220,19 @@ class LinkService {
             ]                
         }
     }
+    /**
+     * Executes a PHP Script
+     * 
+     * @param     rule                   The text code of the rule
+     * @param     sourceName             The string value of the database source to be executed on
+     * @param     executeEnum            The enumerator value indicating how the script will be executed
+     * @param     resultEnum             The enumerator value indicating the result will be handled
+     * @param     input                  A set of parameters used in execution of the script
+     * @return                           An array of objects representing the result of the script
+     * @see       ExecuteEnum
+     * @see       ResultEnum
+     * @see       Rule
+     */
     def justPHP(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         return Link.withTransaction{ status ->            
             try {
@@ -297,8 +362,19 @@ class LinkService {
 
 
        }
-
-    
+    /**
+     * Executes a Groovy Script
+     * 
+     * @param     rule                   The text code of the rule
+     * @param     sourceName             The string value of the database source to be executed on
+     * @param     executeEnum            The enumerator value indicating how the script will be executed
+     * @param     resultEnum             The enumerator value indicating the result will be handled
+     * @param     input                  A set of parameters used in execution of the script
+     * @return                           An array of objects representing the result of the script
+     * @see       ExecuteEnum
+     * @see       ResultEnum
+     * @see       Rule
+     */
     def justGroovy(Rule rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         return Link.withTransaction{ status ->
             def sql = getSQLSource(sourceName)
@@ -347,6 +423,19 @@ class LinkService {
             }
         }
     }
+    /**
+     * Executes a SQL Script
+     * 
+     * @param     rule                   The text code of the rule
+     * @param     sourceName             The string value of the database source to be executed on
+     * @param     executeEnum            The enumerator value indicating how the script will be executed
+     * @param     resultEnum             The enumerator value indicating the result will be handled
+     * @param     input                  A set of parameters used in execution of the script
+     * @return                           An array of objects representing the result of the script
+     * @see       ExecuteEnum
+     * @see       ResultEnum
+     * @see       Rule
+     */
     def justSQL(def rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         Link.withTransaction {
             def sql = getSQLSource(sourceName)
@@ -377,6 +466,19 @@ class LinkService {
              }
         }
     }
+    /**
+     * Executes a SQL Stored Procedure Script
+     * 
+     * @param     rule                   The text code of the rule
+     * @param     sourceName             The string value of the database source to be executed on
+     * @param     executeEnum            The enumerator value indicating how the script will be executed
+     * @param     resultEnum             The enumerator value indicating the result will be handled
+     * @param     input                  A set of parameters used in execution of the script
+     * @return                           An array of objects representing the result of the script
+     * @see       ExecuteEnum
+     * @see       ResultEnum
+     * @see       Rule
+     */
     def justStoredProcedure(def rule,String sourceName,ExecuteEnum executeEnum,ResultEnum resultEnum,def input) {
         Link.withTransaction {
             //println input as JSON

@@ -7,7 +7,16 @@ import grails.util.DomainBuilder
 import groovy.swing.factory.ListFactory
 import groovy.json.JsonSlurper
 import groovy.io.FileType
+import grails.util.GrailsUtil
 
+/**
+ * ConfigService provides backup and restoration of rules, chains, chainServiceHandlers
+ * and schedules.
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class ConfigService {
     static transactional = true
     def grailsApplication
@@ -16,6 +25,13 @@ class ConfigService {
     def chainServiceHandlerService
     def jobService
     
+    /**
+     * Initializes the database from a Git repository
+     * 
+     * @param  isSynced  An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return           An object containing the resulting list of Chain objects
+     * @see    Chain
+     */        
     def syncronizeDatabaseFromGit(boolean isSynced = false) {
         // Clear the Chain/Rule/ChainHandlers data
         ChainServiceHandler.withTransaction { status ->
@@ -75,23 +91,26 @@ class ConfigService {
         if(chainsFolder.exists()) {
             restore.chains = []
             Chain.withTransaction { status ->
+                def chains = []
                 chainsFolder.eachDir{ chainFolder ->
+                    def links = []
                     println "Chain to create ${chainFolder.name}"
                     chainService.addChain(chainFolder.name,isSynced)
-                    def cs = []
                     chainFolder.eachFile(FileType.FILES) { linkFile ->
                         def link = JSON.parse(linkFile.text)
-                        cs << link
-                        chainService.addChainLink(chainFolder.name,link,isSynced)
+                        links << link
                     }
-                    restore.chains << [ "${chainFolder.name}": cs.collect { link -> 
-                            link.chain = chainFolder.name
-                            link.isSynced = isSynced
-                            return link
-                        },
-                        "isSynced": isSynced
-                    ]
-                }  
+                    restore.chains << [
+                        name: chainFolder.name,
+                        links: links.sort { a,b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
+                            chainService.addChainLink(chainFolder.name,l,isSynced)
+                        }.collect { l ->
+                            l.chain = chainFolder.name
+                            l.isSynced = isSynced
+                            return l
+                        }
+                    ]                        
+                }
                 status.flush()
             }
         }
@@ -118,7 +137,7 @@ class ConfigService {
                 def badJob = false
                 job.triggers.eachWithIndex { t,i->
                     if(i < 1) {
-                        if("error" in jobService.createChainJob(t,job.name,(job.input)?job.input:[])) {
+                        if("error" in jobService.createChainJob(t,job.name,(job.input)?job.input:[[:]])) {
                             // delete the bad schedule
                             badJob = true
                         }
@@ -143,7 +162,14 @@ class ConfigService {
         println restore as JSON
         // println "Does ruleSets exist? ${ruleSetsFolder.exists()}"
     }
-    def uploadChainData(restore) {
+    /**
+     * Takes the JSON object from the upload and merges it into the syncronized
+     * Git repository and live database
+     * 
+     * @param   restore     A JSON Object containing rules,chains and chainServiceHandlers
+     * @return              Returns a status object indicating the state of the import
+     */
+    def uploadChainData(def restore,boolean isSynced = false) {
         // def o = JSON.parse(new File('Samples/import.json').text); // Parse a JSON String
         switch(restore) {
             case { (("ruleSets" in it)?checkDuplicateMismatchRuleTypes(it.ruleSets):false) && (("chains" in it)?!checkSources(it.chains):false) }:
@@ -160,30 +186,30 @@ class ConfigService {
                     restore.ruleSets.each { rs ->
                         print rs.name
                         def ruleSet = { r ->
-                            if("error" in r) {
-                                r = ruleSetService.addRuleSet(rs.name)
-                                if("error" in r) {
-                                    println "Error ${r.error}"
+                            if("error" in r || !!!r) {
+                                r = ruleSetService.addRuleSet(rs.name,isSynced)                                
+                                if("error" in r || !!!r) {
+                                    println "Error ${(!!!r)?null:r.error}"
                                     return null
                                 }
                                 return r.ruleSet
                             }
                             return r.ruleSet
-                        }.call(ruleSetService.getRuleSet(rs.name))
+                        }.call((GrailsUtil.environment in ['test'])?RuleSet.findByName(rs.name):ruleSetService.getRuleSet(rs.name))                        
                         if(!!!!ruleSet) {
-                            rs.rules.each { r ->
+                            (("rules" in rs)?rs.rules:[]).each { r ->
                                 { r2 ->
                                     if(r."class".endsWith("Snippet")) {
                                         { c ->
                                             if("error" in c) {
-                                                chainService.addChain(r.name)
+                                                chainService.addChain(r.name,isSynced)
                                             }
                                         }.call(chainService.getChain(r.name))                                
                                     }
                                     if("error" in r2) {                                
-                                        ruleSetService.addRule(ruleSet.name,r.name,r."class".tokenize('.').last())                                
+                                        ruleSetService.addRule(ruleSet.name,r.name,r."class".tokenize('.').last(),isSynced)                                
                                     }
-                                    ruleSetService.updateRule(ruleSet.name,r.name,r) 
+                                    ruleSetService.updateRule(ruleSet.name,r.name,r,isSynced) 
                                 }.call(ruleSetService.getRule(ruleSet.name,r.name))                        
                             }
                         } else {
@@ -196,11 +222,14 @@ class ConfigService {
                 if("chains" in restore) {                        
                     restore.chains.each { c ->
                         def chain = { ch ->
-                            if("error" in ch) {
+                            if("error" in ch || !!!ch) {
+                                if(!!!ch) {
+                                    return null
+                                }
                                 return chainService.addChain(c.name).chain
                             }
                             return ch.chain
-                        }.call(chainService.getChain(c.name)) 
+                        }.call((GrailsUtil.environment in ['test'])?Chain.findByName(rs.name):chainService.getChain(c.name)) 
                         if(!!!!chain) {
                             c.links.sort { a, b -> a.sequenceNumber <=> b.sequenceNumber }.each { l ->
                                 println "${l.sequenceNumber}"
@@ -209,11 +238,11 @@ class ConfigService {
                                 println chainService.getChainLink(c.name,l.sequenceNumber) as JSON
                                 if("error" in chainService.getChainLink(c.name,l.sequenceNumber)) {
                                     println "Added chain link"
-                                    chainService.addChainLink(c.name,l)
+                                    chainService.addChainLink(c.name,l,isSynced)
                                     // chain.refresh()
                                 } else {
                                     println "Modified chain link"
-                                    chainService.modifyChainLink(c.name,l.sequenceNumber,l)
+                                    chainService.modifyChainLink(c.name,l.sequenceNumber,l,isSynced)
                                 }
                                 println "${l.sequenceNumber}"
                             }
@@ -228,7 +257,11 @@ class ConfigService {
                 break
         }
     }
-    
+    /**
+     * Returns an object containing rules,chains and chainServiceHandlers
+     * 
+     * @return      An object containing rules,chains and chainSeriveHandlers
+     */
     def downloadChainData() {
         return [
             ruleSets: RuleSet.list(),
@@ -236,7 +269,12 @@ class ConfigService {
             chainServiceHandlers: ChainServiceHandler.list()
         ]
     }
-    
+    /**
+     * Iterates through a chain and checks to ensure all sources exist before importing
+     * 
+     * @param   chains  An object containing an array of chains
+     * @return          A boolean which indicates all sources exists
+     */
     def checkSources(def chains) {
         String sfRoot = "sessionFactory_"
         return grailsApplication.mainContext.beanDefinitionNames.findAll{ it.startsWith( sfRoot ) }.collect { sf ->
@@ -249,6 +287,13 @@ class ConfigService {
             }.flatten().unique()
         )
     }
+    /**
+     * Compares existing sources with sources specified in a chain and returns
+     * what sources are missing.
+     * 
+     * @param     chains  An object containing an array of chains
+     * @return            An array of source names that don't exist
+     */
     def missingSources(def chains) {
         String sfRoot = "sessionFactory_"
         return { lsources,sources ->
@@ -266,9 +311,21 @@ class ConfigService {
             }
         )
     }
+    /**
+     * Checks to determine if there are duplicate rule defined
+     * 
+     * @param  ruleSets  A list of rule sets containing rules belonging to those rule sets
+     * @return           True or False on duplicates being detected
+     */
     def checkDuplicateMismatchRuleTypes(def ruleSets) {
         return duplicateRules(ruleSets).size() > 0
     }
+    /**
+     * Iterates through rule sets and finds the duplicates
+     * 
+     * @param  ruleSets  A list of rule sets containing rules belonging to those rule sets
+     * @return           A list of duplicate rules detected
+     */
     def duplicateRules(def ruleSets) {
         def testRules = []
         ruleSets.each { rs ->
