@@ -14,7 +14,7 @@ grails.project.dependency.resolution = {
     }
     log "error" // log level of Ivy resolver, either 'error', 'warn', 'info', 'debug' or 'verbose'
     checksums true // Whether to verify checksums on resolve
-
+    legacyResolve true // whether to do a secondary resolve on plugin installation, not advised and here for backwards compatibility
     repositories {
         inherits true // Whether to inherit repository definitions from plugins
 
@@ -35,6 +35,10 @@ grails.project.dependency.resolution = {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
 
         runtime 'mysql:mysql-connector-java:5.1.24'
+        runtime 'postgresql:postgresql:9.1-901.jdbc4'
+        compile "org.eclipse.jgit:org.eclipse.jgit:3.1.0.201310021548-r"
+        compile "net.sf.opencsv:opencsv:2.3"
+        compile "jcifs:jcifs:1.3.17"
     }
 
     plugins {
@@ -52,5 +56,11 @@ grails.project.dependency.resolution = {
         runtime ":database-migration:1.1"
 
         compile ':cache:1.0.0'
+        compile ':spring-security-core:1.2.7.3'
+        compile ":spring-security-acl:1.1.1"
+        compile ':spring-security-cas-usf:1.2.1'
+        compile ':grails-cas-rest-client:0.3.1'
+        compile ":quartz2:2.1.6.2"
+        compile ":rest:0.7"
     }
 }

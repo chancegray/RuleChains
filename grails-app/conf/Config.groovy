@@ -10,9 +10,8 @@
 // if (System.properties["${appName}.config.location"]) {
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }
-
-grails.config.locations = [ "file:/usr/local/etc/grails/RuleChains.groovy"]
-
+grails.config.folder = '/usr/local/etc/grails/RuleChains'
+grails.config.locations = (new File(grails.config.folder)).listFiles().collect { "file:" + it.canonicalPath }
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
 grails.mime.use.accept.header = true
@@ -95,3 +94,22 @@ log4j = {
            'org.hibernate',
            'net.sf.ehcache.hibernate'
 }
+jcifs.smb.client.dfs.disabled = true
+
+// Added by the Spring Security CAS (USF) plugin:
+grails.plugins.springsecurity.userLookup.userDomainClassName = 'edu.usf.cims.UsfCasUser'
+grails.plugins.springsecurity.cas.active = true
+grails.plugins.springsecurity.cas.sendRenew = false
+grails.plugins.springsecurity.cas.key = '9a3433aca7184008df30ee8f5c62f160' //unique value for each app
+grails.plugins.springsecurity.cas.artifactParameter = 'ticket'
+grails.plugins.springsecurity.cas.serviceParameter = 'service'
+grails.plugins.springsecurity.cas.filterProcessesUrl = '/j_spring_cas_security_check'
+grails.plugins.springsecurity.cas.proxyCallbackUrl = "${grails.serverURL}/secure/receptor"
+grails.plugins.springsecurity.cas.proxyReceptorUrl = '/secure/receptor'
+grails.plugins.springsecurity.cas.useSingleSignout = false
+grails.plugins.springsecurity.cas.driftTolerance = 120000
+grails.plugins.springsecurity.cas.loginUri = '/login'
+grails.plugins.springsecurity.cas.useSamlValidator = true
+grails.plugins.springsecurity.cas.authorityAttribute = 'eduPersonEntitlement'
+grails.plugins.springsecurity.cas.serverUrlPrefix = 'https://authtest.it.usf.edu'
+grails.plugins.springsecurity.cas.serviceUrl = "${grails.serverURL}/j_spring_cas_security_check"

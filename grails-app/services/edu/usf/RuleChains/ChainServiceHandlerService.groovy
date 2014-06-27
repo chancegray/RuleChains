@@ -1,24 +1,124 @@
 package edu.usf.RuleChains
 
+import grails.converters.*
+import groovy.lang.GroovyShell
+import groovy.lang.Binding
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+import groovy.sql.Sql
+import oracle.jdbc.driver.OracleTypes
+import grails.util.Holders
+
+/**
+ * ChainServiceHanderService provide for the processing and manipulation of ChainServiceHandler objects
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class ChainServiceHandlerService {
     def chainService
+    def jobService
     
+    /**
+     * Takes REST parameters, matches it on a method and processess
+     * the matched Chain Service Handler {@link ChainServiceHandler}
+     * against it's embedded Chain {@link Chain} with input parameters.
+     * <p>
+     * This method has it's own reordering handling to conform the input and output 
+     * to the calling REST client's needs.
+     * 
+     * @param  name
+     * @param  method
+     * @param  input
+     * @return The result of the chain execution along with optional grooming on the output reorder
+     * @see    Chain
+     * @see    ChainServiceHandler
+     */ 
     def handleChainService(String name,String method,def input) {
-        def chainServiceHandlerResponse = getChainServiceHandler(name)
-        if("error" in chainServiceHandlerResponse) {
-            return [ error: "Chain Service Handler not found" ]
-        } else if(chainServiceHandlerResponse.chainServiceHandler.method in [ MethodEnum.byName(method) ]) {
-            // Execute the rule chain
-            def chain = Chain.findByName(chainServiceHandlerResponse.chainServiceHandler.chain.name)
-            if(!!chain) {
-                return [ result: Chain.rearrange(chain.execute(Chain.rearrange(input,chainServiceHandlerResponse.chainServiceHandler.inputReorder)),chainServiceHandlerResponse.chainServiceHandler.outputReorder) ]
+        println "--------"
+        println input as JSON
+        println "--------"
+        def chainServiceHandler = ChainServiceHandler.findByName(name)
+        if(!!chainServiceHandler) {
+            if(chainServiceHandler.method in [ MethodEnum.byName(method) ]) {
+                def suffix = System.currentTimeMillis()
+                // Attaches a JobHistory to the Chain as a transient
+                chainServiceHandler.chain.jobHistory = { jh -> 
+                    if('error' in jh) {
+                        log.info "Creating a new job history"
+                        jh = jobService.addJobHistory("${name}:${suffix}:chainServiceHandler")
+                        return ('error' in jh)?null:jh.jobHistory
+                    }
+                    return jh.jobHistory
+                }.call(jobService.findJobHistory("${name}:${suffix}:chainServiceHandler"))    
+                if(!!chainServiceHandler.chain.jobHistory) {
+                    chainServiceHandler.chain.jobHistory.properties = [
+                        chain: chainServiceHandler.chain.name,
+                        description: "ChainServiceHandler ${name} for ${chainServiceHandler.chain.name}",
+                        groupName: "none",
+                        cron: "rest triggered",
+                        fireTime: new Date(suffix),
+                        scheduledFireTime: new Date(suffix)
+                    ]       
+                    if(!chainServiceHandler.chain.jobHistory.save(failOnError:false, flush: true, insert: false, validate: true)) {
+                        log.error "'${chainServiceHandler.chain.jobHistory.errors.fieldError.field}' value '${chainServiceHandler.chain.jobHistory.errors.fieldError.rejectedValue}' rejected" 
+                        return [ error: "ChainServiceHander aborted due to jobHistory error: '${chainServiceHandler.chain.jobHistory.errors.fieldError.field}' value '${chainServiceHandler.chain.jobHistory.errors.fieldError.rejectedValue}' rejected" ]
+                    } else {
+                        def rows = [ Chain.rearrange(input,chainServiceHandler.inputReorder) ]
+                        return rearrange(chainServiceHandler.chain.execute(rows,chainServiceHandler.chain.getOrderedLinks()),chainServiceHandler.outputReorder)
+                    }                    
+                } else {
+                    log.error "Job History is NULL and won't be used to log execution"
+                    return [ error: "JobHistory cannot be null in executing a ChainServiceHandler"]                    
+                }
             } else {
-                return [ error: "Chain not found ${chainServiceHandlerResponse.chainServiceHandler.chain.name}" ]
-            }            
+                return [ error: "Method '${chainServiceHandler.method.name()}' for handler '${name}' not defined" ]
+            }
         } else {
-            return [ error: "Method '${name}' for handler '${name}'" ]
+            return [ error: "Chain Service Handler not found" ]
         }
+        
     }
+    /**
+     * A special rearrange for returning REST responses.
+     * This takes the whole value and allows you to manipulate it rather
+     * than row by row
+     * 
+     * @param  rows       an array of objects
+     * @param  rearrange  a groovy script with 'rows' bound in it to allow custom rearranging
+     * @return            the rearranged array of objects processed through the rearrange groovy script
+     */
+    private def rearrange(def rows,String rearrange){
+        println "unmodified ${rows}"
+        println rows as JSON
+        println "-------"
+        if(!!rearrange) {
+            println "Made it Rearrange ${rearrange}"
+            String toBeEvaluated = """
+                import groovy.sql.Sql
+                import oracle.jdbc.driver.OracleTypes
+                
+                rcGlobals
+                rows
+                ${rearrange}
+            """        
+            try {
+                return new GroovyShell(new Binding("rows":rows,rcGlobals: (Holders.config.rcGlobals)?Holders.config.rcGlobals:[:])).evaluate(toBeEvaluated)
+            } catch(Exception e) {
+                System.out.println("${rows.toString()} error: ${e.message} on closure: ${toBeEvaluated}")
+            }
+        }
+        println "Skipped rearrange as it was ${rearrange}"
+        return rows
+    }    
+    /**
+     * Finds a ChainServiceHandler by it's name
+     * 
+     * @param  name  The unique name of the ChainServiceHandler
+     * @return       Returns a ChainServiceHander if matched or returns an error message
+     * @see    ChainServiceHandler
+     */
     def getChainServiceHandler(String name) {
         if(!!name) {
             def chainServiceHandler = ChainServiceHandler.findByName(name.trim())
@@ -29,19 +129,36 @@ class ChainServiceHandlerService {
         }
         return [ error : "You must supply a name for the target ChainServiceHandler"]        
     }
+    /**
+     * Returns a list of ChainServiceHandler objects with an option matching filter
+     * 
+     * @param  pattern  An optional parameter. When provided the full list (default) will be filtered down with the regex pattern string when provided
+     * @return          An object containing the resulting list of ChainServiceHandler objects
+     * @see    ChainServiceHandler
+     */
     def listChainServiceHandlers(String pattern = null) { 
         if(!!pattern) {
-            return [chainServiceHandlers: ChainServiceHandler.list().findAll(fetch:[links:"eager"]) {
-                Pattern.compile(pattern.trim()).matcher(it.name).matches()
-            }]
+            return [chainServiceHandlers: ChainServiceHandler.list().findAll {
+                    Pattern.compile(pattern.trim()).matcher(it.name).matches()
+                }]
         } else {
             return [ chainServiceHandlers: ChainServiceHandler.list() ]
         }
     }
-    def addChainServiceHandler(String name,def ch) {
-        def chain = Chain.findByName(ch.name)
+    /**
+     * Creates a new ChainServiceHandler
+     * 
+     * @param  name      The unique name of the new ChainServiceHandler
+     * @param  ch        A HashMap of the ChainServiceHandler properties
+     * @param  isSynced  An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return           Returns an object containing the new ChainServiceHandler
+     */
+    def addChainServiceHandler(String name,def ch,boolean isSynced = true) {
+        def chain = Chain.findByName(('name' in ch)?ch.name:ch)
         if(!!name && !!!!chain) {
+            chain.isSynced = isSynced
             def chainServiceHandler = [ name: name.trim(), chain: chain ] as ChainServiceHandler
+            chainServiceHandler.isSynced = isSynced
             if(!chainServiceHandler.save(failOnError:false, flush: true, insert: true, validate: true)) {
                 return [ error : "Name value '${chainServiceHandler.errors.fieldError.rejectedValue}' rejected" ]
             } else {
@@ -52,22 +169,32 @@ class ChainServiceHandlerService {
         }
         return [ error: "You must supply a name" ]
     }
-    def modifyChainServiceHandler(String name,def updatedChainServiceHandler) {
+    /**
+     * Modifies an existing ChainServiceHandler with updated options
+     * 
+     * @param  name                              The name of the ChainServiceHandler to be updated
+     * @param  updatedChainServiceHandler        A HashMap of the ChainServiceHandler properties
+     * @param  isSynced                          An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return                                   Returns an object containing the updated ChainServiceHandler
+     */
+    def modifyChainServiceHandler(String name,def updatedChainServiceHandler,boolean isSynced = true) {
         def chainServiceHandler = ChainServiceHandler.findByName(name.trim())
         if(!!chainServiceHandler) {
-            chainServiceHandler.properties = updatedChainServiceHandler.collectEntries {
-                switch(it.key) {
+            chainServiceHandler.properties = updatedChainServiceHandler.inject([:]) {m,k,v ->
+                switch(k) {
                     case "method":
-                        return [ "${it.key}": MethodEnum.byName((("name" in it.value)?it.value.name:it.value)) ]
+                        m[k] = MethodEnum.byName((("name" in v)?v.name:v))
                         break
                     case "chain":
-                        return [ "${it.key}": Chain.findByName(it.value.name) ]
+                        m[k] = Chain.findByName(("name" in v)?v.name:v)
                         break
                     default:
-                        return [ "${it.key}": it.value ]
+                        m[k] = v
                         break
                 }
+                return m
             }
+            chainServiceHandler.isSynced = isSynced
             if(!chainServiceHandler.save(failOnError:false, flush: true, validate: true)) {
                 chainServiceHandler.errors.allErrors.each {
                     println it
@@ -78,10 +205,18 @@ class ChainServiceHandlerService {
         }
         return [ error : "Chain Service Handler named ${name} not found!"]
     }
-    def deleteChainServiceHandler(String name) {
+    /**
+     * Removes an existing ChainServiceHander by name
+     * 
+     * @param  name      The name of the ChainServiceHandler to be removed
+     * @param  isSynced  An optional parameter for syncing to Git. The default value is 'true' keeping sync turned on
+     * @return           Returns an object containing the sucess or error message
+     */
+    def deleteChainServiceHandler(String name,boolean isSynced = true) {
         if(!!name) {
             def chainServiceHandler = ChainServiceHandler.findByName(name.trim())
             if(!!chainServiceHandler) {
+                chainServiceHandler.isSynced = isSynced
                 chainServiceHandler.delete()
                 return [ success : "Chain Service Handler deleted" ]
             }

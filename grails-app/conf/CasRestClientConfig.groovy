@@ -5,8 +5,9 @@
     rest.https.cert.hostnameVerifier = 'ALLOW_ALL'
     /** Enforce SSL Socket Factory */
     rest.https.sslSocketFactory.enforce = true
-
-    casRestClient.cas.server = "https://authtest.it.usf.edu"
-    casRestClient.cas.ticketsPath = "/v1/tickets"        
-    casRestClient.cas.username = "myusername"    
-    casRestClient.cas.password = "mypassword"
+    /** The CAS server tickets path **/
+    casRestClient.cas.ticketsPath = "/v1/tickets"
+    /** Optional Global CAS username - rather than specifying it on each call **/ 
+    // casRestClient.cas.username = "mycasusername"        
+    /** Optional Global CAS password - rather than specifying it on each call **/ 
+    // casRestClient.cas.password = "mycaspassword"        

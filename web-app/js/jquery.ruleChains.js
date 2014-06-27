@@ -266,6 +266,33 @@
                     }
                 });        
             },
+            // listCurrentlyExecutingJobs
+            GETlistCurrentlyExecutingJobs: function(json,callback) {
+                json = jQuery.extend({
+                    name: ""
+                },json);
+                $.ajax({
+                    url: "/RuleChains/running/",
+                    type: "GET",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+//                    data: ($.trim(json.pattern).length < 1)?{}:{
+//                        pattern: $.trim(json.pattern)
+//                    },
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });        
+            },
             POSTmergescheduleChainJob: function(json,callback) {
                 json = jQuery.extend(true,{
                     name: "",
@@ -452,6 +479,114 @@
                         }
                     }
                 });                                                
+            },
+            GETgetJobLogs: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: "",
+                    records: 10,
+                    offset: 1
+                },json);
+                $.ajax({
+                    url: '/RuleChains/history/'+json.name,
+                    type: "GET",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    data: {
+                        records: $.trim(json.records),
+                        offset: $.trim(json.offset)
+                    },
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                                                
+            },
+            GETgetJobHistories: function(json,callback) {
+                json = jQuery.extend({
+                    name: ""
+                },json);
+                $.ajax({
+                    url: "/RuleChains/history/",
+                    type: "GET",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+//                    data: ($.trim(json.pattern).length < 1)?{}:{
+//                        pattern: $.trim(json.pattern)
+//                    },
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                        
+            },
+            DELETEdeleteJobHistory: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: ""
+                },json);
+                $.ajax({
+                    url: '/RuleChains/history/'+json.name,
+                    type: "DELETE",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    // data: JSON.stringify(json),
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                                                
+            },
+            GETgetJobRuleTimings: function(json,callback) {
+                json = jQuery.extend(true,{
+                    name: "",
+                    records: 10,
+                    offset: 1
+                },json);
+                $.ajax({
+                    url: '/RuleChains/timing/'+json.name,
+                    type: "GET",
+                    dataType : "json",
+                    beforeSend: function (XMLHttpRequest, settings) {
+                        XMLHttpRequest.setRequestHeader("Content-Type", "application/json");
+                        XMLHttpRequest.setRequestHeader("Accept", "application/json");
+                    },
+                    data: {
+                        records: $.trim(json.records),
+                        offset: $.trim(json.offset)
+                    },
+                    success: callback,
+                    error: function (jqXHR,  textStatus, errorThrown) {
+                        if (jqXHR.status === 0) {
+                            // Session has probably expired and needs to reload and let CAS take care of the rest
+                            alert('Your session has expired, the page will need to reload and you may be asked to log back in');
+                            // reload entire page - this leads to login page
+                            window.location.reload();
+                        }
+                    }
+                });                                                                                
             }
         },
         chain: {
@@ -504,12 +639,11 @@
                         }
                     }
                 });                                
-
             },
             POSTmodifyChain: function(json,callback) {
                 json = jQuery.extend(true,{
                     name: "",
-                    ruleSet: {
+                    chain: {
                         name: ""
                     }
                 },json);
@@ -683,7 +817,6 @@
                     }
                 });                                                                
             }
-        
         },
         ruleSet: {
             GETlistRuleSets: function(json,callback) {

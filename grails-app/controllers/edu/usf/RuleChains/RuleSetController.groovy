@@ -1,9 +1,21 @@
 package edu.usf.RuleChains
 
 import grails.converters.*
-
+/**
+ * RuleSetController provides for REST services handling the processing and manipulation of RuleSet objects
+ * <p>
+ * Developed originally for the University of South Florida
+ * 
+ * @author <a href='mailto:james@mail.usf.edu'>James Jones</a> 
+ */ 
 class RuleSetController {
     def ruleSetService
+    /**
+     * Returns a list of RuleSet objects objects with an option matching filter
+     * 
+     * @return          An object containing the resulting list of RuleSet objects
+     * @see    RuleSet
+     */    
     def listRuleSets() { 
         withFormat {
             html {
@@ -17,6 +29,11 @@ class RuleSetController {
             }
         }                    
     }
+    /**
+     * Creates a new RuleSet
+     * 
+     * @return           Returns an object containing the new RuleSet
+     */    
     def addRuleSet() {
         withFormat {
             html {
@@ -30,6 +47,12 @@ class RuleSetController {
             }
         }                    
     }
+    /**
+     * Finds a RuleSet by it's name
+     * 
+     * @return       Returns a RuleSet if matched or returns an error message
+     * @see    RuleSet
+     */
     def getRuleSet() {
         withFormat {
             html {
@@ -43,6 +66,11 @@ class RuleSetController {
             }
         }                    
     }
+    /**
+     * Removes an existing RuleSet by name
+     * 
+     * @return           Returns an object containing the sucess or error message
+     */    
     def deleteRuleSet() {
         withFormat {
             html {
@@ -56,6 +84,11 @@ class RuleSetController {
             }
         }                    
     }
+    /**
+     * Renames an existing RuleSet
+     * 
+     * @return                                   Returns an object containing the updated RuleSet
+     */
     def modifyRuleSet() {
         withFormat {
             html {
@@ -69,6 +102,12 @@ class RuleSetController {
             }
         }                    
     }
+    /**
+     * Retrieves a Rule by it's RuleSet name and Rule name
+     * 
+     * @return                 Returns a Rule if matched or returns an error message
+     * @see    Rule
+     */    
     def getRule() {
         withFormat {
             html {
@@ -82,6 +121,13 @@ class RuleSetController {
             }
         }                    
     }
+    /**
+     * Creates a new Rule in an existing RuleSet
+     * 
+     * @return                 Returns an object containing the newly created Rule
+     * @see Rule
+     * @see RuleSet
+     */
     def addRule() {
         withFormat {
             html {
@@ -95,6 +141,11 @@ class RuleSetController {
             }
         }                            
     }
+    /**
+     * Updates an existing rule in a RuleSet
+     * 
+     * @return                    Returns an object containing the updete Rule
+     */
     def updateRule() {
         withFormat {
             html {
@@ -108,6 +159,11 @@ class RuleSetController {
             }
         }                                    
     }
+    /**
+     * Renames an existing Rule
+     * 
+     * @return                                   Returns an object containing the updated Rule
+     */
     def updateRuleName() {
         withFormat {
             html {
@@ -121,6 +177,11 @@ class RuleSetController {
             }
         }                                            
     }
+    /**
+     * Removes an existing Rule by RuleSet name and Rule name. 
+     * 
+     * @return                 Returns an object containing the sucess or error message
+     */    
     def deleteRule(String ruleSetName,String name) {
         withFormat {
             html {
@@ -134,6 +195,11 @@ class RuleSetController {
             }
         }                                            
     }
+    /**
+     * Relocates an existing Rule in a different RuleSet
+     *
+     * @return                 Returns moved Rule if successful or returns an error message
+     */
     def moveRule() {
         withFormat {
             html {

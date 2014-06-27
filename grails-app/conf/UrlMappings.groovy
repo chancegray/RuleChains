@@ -1,12 +1,9 @@
+import org.springframework.security.access.AccessDeniedException
+import org.springframework.security.acls.model.NotFoundException
+
 class UrlMappings {
 
 	static mappings = {
-//		"/$controller/$action?/$id?"{
-//			constraints {
-//				// apply constraints here
-//			}
-//		}
-// listRuleSets
                 "/ruleSet"(controller:"ruleSet",parseRequest: true){ 
                     action = [GET:"listRuleSets", PUT:"addRuleSet", DELETE:"error", POST:"error"] 
                 } 
@@ -40,6 +37,18 @@ class UrlMappings {
                 "/job/$name/$cronExpression"(controller:"job",parseRequest: true){ 
                     action = [GET:"error", PUT:"addscheduleChainJob", DELETE:"unscheduleChainJob", POST:"rescheduleChainJob"] 
                 }
+                "/history"(controller:"job",parseRequest: true){ 
+                    action = [GET:"getJobHistories", PUT:"error", DELETE:"error", POST:"error"] 
+                }
+                "/history/$name"(controller:"job",parseRequest: true){ 
+                    action = [GET:"getJobLogs", PUT:"error", DELETE:"deleteJobHistory", POST:"error"] 
+                }
+                "/timing/$name"(controller:"job",parseRequest: true){ 
+                    action = [GET:"getJobRuleTimings", PUT:"error", DELETE:"error", POST:"error"] 
+                }
+                "/running"(controller:"job",parseRequest: true){ 
+                    action = [GET:"listCurrentlyExecutingJobs", PUT:"error", DELETE:"error", POST:"error"] 
+                }
                 "/chainServiceHandler"(controller:"chainServiceHandler",parseRequest: true){ 
                     action = [GET:"listChainServiceHandlers", PUT:"addChainServiceHandler", DELETE:"error", POST:"error"] 
                 }
@@ -51,7 +60,18 @@ class UrlMappings {
                     action = [GET:"error", PUT:"error", DELETE:"error", POST:"uploadChainData"] 
                 }
                 "/service/$handler"(controller:"chainServiceHandler",action: "handleChainService",parseRequest: true)
-		"/"(view:"/index")
-		"500"(view:'/error')
+		"/"(view:"/index",parseRequest: true)
+		"/login/denied"(view:"/login/denied",parseRequest: true)
+                "/logout/index"(controller:"logout",parseRequest: true) {
+                    action = "index"
+                }
+		// "500"(view:'/error')
+                "403"(controller: "errors", action: "error403")
+                "404"(controller: "errors", action: "error404")
+                "500"(controller: "errors", action: "error500")
+                "500"(controller: "errors", action: "error403",
+                      exception: AccessDeniedException)
+                "500"(controller: "errors", action: "error403",
+                      exception: NotFoundException)                
 	}
 }
